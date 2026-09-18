@@ -35,4 +35,4 @@ Status: requirements from the user; dimensions still needed. Shared by the user 
 ## Field facts (2026-09-18)
 - Measured 72.3" x 104.5" plus a nook 12.4" x 27.9". The door wall runs 25.8 | 32 door | 26.5.
 - Door is LHI (left-hand inswing), hinge on the jamb nearer the long hanging wall
-- Crawl hatch 24.2" x 29.1": edges 14.9" and 44" from the right wall, centered on the nook (about 1.7" from the door wall). Keep it accessible.
+- Crawl hatch 24.2" x 29.1": edges 14.9" and 44" from the nook's 27.9" wall, centered on the nook (about 1.7" from the door wall). Keep it accessible.

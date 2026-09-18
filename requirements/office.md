@@ -38,5 +38,6 @@ Status: requirements from the user; dimensions still needed.
 - Cables arrive on the LEFT end wall, in two boxes at 75.2" AFF, 12.9" and 5.9" from the back corner:
   the left box is motorized blinds only; the right box is AT&T fiber, cameras (Cat6) and ethernet.
 - Outlet for the UPS at 15.6" AFF on the same wall
+- Another outlet at the top: 98" AFF, 14.6" from the back corner, above the cable boxes
 - Crawl-space hatch in this closet too; size and position to come
 - Measured 59.8" x 23.6"; opening 49.9" with 4.8" / 5.1" stubs
