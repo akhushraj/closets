@@ -32,6 +32,8 @@
   .eyebrow{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);font-weight:700;margin:0}
   .tb-main h1{font-size:clamp(15px,1.6vw,18px);margin:0;line-height:1.1}
   .tb-main select{font:inherit;font-size:12px;background:var(--paper);color:var(--ink);border:1px solid var(--hair);border-radius:4px;padding:2px 6px}
+  .tblink{font-size:12px;color:var(--blue);text-decoration:none;border:1px solid var(--hair);border-radius:4px;padding:2px 8px;white-space:nowrap}
+  .tblink:hover{border-color:var(--blue)}
   .tb-meta{display:grid;grid-auto-flow:column}
   .tb-meta div{padding:5px 12px;border-left:1px solid var(--hair);display:flex;flex-direction:column;font-size:10.5px;justify-content:center}
   .tb-meta div:first-child{border-left:0}
@@ -156,6 +158,7 @@
       <p class="eyebrow" id="eyebrow">Closets · Shop Drawing Set</p>
       <h1 id="title">Rohan's Closet — Bedroom 2</h1>
       <select id="closetPick" aria-label="Closet"></select>
+      <a class="tblink" href="measurements.html">Field measurements →</a>
     </div>
     <div class="tb-meta mono" id="meta"></div>
   </div>
