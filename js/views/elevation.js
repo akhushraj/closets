@@ -3,11 +3,11 @@ import { el, clear, dim } from "../lib/svg.js";
 import { frac, ftin } from "../lib/units.js";
 
 const S = 3.6;   // px per inch
-const ORDER = ["T", "L", "D", "E", "N2"];
 
 export function renderElevations(root, model) {
   clear(root);
-  for (const id of ORDER) {
+  const order = model.elevations || model.closet.walls.filter(w => !w.hidden).map(w => w.id);
+  for (const id of order) {
     const w = model.closet.walls.find(x => x.id === id);
     if (!w) continue;
     const len = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]);
@@ -34,15 +34,14 @@ function drawWall(svg, w, len, model) {
   el("rect", { x: U(0), y: Z(ceil), width: len * S, height: ceil * S, class: "wallbg" }, g);
   const marks = [];
 
-  const door = model.door;
-  if (door.wall === w.id) {
+  for (const door of model.doors.filter(d => d.wall === w.id)) {
     el("rect", { x: U(door.u0), y: Z(door.roH), width: (door.u1 - door.u0) * S, height: door.roH * S, class: "opening" }, g);
-    const a = door.u0 + 1, b = door.u1 - 1, hU = door.hinge === "near" ? a : b, lU = door.hinge === "near" ? b : a;
-    el("rect", { x: U(a), y: Z(door.h), width: (b - a) * S, height: door.h * S, class: "leaf" }, g);
+    const a = door.u0 + 1, b = door.u1 - 1, nearA = Math.abs(door.hingeU - a) < Math.abs(door.hingeU - b);
+    const hU = nearA ? a : b, lU = nearA ? b : a, inward = door.swing === "in";
+    el("rect", { x: U(a), y: Z(door.h), width: (b - a) * S, height: door.h * S, class: inward ? "leafin" : "leaf" }, g);
     el("path", { d: `M${U(hU)} ${Z(door.h)} L${U(lU)} ${Z(door.h / 2)} L${U(hU)} ${Z(0)}`, class: "swingel" }, g);
-    el("text", { x: U((a + b) / 2), y: Z(door.h) + 14, class: "lb", "font-size": 10.5, "text-anchor": "middle" }, g,
-      `door · ${door.hinge === "near" ? "LHO" : "RHO"}`);
-    el("text", { x: U((a + b) / 2), y: Z(door.h) + 27, class: "lbs", "font-size": 9.5, "text-anchor": "middle" }, g, "swings out, mirror");
+    el("text", { x: U((a + b) / 2), y: Z(door.h) + 14, class: "lb", "font-size": 10.5, "text-anchor": "middle" }, g, `door · ${door.label || ""}`);
+    el("text", { x: U((a + b) / 2), y: Z(door.h) + 27, class: "lbs", "font-size": 9.5, "text-anchor": "middle" }, g, inward ? "swings in" : "swings out");
     marks.push({ z: door.roH, label: "Door R.O." });
   }
 

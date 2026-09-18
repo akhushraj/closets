@@ -111,6 +111,19 @@
   .m-shelves{fill:var(--shelf);stroke:var(--shelf-bd);stroke-width:1}
   .m-hamper{fill:var(--hamp);stroke:var(--ink-soft);stroke-width:1}
   .m-band{fill:none;stroke:var(--ink-soft);stroke-width:.8;stroke-dasharray:6 4;stroke-opacity:.5}
+  .m-press{fill:#E3E0D8;stroke:var(--ink-soft);stroke-width:1}
+  .m-other{fill:var(--hair);stroke:var(--ink-soft);stroke-width:1}
+  .hatch{fill:none;stroke:var(--amber);stroke-width:1.4;stroke-dasharray:5 3}
+  .leafin{fill:color-mix(in srgb,var(--panel) 70%,var(--ink) 8%);stroke:var(--ink-soft);stroke-width:.8}
+  .p-cabinet,.p-backboard,.p-outlet{fill:#F1EEE8;stroke:var(--ink);stroke-width:.8}
+  .p-rack,.p-ups,.p-device{fill:#3A3D44;stroke:var(--ink);stroke-width:.8}
+  .p-desktop{fill:var(--wood);stroke:var(--wood-dk);stroke-width:.7}
+  .m-equip{fill:#4A4E57;stroke:var(--ink-soft);stroke-width:1}
+  .m-desk{fill:var(--wood);stroke:var(--wood-dk);stroke-width:1}
+  .m-ups{fill:#3A3D44;stroke:var(--ink-soft);stroke-width:1}
+  .notes{margin:0 0 12px;padding-left:18px;font-size:12.5px;color:var(--ink)}
+  .notes li{margin:4px 0}
+  .p-board{fill:#D9D5CC;stroke:var(--ink-soft);stroke-width:.6}
   .ghost{fill:none;stroke:var(--wood-dk);stroke-width:1.1;stroke-dasharray:3 3}
   .rodline{stroke:var(--hang-bd);stroke-width:2;stroke-dasharray:8 4}
   .etag{fill:var(--panel);stroke:var(--blue);stroke-width:1}
@@ -140,23 +153,11 @@
 <div class="sheet">
   <div class="titleblock">
     <div class="tb-main">
-      <p class="eyebrow">Closets · Shop Drawing Set · Concept A · Rev A</p>
+      <p class="eyebrow" id="eyebrow">Closets · Shop Drawing Set</p>
       <h1 id="title">Rohan's Closet — Bedroom 2</h1>
-      <select id="closetPick" aria-label="Closet">
-        <option value="rohan">Rohan · Bedroom 2</option>
-        <option disabled>Master bedroom (next)</option>
-        <option disabled>Daughter's room (next)</option>
-        <option disabled>Guest room (next)</option>
-        <option disabled>Office (next)</option>
-        <option disabled>Laundry (next)</option>
-      </select>
+      <select id="closetPick" aria-label="Closet"></select>
     </div>
-    <div class="tb-meta mono">
-      <div><span class="k">Closet</span><span class="v" id="mSize">·</span></div>
-      <div><span class="k">Ceiling</span><span class="v" id="mCeil">·</span></div>
-      <div><span class="k">Rod</span><span class="v" id="mRod">·</span></div>
-      <div><span class="k">Drawers</span><span class="v" id="mDr">·</span></div>
-    </div>
+    <div class="tb-meta mono" id="meta"></div>
   </div>
 
   <div class="tabs" id="tabs">

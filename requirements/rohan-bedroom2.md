@@ -46,3 +46,7 @@ shelves. Leaning plywood: the space is irregular and 10' tall.
 - Lego: how many bins, or how many cubic feet
 - Is there a ceiling light or an outlet in the closet today? Are the walls still open?
 - The thin brown line across the alcove at the door's far jamb: header, soffit, or nothing?
+
+## Field facts (2026-09-18)
+- Main 46.2" wide, left wall 52.1". Door wall: 31.1" | 30.3" opening | 17.3". Alcove 25.2" / 25.7" wide, left wall 27.3"; notch 21.5".
+- About 1/2" out of parallel. That's normal framing tolerance; scribe the built-ins to fit.

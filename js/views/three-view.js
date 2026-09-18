@@ -78,10 +78,13 @@ export function createThreeView(host) {
     ledOff: new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.4 }),
     hamper: new THREE.MeshStandardMaterial({ color: 0xb9a98c, roughness: 1 }),
     door: new THREE.MeshStandardMaterial({ color: 0xf4f2ee, roughness: 0.5, transparent: true, opacity: 0.28, depthWrite: false }),
+    hatch: new THREE.MeshStandardMaterial({ color: 0x5f574c, roughness: 0.9 }),
+    metal: new THREE.MeshStandardMaterial({ color: 0x2c2e33, metalness: 0.5, roughness: 0.45 }),
+    board: new THREE.MeshStandardMaterial({ color: 0xd9d5cc, roughness: 0.9 }),
     garments: GARMENT.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 })),
   };
 
-  let root = null, framed = false, last = null;
+  let root = null, framedFor = null, last = null, bounds = null;
 
   function addBox(p, mat, wood = false) {
     const w = p.x1 - p.x0, h = p.z1 - p.z0, d = p.y1 - p.y0;
@@ -108,7 +111,7 @@ export function createThreeView(host) {
     last = model;
     if (root) { root.traverse(o => o.geometry && o.geometry.dispose()); scene.remove(root); }
     root = new THREE.Group(); scene.add(root);
-    const c = model.closet, p = model.params, door = model.door, ceil = c.ceiling;
+    const c = model.closet, p = model.params, ceil = c.ceiling;
     const wood = mats[p.finish] || mats.oak;
 
     const shape = new THREE.Shape(c.outline.map(([x, y]) => new THREE.Vector2(x, -y)));
@@ -117,12 +120,13 @@ export function createThreeView(host) {
 
     for (const w of c.walls) {
       const len = frame(w).len;
-      if (w.id === door.wall) {
-        wallPiece(w, 0, door.u0, 0, ceil);
-        wallPiece(w, door.u1, len, 0, ceil);
-        wallPiece(w, door.u0, door.u1, door.roH, ceil);
-      } else wallPiece(w, 0, len, 0, ceil);
+      const ds = model.doors.filter(d => d.wall === w.id).sort((a, b) => a.u0 - b.u0);
+      let u = 0;
+      for (const d of ds) { if (d.u0 > u) wallPiece(w, u, d.u0, 0, ceil); wallPiece(w, d.u0, d.u1, d.roH, ceil); u = d.u1; }
+      if (u < len) wallPiece(w, u, len, 0, ceil);
     }
+    for (const h of model.hatches || [])
+      addBox({ x0: h.x0, x1: h.x1, y0: h.y0, y1: h.y1, z0: 0, z1: 0.12 }, mats.hatch).castShadow = false;
 
     const lights = [];
     for (const part of model.parts) {
@@ -131,6 +135,11 @@ export function createThreeView(host) {
         case "kick": addBox(part, mats.kick); break;
         case "pull": addBox(part, mats.pull); break;
         case "hamper": addBox(part, mats.hamper); break;
+        case "cabinet": case "backboard": case "outlet": addBox(part, mats.white); break;
+        case "rack": case "ups": addBox(part, mats.metal); break;
+        case "device": addBox(part, part.tone === "light" ? mats.white : mats.metal); break;
+        case "desktop": addBox(part, wood, true); break;
+        case "board": addBox(part, mats.board); break;
         case "garment": addBox(part, mats.garments[part.tone % GARMENT.length]); break;
         case "led": addBox(part, p.lights ? mats.ledOn : mats.ledOff).castShadow = false; lights.push(part); break;
         case "rod": {
@@ -157,21 +166,40 @@ export function createThreeView(host) {
     hemi.intensity = p.lights ? 0.45 : 0.75;
     key.intensity = p.lights ? 0.7 : 1.1;
 
-    // door, standing open 90 degrees into the bedroom
-    const hx = c.W + c.wallT, hz = door.hingeU;
-    const leaf = new THREE.Mesh(new THREE.BoxGeometry(door.slab, door.h, 1.375), mats.door);
-    leaf.position.set(hx + door.slab / 2, door.h / 2, hz + (door.hinge === "near" ? -0.7 : 0.7));
-    leaf.castShadow = true; root.add(leaf);
+    // doors, standing open 90 degrees (see-through so they never hide the closet)
+    for (const d of model.doors) {
+      const w = c.walls.find(x => x.id === d.wall), f = frame(w), out = d.swing === "out";
+      const v = out ? -c.wallT : 0, s = out ? -1 : 1, other = d.hingeU < (d.u0 + d.u1) / 2 ? 1 : -1;
+      const hx = f.ax + f.dx * d.hingeU + f.nx * v, hy = f.ay + f.dy * d.hingeU + f.ny * v;
+      const dx = f.nx * s, dy = f.ny * s;
+      const leaf = new THREE.Mesh(new THREE.BoxGeometry(d.slab, d.h, 1.375), mats.door);
+      leaf.rotation.y = Math.atan2(-dy, dx);
+      leaf.position.set(hx + dx * d.slab / 2 + f.dx * other * 0.7, d.h / 2, hy + dy * d.slab / 2 + f.dy * other * 0.7);
+      root.add(leaf);
+    }
 
-    key.target.position.set(c.W / 2, 40, c.L / 2);
-    if (!framed) { view("overview"); framed = true; }
+    const xs = c.outline.map(q => q[0]), ys = c.outline.map(q => q[1]);
+    bounds = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+    key.target.position.set((bounds.x0 + bounds.x1) / 2, 40, (bounds.y0 + bounds.y1) / 2);
+    if (framedFor !== model.info.id) { view("overview"); framedFor = model.info.id; }
   }
 
   function view(name) {
-    if (!last) return;
-    const c = last.closet, d = last.door, mid = (d.u0 + d.u1) / 2;
-    if (name === "door") { camera.position.set(c.W + 85, 66, d.u1 + 10); controls.target.set(4, 50, 30); }
-    else { camera.position.set(c.W + 110, 118, mid + 2); controls.target.set(c.W / 2 - 6, 48, c.L / 2 - 6); }
+    if (!last || !bounds) return;
+    // cameras stand outside the (first) door's wall, so that wall culls away and you look in
+    const c = last.closet, d = last.doors[0];
+    const cx = (bounds.x0 + bounds.x1) / 2, cy = (bounds.y0 + bounds.y1) / 2;
+    const R = Math.max(bounds.x1 - bounds.x0, bounds.y1 - bounds.y0);
+    const w = c.walls.find(x => x.id === d.wall), f = frame(w), um = (d.u0 + d.u1) / 2;
+    const px = f.ax + f.dx * um, py = f.ay + f.dy * um;
+    if (name === "door") {
+      camera.position.set(px - f.nx * (R * 0.9 + 20), 66, py - f.ny * (R * 0.9 + 20));
+      controls.target.set(cx + f.nx * 6, 50, cy + f.ny * 6);
+    } else {
+      const dist = Math.max(R * 1.25 + 20, 120), hgt = 60 + R * 0.45;
+      camera.position.set(px - f.nx * dist + f.dx * R * 0.25, hgt, py - f.ny * dist + f.dy * R * 0.25);
+      controls.target.set(cx, 46, cy);
+    }
     controls.update();
   }
 
