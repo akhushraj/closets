@@ -8,9 +8,11 @@ export const INFO = {
   id: "rohan", name: "Rohan's Closet", room: "Bedroom 2", concept: "Concept A · hang across the top", rev: "Rev A",
 };
 
+// Measured in the field (2026-09-18). These always override stored or default values.
+export const FIELD = { closetW: 46.2, mainD: 52.1, alcoveW: 25.2, totalL: 78.7, ceiling: 120,
+  doorAt: 31.1, doorRO: 30.3, doorSlab: 28, doorH: 80, hinge: "near" };
+
 export const DEFAULTS = {
-  closetW: 45, mainD: 52, alcoveW: 25, totalL: 81, ceiling: 120,
-  doorAt: 34, doorRO: 28, doorSlab: 26, doorH: 80, hinge: "near",
   hangDepth: 24, rodZ: 70, hatDepth: 14,
   towerDepth: 20, fronts: "6, 7, 8, 8, 9", towerShelves: 2,
   alcoveDepth: 14, alcoveBottom: 30, alcoveShelves: 4,
@@ -20,18 +22,6 @@ export const DEFAULTS = {
 };
 
 export const CONTROLS = [
-  ["Shell (field-verify)", [
-    { key: "closetW", label: "Closet width", min: 36, max: 60, step: 0.5 },
-    { key: "mainD", label: "Left wall length", min: 40, max: 64, step: 0.5 },
-    { key: "alcoveW", label: "Alcove width", min: 18, max: 36, step: 0.5 },
-    { key: "totalL", label: "Door wall length", min: 66, max: 96, step: 0.5 },
-    { key: "ceiling", label: "Ceiling", min: 96, max: 132, step: 1, fmt: "ftin" },
-  ]],
-  ["Door", [
-    { key: "doorAt", label: "Opening starts from top wall", min: 0, max: 60, step: 0.5 },
-    { key: "doorRO", label: "Rough opening", min: 24, max: 36, step: 0.5 },
-    { key: "hinge", label: "Handing", type: "select", options: [["near", "LHO · hinge near top wall"], ["far", "RHO · hinge far side"]] },
-  ]],
   ["Hanging", [
     { key: "rodZ", label: "Rod height", min: 60, max: 84, step: 0.5 },
     { key: "hangDepth", label: "Hanging depth", min: 20, max: 28, step: 0.5 },
@@ -64,6 +54,7 @@ export function parseFronts(s, fallback = [6, 7, 8, 8, 9]) {
 }
 
 export function build(p) {
+  p = { ...p, ...FIELD };
   const W = p.closetW, M = p.mainD, A = p.alcoveW, L = p.totalL, nx = W - A, t = 4.5;
   const outline = [[0, 0], [W, 0], [W, L], [nx, L], [nx, M], [0, M]];
   const walls = [

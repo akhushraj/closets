@@ -11,33 +11,23 @@ export const INFO = {
   id: "master", name: "Master Closet", room: "Master bedroom", concept: "Concept A · hanging wall + drawer wall", rev: "Rev A",
 };
 
+// Measured in the field (2026-09-18). These always override stored or default values.
+export const FIELD = { W: 104.5, D: 72.3, nookW: 27.9, nookD: 12.4, ceiling: 120,
+  doorAt: 25.8, doorRO: 32, doorSlab: 30, doorH: 80, doorHinge: "top", doorSwing: "in",
+  // crawl hatch: edges 14.9" / 44" from the nook wall, centered on the nook
+  hatchX: 1.65, hatchY: 40.7, hatchW: 24.2, hatchD: 29.1 };
+
 export const DEFAULTS = {
-  W: 104, D: 72, nookW: 28, nookD: 12, ceiling: 120,
-  doorAt: 22, doorRO: 32, doorSlab: 30, doorH: 80, doorHinge: "top", doorSwing: "in",
-  hangDepth: 24, split: 52, hisLong: 20, hersLong: 20, upperRod: 82, lowerRod: 41,
+  hangDepth: 24, split: 52.25, hisLong: 20, hersLong: 20, upperRod: 82, lowerRod: 41,
   drawerDepth: 15, bankW: 30, hisFronts: "5, 5, 6, 6, 8", hersFronts: "5, 5, 6, 6, 8", centerFronts: "8, 10, 12",
   towerShelves: 3,
   pressOn: true, pressDown: false, pressAt: 33,
   nookBottom: 24, nookShelves: 4, mandirZ: 48,
-  hatchX: 2, hatchY: 60, hatchW: 24, hatchD: 18,
   bandOn: true, band1: 96, band2: 108, bandDepthTop: 20,
   finish: "oak", lights: true,
 };
 
 export const CONTROLS = [
-  ["Shell (field-verify)", [
-    { key: "W", label: "Closet width", min: 96, max: 116, step: 0.5 },
-    { key: "D", label: "Closet depth", min: 64, max: 80, step: 0.5 },
-    { key: "nookW", label: "Nook width", min: 20, max: 36, step: 0.5 },
-    { key: "nookD", label: "Nook depth", min: 8, max: 18, step: 0.5 },
-    { key: "ceiling", label: "Ceiling", min: 96, max: 132, step: 1, fmt: "ftin" },
-  ]],
-  ["Door", [
-    { key: "doorAt", label: "Opening starts from top wall", min: 0, max: 40, step: 0.5 },
-    { key: "doorRO", label: "Rough opening", min: 28, max: 36, step: 0.5 },
-    { key: "doorHinge", label: "Hinge side", type: "select", options: [["top", "Near the top wall"], ["bottom", "Near the nook"]] },
-    { key: "doorSwing", label: "Swing", type: "select", options: [["in", "Into the closet (as drawn)"], ["out", "Out into the bedroom"]] },
-  ]],
   ["Hanging · top wall", [
     { key: "hangDepth", label: "Hanging depth", min: 20, max: 28, step: 0.5 },
     { key: "split", label: "His | hers split, from the left", min: 30, max: 74, step: 0.5 },
@@ -64,12 +54,6 @@ export const CONTROLS = [
     { key: "nookShelves", label: "Shelves", min: 2, max: 6, step: 1, fmt: "int" },
     { key: "mandirZ", label: "Mandir shelf height", min: 30, max: 70, step: 0.5 },
   ]],
-  ["Crawl-space hatch", [
-    { key: "hatchX", label: "From the left wall", min: 0, max: 90, step: 0.5 },
-    { key: "hatchY", label: "From the top wall", min: 0, max: 70, step: 0.5 },
-    { key: "hatchW", label: "Width", min: 18, max: 32, step: 0.5 },
-    { key: "hatchD", label: "Depth", min: 14, max: 30, step: 0.5 },
-  ]],
   ["Upper storage", [
     { key: "bandOn", label: "Upper shelves on all walls", type: "check" },
     { key: "band1", label: "Seasonal shelf", min: 88, max: 104, step: 0.5 },
@@ -82,6 +66,7 @@ export const CONTROLS = [
 ];
 
 export function build(p) {
+  p = { ...p, ...FIELD };
   const W = p.W, D = p.D, NW = p.nookW, ND = p.nookD, L = D + ND, t = 4.5;
   const outline = [[0, 0], [W, 0], [W, D], [NW, D], [NW, L], [0, L]];
   const walls = [

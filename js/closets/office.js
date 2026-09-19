@@ -9,9 +9,10 @@ export const INFO = {
   id: "office", name: "Office Closet", room: "Office", concept: "Gear end + fold-down desk", rev: "Rev A",
 };
 
+// Measured in the field (2026-09-18). These always override stored or default values.
+export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9, doorH: 96 };
+
 export const DEFAULTS = {
-  W: 60, D: 24, ceiling: 120,
-  doorAt: 5, doorRO: 50, doorH: 96,
   gearW: 22, rackU: 12, rackZ: 56, rackDepth: 12, boardTop: 84, upsW: 7, upsD: 17, upsH: 10,
   deskZ: 29.5, deskDepth: 20, deskDown: true,
   paper1: 64, paper2: 76, paperDepth: 12,
@@ -21,13 +22,6 @@ export const DEFAULTS = {
 };
 
 export const CONTROLS = [
-  ["Shell (field-verify)", [
-    { key: "W", label: "Closet width", min: 48, max: 72, step: 0.5 },
-    { key: "D", label: "Closet depth", min: 20, max: 30, step: 0.5 },
-    { key: "ceiling", label: "Ceiling", min: 96, max: 132, step: 1, fmt: "ftin" },
-    { key: "doorAt", label: "Door opening starts from left", min: 0, max: 12, step: 0.5 },
-    { key: "doorRO", label: "Door rough opening (pair)", min: 36, max: 60, step: 0.5 },
-  ]],
   ["Network gear · left end", [
     { key: "gearW", label: "Gear zone width", min: 20, max: 30, step: 0.5 },
     { key: "rackU", label: "Wall rack size (U)", min: 6, max: 18, step: 1, fmt: "int" },
@@ -48,7 +42,7 @@ export const CONTROLS = [
     { key: "top2", label: "Long-term shelf 2", min: 96, max: 114, step: 0.5 },
     { key: "topDepth", label: "Long-term shelf depth", min: 12, max: 22, step: 0.5 },
   ]],
-  ["Crawl-space hatch", [
+  ["Crawl-space hatch (until measured)", [
     { key: "hatchX", label: "From the left wall", min: 0, max: 40, step: 0.5 },
     { key: "hatchY", label: "From the back wall", min: 0, max: 10, step: 0.5 },
     { key: "hatchW", label: "Width", min: 18, max: 32, step: 0.5 },
@@ -61,6 +55,7 @@ export const CONTROLS = [
 ];
 
 export function build(p) {
+  p = { ...p, ...FIELD };
   const W = p.W, D = p.D, t = 4.5;
   const outline = [[0, 0], [W, 0], [W, D], [0, D]];
   const walls = [
