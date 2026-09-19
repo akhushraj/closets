@@ -47,6 +47,14 @@ function buildControls() {
         row.innerHTML = `<label for="${id}">${c.label}</label><select id="${id}">${c.options.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select>`;
         const inp = row.querySelector("select"); inp.value = state[c.key];
         inp.onchange = () => set(c.key, inp.value);
+      } else if (c.type === "shelf") {
+        // on/off checkbox plus a height slider
+        row.innerHTML = `<label for="${id}"><span><input type="checkbox" id="${id}_on"> ${c.label}</span><output></output></label><input type="range" id="${id}" min="${c.min}" max="${c.max}" step="${c.step}">`;
+        const cb = row.querySelector("input[type=checkbox]"), inp = row.querySelector("input[type=range]"), out = row.querySelector("output");
+        const sync = () => { inp.disabled = !cb.checked; row.classList.toggle("off", !cb.checked); };
+        cb.checked = !!state[c.onKey]; inp.value = state[c.key]; out.textContent = frac(+inp.value, 8); sync();
+        cb.onchange = () => { sync(); set(c.onKey, cb.checked); };
+        inp.oninput = () => { out.textContent = frac(+inp.value, 8); set(c.key, +inp.value); };
       } else if (c.type === "text") {
         row.innerHTML = `<label for="${id}">${c.label}</label><input type="text" id="${id}" spellcheck="false">`;
         const inp = row.querySelector("input"); inp.value = state[c.key];

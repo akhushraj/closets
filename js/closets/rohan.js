@@ -15,7 +15,10 @@ export const FIELD = { closetW: 46.2, mainD: 52.1, alcoveW: 25.2, totalL: 78.7, 
 export const DEFAULTS = {
   hangDepth: 24, rodZ: 70, hatDepth: 14,
   towerDepth: 20, fronts: "6, 7, 8, 8, 9", towerShelves: 2,
-  alcoveLevels: "28, 40, 52, 64, 76, 88, 104", casingW: 3.5,
+  // alcove shelves, lowest first: top-of-shelf height AFF and on/off
+  s1: 16, s1on: false, s2: 28, s2on: true, s3: 40, s3on: true, s4: 52, s4on: true,
+  s5: 64, s5on: true, s6: 76, s6on: true, s7: 88, s7on: true, s8: 104, s8on: true,
+  casingW: 3.5,
   hamperW: 16, hamperD: 16, hamperH: 25,
   bandOn: true, band1: 88, band2: 104, bandDepth: 12,
   finish: "oak", lights: true,
@@ -32,8 +35,9 @@ export const CONTROLS = [
     { key: "fronts", label: "Drawer front heights, top → bottom", type: "text" },
     { key: "towerShelves", label: "Shelves above the counter", min: 0, max: 4, step: 1, fmt: "int" },
   ]],
-  ["Alcove · fixed plywood shelves", [
-    { key: "alcoveLevels", label: "Shelf heights, top of each (AFF)", type: "text" },
+  ["Alcove shelves · top of each, AFF", [
+    ...[1, 2, 3, 4, 5, 6, 7, 8].map(i => ({ key: `s${i}`, onKey: `s${i}on`, type: "shelf",
+      label: i === 1 ? "Shelf 1 (lowest)" : `Shelf ${i}`, min: 4, max: 114, step: 0.5 })),
     { key: "casingW", label: "Door casing width (sets the shelf depth)", min: 2, max: 4.5, step: 0.25 },
   ]],
   ["Upper storage", [
@@ -49,11 +53,6 @@ export const CONTROLS = [
 
 export function parseFronts(s, fallback = [6, 7, 8, 8, 9]) {
   const v = String(s).split(/[\s,]+/).map(Number).filter(n => n >= 3 && n <= 16);
-  return v.length ? v : fallback;
-}
-
-export function parseLevels(s, fallback = [28, 40, 52, 64, 76, 88, 104]) {
-  const v = String(s).split(/[\s,]+/).map(Number).filter(n => n >= 6 && n <= 118).sort((a, b) => a - b);
   return v.length ? v : fallback;
 }
 
@@ -80,7 +79,7 @@ export function build(p) {
   // alcove: fixed plywood shelves wall-to-wall on cleats, as deep as the door casing allows
   const belowDoor = L - (p.doorAt + p.doorRO);
   const alcDepth = Math.floor((belowDoor - p.casingW - 0.25) * 8) / 8;
-  const alcLevels = parseLevels(p.alcoveLevels);
+  const alcLevels = [1, 2, 3, 4, 5, 6, 7, 8].filter(i => p[`s${i}on`]).map(i => +p[`s${i}`]).sort((a, b) => a - b);
   add(fixedShelves(w.E, { u0: 0, u1: A, depth: alcDepth, levels: alcLevels, label: "Alcove shelves" }));
   add(floorItem(w.E, "hamper", { u0: (A - p.hamperW) / 2, u1: (A + p.hamperW) / 2, v0: 1, v1: 1 + p.hamperD, h: p.hamperH, label: "Hamper" }));
   if (p.bandOn) {
@@ -106,7 +105,10 @@ export function build(p) {
   if (p.bandOn && p.band1 < door.roH + 4) warnings.push(`The first upper shelf (${p.band1}") runs into the door head and casing (about ${door.roH + 3.5}").`);
   if (tower.counterZ > stackTop - 12) warnings.push("The drawer stack is so tall there's almost no open shelf left above it.");
   if (p.rodZ - 42 < 4) warnings.push("Long coats will touch the floor at this rod height.");
-  if (alcLevels[0] - 1.5 - 0.5 < p.hamperH)
+  for (let i = 1; i < alcLevels.length; i++)
+    if (alcLevels[i] - alcLevels[i - 1] < 6)
+      warnings.push(`Two alcove shelves are only ${frac(alcLevels[i] - alcLevels[i - 1], 8)} apart (tops at ${alcLevels[i - 1]}" and ${alcLevels[i]}").`);
+  if (alcLevels.length && alcLevels[0] - 1.5 - 0.5 < p.hamperH)
     warnings.push(`The lowest alcove shelf (${alcLevels[0]}") is too low for a ${p.hamperH}" hamper under its front edge.`);
   const notes = [
     `Alcove shelf depth: the wall beside the door is ${frac(belowDoor, 8)} long. Take off a ${frac(cw, 8)} casing and 1/4" of clearance, and each shelf is ${frac(alcDepth, 8)} deep, running wall to wall at ${frac(A, 8)}.`,
@@ -140,7 +142,7 @@ export function build(p) {
       { k: "Drawers", v: `${n} × ${slide}" deep`, s: `${slide}" full-extension slides` },
       { k: "Drawer tower", v: `${frac(M - hd, 8)} W × ${frac(p.towerDepth, 8)} D`, s: `counter at ${frac(tower.counterZ, 8)}` },
       { k: "Aisle", v: frac(aisle, 8), s: `${frac(Math.max(0, openClear), 8)} left with a drawer fully open` },
-      { k: "Alcove shelves", v: `${alcLevels.length} × ${frac(alcDepth, 8)} deep`, s: `tops at ${alcLevels.join(", ")}"` },
+      { k: "Alcove shelves", v: `${alcLevels.length} × ${frac(alcDepth, 8)} deep`, s: alcLevels.length ? `tops at ${alcLevels.join(", ")}"` : "none on" },
     ],
     titleMeta: [
       { k: "Closet", v: `${ftin(W)} × ${ftin(L)}` },
