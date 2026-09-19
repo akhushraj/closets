@@ -153,6 +153,24 @@ export function shelfStack(w, o) {
     { label, sub: `shelves from ${frac(bottom, 8)} up`, bottom, count }) };
 }
 
+/* ---------- fixed plywood shelves wall-to-wall: no gables, cleats on back + both sides,
+   solid-wood nosing on the front edge. `levels` are shelf-top heights AFF. ---------- */
+export function fixedShelves(w, o) {
+  const { u0, u1, depth, levels, nosing = 1.5, cleat = 1.5, led = true, label = "Fixed shelves" } = o;
+  const parts = [], zs = [...levels].sort((a, b) => a - b);
+  for (const top of zs) {
+    const z0 = top - PLY;
+    parts.push(box(w, "shelf", u0, u1, 0, depth - PLY, z0, top, { mark: true, label: "Shelf" }));
+    parts.push(box(w, "nosing", u0, u1, depth - PLY, depth, top - nosing, top));
+    parts.push(box(w, "cleat", u0, u1, 0, PLY, z0 - cleat, z0));
+    parts.push(box(w, "cleat", u0, u0 + PLY, PLY, depth - 2.5, z0 - cleat, z0));
+    parts.push(box(w, "cleat", u1 - PLY, u1, PLY, depth - 2.5, z0 - cleat, z0));
+    if (led) parts.push(box(w, "led", u0 + 1, u1 - 1, depth - PLY - 1.2, depth - PLY - 0.4, z0 - 0.35, z0));
+  }
+  return { parts, shelfZs: zs, module: module(w, "shelves", u0, u1, 0, depth,
+    { label, sub: `${zs.length} shelves · ${frac(depth, 8)} deep`, levels: zs }) };
+}
+
 /* ---------- high storage band: plain shelves on cleats ---------- */
 export function band(w, o) {
   const { u0, u1, depth = 12, levels = [88, 104], minZ = 0, led = true, labels = [] } = o;

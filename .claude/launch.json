@@ -4,8 +4,8 @@
     {
       "name": "closets",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8742", "--directory", "/Users/akhushraj/Development/experiments/closets"],
-      "port": 8742
+      "runtimeArgs": ["/Users/akhushraj/Development/experiments/closets/.claude/serve.py", "8743", "/Users/akhushraj/Development/experiments/closets"],
+      "port": 8743
     }
   ]
 }

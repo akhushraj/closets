@@ -139,6 +139,8 @@ export function createThreeView(host) {
         case "rack": case "ups": addBox(part, mats.metal); break;
         case "device": addBox(part, part.tone === "light" ? mats.white : mats.metal); break;
         case "desktop": addBox(part, wood, true); break;
+        case "nosing": case "cleat": addBox(part, wood, true); break;
+        case "casing": addBox(part, mats.white); break;
         case "board": addBox(part, mats.board); break;
         case "garment": addBox(part, mats.garments[part.tone % GARMENT.length]); break;
         case "led": addBox(part, p.lights ? mats.ledOn : mats.ledOff).castShadow = false; lights.push(part); break;

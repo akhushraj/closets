@@ -1,7 +1,7 @@
 // Rohan's closet (Bedroom 2), Concept A: hang across the top wall, drawer tower on the
 // left wall, shelves over a free-standing hamper in the alcove, upper band above the door.
 // Plan orientation is as drawn on the architect's plan: x to the right, y down the page.
-import { hangRun, drawerTower, shelfStack, band, floorItem, collector } from "../model/builders.js";
+import { hangRun, drawerTower, fixedShelves, band, floorItem, collector, box } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 
 export const INFO = {
@@ -15,8 +15,8 @@ export const FIELD = { closetW: 46.2, mainD: 52.1, alcoveW: 25.2, totalL: 78.7, 
 export const DEFAULTS = {
   hangDepth: 24, rodZ: 70, hatDepth: 14,
   towerDepth: 20, fronts: "6, 7, 8, 8, 9", towerShelves: 2,
-  alcoveDepth: 14, alcoveBottom: 30, alcoveShelves: 4,
-  hamperW: 16, hamperD: 16, hamperH: 26,
+  alcoveLevels: "28, 40, 52, 64, 76, 88, 104", casingW: 3.5,
+  hamperW: 16, hamperD: 16, hamperH: 25,
   bandOn: true, band1: 88, band2: 104, bandDepth: 12,
   finish: "oak", lights: true,
 };
@@ -32,10 +32,9 @@ export const CONTROLS = [
     { key: "fronts", label: "Drawer front heights, top → bottom", type: "text" },
     { key: "towerShelves", label: "Shelves above the counter", min: 0, max: 4, step: 1, fmt: "int" },
   ]],
-  ["Alcove", [
-    { key: "alcoveBottom", label: "Lowest shelf (hamper below)", min: 20, max: 40, step: 0.5 },
-    { key: "alcoveShelves", label: "Shelves", min: 2, max: 6, step: 1, fmt: "int" },
-    { key: "alcoveDepth", label: "Shelf depth", min: 10, max: 16, step: 0.5 },
+  ["Alcove · fixed plywood shelves", [
+    { key: "alcoveLevels", label: "Shelf heights, top of each (AFF)", type: "text" },
+    { key: "casingW", label: "Door casing width (sets the shelf depth)", min: 2, max: 4.5, step: 0.25 },
   ]],
   ["Upper storage", [
     { key: "bandOn", label: "Shelves above the door, all walls", type: "check" },
@@ -50,6 +49,11 @@ export const CONTROLS = [
 
 export function parseFronts(s, fallback = [6, 7, 8, 8, 9]) {
   const v = String(s).split(/[\s,]+/).map(Number).filter(n => n >= 3 && n <= 16);
+  return v.length ? v : fallback;
+}
+
+export function parseLevels(s, fallback = [28, 40, 52, 64, 76, 88, 104]) {
+  const v = String(s).split(/[\s,]+/).map(Number).filter(n => n >= 6 && n <= 118).sort((a, b) => a - b);
   return v.length ? v : fallback;
 }
 
@@ -73,19 +77,27 @@ export function build(p) {
   const hang = add(hangRun(w.T, { u0: 0, u1: W, depth: p.hangDepth, rodZ: p.rodZ, shelfDepth: p.hatDepth, coatsTo: p.towerDepth }));
   const tower = add(drawerTower(w.L, { u0: 0, u1: M - p.hangDepth, depth: p.towerDepth, top: stackTop,
     fronts: [...parseFronts(p.fronts)].reverse(), shelves: p.towerShelves }));
-  add(shelfStack(w.E, { u0: 0, u1: A, depth: p.alcoveDepth, bottom: p.alcoveBottom, top: stackTop, count: p.alcoveShelves }));
-  add(floorItem(w.E, "hamper", { u0: (A - p.hamperW) / 2, u1: (A + p.hamperW) / 2, v0: 0.5, v1: 0.5 + p.hamperD, h: p.hamperH, label: "Hamper" }));
+  // alcove: fixed plywood shelves wall-to-wall on cleats, as deep as the door casing allows
+  const belowDoor = L - (p.doorAt + p.doorRO);
+  const alcDepth = Math.floor((belowDoor - p.casingW - 0.25) * 8) / 8;
+  const alcLevels = parseLevels(p.alcoveLevels);
+  add(fixedShelves(w.E, { u0: 0, u1: A, depth: alcDepth, levels: alcLevels, label: "Alcove shelves" }));
+  add(floorItem(w.E, "hamper", { u0: (A - p.hamperW) / 2, u1: (A + p.hamperW) / 2, v0: 1, v1: 1 + p.hamperD, h: p.hamperH, label: "Hamper" }));
   if (p.bandOn) {
     add(band(w.T,  { u0: 0, u1: W, depth: p.hatDepth, levels }));
     add(band(w.L,  { u0: 0, u1: M - p.hatDepth, depth: p.towerDepth, levels, minZ: stackTop + 1 }));
-    add(band(w.E,  { u0: 0, u1: A, depth: p.alcoveDepth, levels, minZ: stackTop + 1 }));
-    add(band(w.N2, { u0: p.alcoveDepth, u1: L - M, depth: Math.min(p.bandDepth, A - p.bandDepth), levels }));
-    add(band(w.D,  { u0: p.hatDepth, u1: L - p.alcoveDepth, depth: p.bandDepth, levels }));
+    add(band(w.N2, { u0: alcDepth, u1: L - M, depth: Math.min(p.bandDepth, A - p.bandDepth), levels }));
+    add(band(w.D,  { u0: p.hatDepth, u1: L - alcDepth, depth: p.bandDepth, levels }));
   }
 
   const door = { wall: "D", u0: p.doorAt, u1: p.doorAt + p.doorRO, slab: p.doorSlab, h: p.doorH, roH: p.doorH + 2.5,
     swing: "out", hingeU: p.hinge === "near" ? p.doorAt + 1 : p.doorAt + p.doorRO - 1,
     label: p.hinge === "near" ? "LHO" : "RHO" };
+  // door casing on the closet side of the door wall
+  const cw = p.casingW;
+  parts.push(box(w.D, "casing", door.u0 - cw, door.u0, 0, 0.75, 0, door.roH + cw));
+  parts.push(box(w.D, "casing", door.u1, door.u1 + cw, 0, 0.75, 0, door.roH + cw));
+  parts.push(box(w.D, "casing", door.u0 - cw, door.u1 + cw, 0, 0.75, door.roH, door.roH + cw, { mark: true, label: "Casing top" }));
 
   const m = tower.module, slide = m.slide, aisle = W - p.towerDepth, openClear = aisle - slide - 1.1;
   const warnings = [];
@@ -94,6 +106,13 @@ export function build(p) {
   if (p.bandOn && p.band1 < door.roH + 4) warnings.push(`The first upper shelf (${p.band1}") runs into the door head and casing (about ${door.roH + 3.5}").`);
   if (tower.counterZ > stackTop - 12) warnings.push("The drawer stack is so tall there's almost no open shelf left above it.");
   if (p.rodZ - 42 < 4) warnings.push("Long coats will touch the floor at this rod height.");
+  if (alcLevels[0] - 1.5 - 0.5 < p.hamperH)
+    warnings.push(`The lowest alcove shelf (${alcLevels[0]}") is too low for a ${p.hamperH}" hamper under its front edge.`);
+  const notes = [
+    `Alcove shelf depth: the wall beside the door is ${frac(belowDoor, 8)} long. Take off a ${frac(cw, 8)} casing and 1/4" of clearance, and each shelf is ${frac(alcDepth, 8)} deep, running wall to wall at ${frac(A, 8)}.`,
+    "Plywood: 3/4\" Baltic birch, or a birch veneer-core cabinet plywood. Its faces are smooth and splinter-free, the core has no voids, and it stays flat. Glue a 3/4\" x 1-1/2\" solid-wood nosing to the front edge. That hides the plies and the LED channel, and stiffens the shelf.",
+    "Mounting: the drywall is up, so the shelves can't be nailed straight into the studs. Under each shelf, screw a 3/4\" x 1-1/2\" cleat through the drywall into the studs on all three walls (2-1/2\" screws plus construction adhesive). Then glue and brad-nail the shelf onto the cleats.",
+  ];
 
   const hd = p.hangDepth, rodLen = hang.module.rodLen, n = tower.drawers.length;
   return {
@@ -113,6 +132,7 @@ export function build(p) {
       { a: [p.towerDepth, hd + 3], b: [W, hd + 3], label: `aisle ${frac(aisle, 8)}`, off: 0 },
       { a: [0, M - 3], b: [p.towerDepth, M - 3], label: frac(p.towerDepth, 8), off: 0 },
       { a: [W - 3, 0], b: [W - 3, hd], label: frac(hd, 8), off: 0 },
+      { a: [W - 8, L - alcDepth], b: [W - 8, L], label: frac(alcDepth, 8), off: 0 },
     ],
     drawerGroups: [{ name: "Drawer tower", drawers: tower.drawers }],
     stats: [
@@ -120,6 +140,7 @@ export function build(p) {
       { k: "Drawers", v: `${n} × ${slide}" deep`, s: `${slide}" full-extension slides` },
       { k: "Drawer tower", v: `${frac(M - hd, 8)} W × ${frac(p.towerDepth, 8)} D`, s: `counter at ${frac(tower.counterZ, 8)}` },
       { k: "Aisle", v: frac(aisle, 8), s: `${frac(Math.max(0, openClear), 8)} left with a drawer fully open` },
+      { k: "Alcove shelves", v: `${alcLevels.length} × ${frac(alcDepth, 8)} deep`, s: `tops at ${alcLevels.join(", ")}"` },
     ],
     titleMeta: [
       { k: "Closet", v: `${ftin(W)} × ${ftin(L)}` },
@@ -127,6 +148,6 @@ export function build(p) {
       { k: "Rod", v: `${frac(rodLen, 8)} @ ${frac(p.rodZ, 8)}` },
       { k: "Drawers", v: `${n} × ${slide}" deep` },
     ],
-    warnings,
+    warnings, notes,
   };
 }
