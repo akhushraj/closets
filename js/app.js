@@ -110,6 +110,11 @@ import("./views/three-view.js").then(m => {
   three = m.createThreeView($("three"));
   three.update(model);
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => three.view(b.dataset.view));
+  const wb = document.querySelector("[data-toggle=walls]");
+  let walls = lsGet("closets.walls") ?? true;
+  const applyWalls = () => { three.setWalls(walls); wb.textContent = walls ? "Hide walls" : "Show walls"; };
+  wb.onclick = () => { walls = !walls; lsSet("closets.walls", walls); applyWalls(); };
+  applyWalls();
 }).catch(err => {
   console.error(err);
   $("three").insertAdjacentHTML("beforeend", `<p style="color:#ccc;padding:20px">The 3D view needs an internet connection to load Three.js. The drawings in the other tabs still work.</p>`);

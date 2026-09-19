@@ -84,7 +84,7 @@ export function createThreeView(host) {
     garments: GARMENT.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 })),
   };
 
-  let root = null, framedFor = null, last = null, bounds = null;
+  let root = null, framedFor = null, last = null, bounds = null, showWalls = true;
 
   function addBox(p, mat, wood = false) {
     const w = p.x1 - p.x0, h = p.z1 - p.z0, d = p.y1 - p.y0;
@@ -104,6 +104,8 @@ export function createThreeView(host) {
     m.position.set(f.ax + f.dx * um, (z0 + z1) / 2, f.ay + f.dy * um);
     m.rotation.y = Math.atan2(f.nx, f.ny);   // plane normal -> inward, so near walls cull away
     m.receiveShadow = true;
+    m.userData.wall = true;
+    m.visible = showWalls;
     root.add(m);
   }
 
@@ -213,5 +215,10 @@ export function createThreeView(host) {
   new ResizeObserver(resize).observe(host);
   renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
 
-  return { update, resize, view };
+  function setWalls(v) {
+    showWalls = !!v;
+    if (root) root.traverse(o => { if (o.userData.wall) o.visible = showWalls; });
+  }
+
+  return { update, resize, view, setWalls };
 }
