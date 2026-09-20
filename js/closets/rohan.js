@@ -116,6 +116,15 @@ export function build(p) {
     "Mounting: the drywall is up, so the shelves can't be nailed straight into the studs. Under each shelf, screw a 3/4\" x 1-1/2\" cleat through the drywall into the studs on all three walls (2-1/2\" screws plus construction adhesive). Then glue and brad-nail the shelf onto the cleats.",
   ];
 
+  // LED wiring: one supply at the top, trunk down the back corner, a WAGO pair per shelf
+  const stripLen = A - 6.5, stripFt = alcLevels.length * stripLen / 12;
+  const watts = Math.round(stripFt * 4.4);
+  const driver = watts * 1.25 <= 60 ? 60 : watts * 1.25 <= 100 ? 100 : 150;
+  const supplyZ = Math.min(p.ceiling - 10, (alcLevels[alcLevels.length - 1] || 90) + 8);
+  const trunkFt = Math.ceil(((supplyZ - (alcLevels[0] || 0)) + alcLevels.length * (A - 4) + 24) / 12);
+  const wiring = alcLevels.length ? { wall: "E", width: A, ceiling: p.ceiling, levels: alcLevels,
+    supplyZ, watts, driver, trunkFt } : null;
+
   const hd = p.hangDepth, rodLen = hang.module.rodLen, n = tower.drawers.length;
   return {
     info: INFO, params: p,
@@ -150,6 +159,6 @@ export function build(p) {
       { k: "Rod", v: `${frac(rodLen, 8)} @ ${frac(p.rodZ, 8)}` },
       { k: "Drawers", v: `${n} × ${slide}" deep` },
     ],
-    warnings, notes,
+    warnings, notes, wiring,
   };
 }

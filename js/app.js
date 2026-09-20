@@ -2,6 +2,7 @@ import { CLOSETS, byId } from "./closets/index.js";
 import { renderPlan } from "./views/plan.js";
 import { renderElevations } from "./views/elevation.js";
 import { renderSchedule } from "./views/schedule.js";
+import { renderWiring } from "./views/wiring.js";
 import { frac, ftin } from "./lib/units.js";
 
 const UPCOMING = ["Maya's closet", "Guest closet", "Laundry / mudroom", "Pantry", "Master bath closet"];
@@ -92,6 +93,9 @@ function render() {
   renderPlan($("plan"), model);
   renderElevations($("elevs"), model);
   renderSchedule($("sched"), model);
+  const wtab = document.querySelector('[data-tab="pWiring"]');
+  if (model.wiring && model.wiring.levels.length) { wtab.hidden = false; renderWiring($("wiring"), model); }
+  else { wtab.hidden = true; if (wtab.classList.contains("on")) document.querySelector('[data-tab="pPlan"]').click(); }
   if (three) three.update(model);
 }
 
