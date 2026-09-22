@@ -4,9 +4,10 @@ import { el, clear, dim } from "../lib/svg.js";
 import { frame } from "../model/builders.js";
 
 const S = 7;   // px per inch
-const ORDER = ["band", "hang", "tower", "shelves", "press", "equip", "desk", "ups", "hamper"];
+const ORDER = ["clear", "band", "hang", "coats", "dress", "tower", "cabinets", "shelves", "counter", "press", "equip", "desk", "ups", "appliance", "sink", "dresser", "hamper"];
 const LEGEND = { hang: "Hanging", tower: "Drawers", shelves: "Shelves", press: "Press board", equip: "Network gear",
-  desk: "Desk", ups: "UPS", hamper: "Hamper", band: "Upper shelves" };
+  desk: "Desk", ups: "UPS", hamper: "Hamper", band: "Upper shelves", dress: "Drawers + hanging", cabinets: "Cabinets",
+  appliance: "Washer / dryer", sink: "Sink", counter: "Counter", coats: "Coats (open)", dresser: "Dresser", clear: "Keep clear" };
 
 export function renderPlan(svg, model) {
   clear(svg);
@@ -92,6 +93,16 @@ export function renderPlan(svg, model) {
   for (const d of model.doors) {
     const w = wallOf(d.wall), out = d.swing === "out", v = out ? -t : 0;
     el("path", { d: poly([P(w, d.u0, 0.4), P(w, d.u1, 0.4), P(w, d.u1, -t - 0.4), P(w, d.u0, -t - 0.4)]), class: "gap" }, g);
+    if (d.swing === "slide") {   // bypass panels, one per track across the wall thickness
+      const n = d.panels || 3, pw = (d.u1 - d.u0) / n;
+      for (let k = 0; k < n; k++) {
+        const vv = -t * (k + 0.5) / n, [x1, y1] = P(w, d.u0 + k * pw - (k ? 1 : 0), vv), [x2, y2] = P(w, d.u0 + (k + 1) * pw + (k < n - 1 ? 1 : 0), vv);
+        el("line", { x1: X(x1), y1: Y(y1), x2: X(x2), y2: Y(y2), class: "leafp" }, g);
+      }
+      const [lx, ly] = P(w, (d.u0 + d.u1) / 2, -t - 3);
+      txt(lx, ly, d.label || "sliding doors", "lbs", 9.5);
+      continue;
+    }
     const other = d.hingeU < (d.u0 + d.u1) / 2 ? d.hingeU + d.slab : d.hingeU - d.slab;
     const [hx, hy] = P(w, d.hingeU, v), [cx, cy] = P(w, other, v), [ox, oy] = P(w, d.hingeU, v + (out ? -d.slab : d.slab));
     const ax = X(cx) - X(hx), ay = Y(cy) - Y(hy), bx = X(ox) - X(hx), by = Y(oy) - Y(hy);

@@ -5,7 +5,7 @@ import { hangRun, drawerTower, fixedShelves, band, floorItem, collector, box } f
 import { PLY, frac, ftin } from "../lib/units.js";
 
 export const INFO = {
-  id: "rohan", name: "Rohan's Closet", room: "Bedroom 2", concept: "Concept A · hang across the top", rev: "Rev A",
+  id: "rohan", name: "Rohan's Closet", room: "Bedroom 2", concept: "Hang across the top · alcove shelves", rev: "",
 };
 
 // Measured in the field (2026-09-18). These always override stored or default values.

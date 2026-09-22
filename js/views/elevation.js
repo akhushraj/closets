@@ -36,6 +36,12 @@ function drawWall(svg, w, len, model) {
 
   for (const door of model.doors.filter(d => d.wall === w.id)) {
     el("rect", { x: U(door.u0), y: Z(door.roH), width: (door.u1 - door.u0) * S, height: door.roH * S, class: "opening" }, g);
+    if (door.swing === "slide") {
+      const n = door.panels || 3, pw = (door.u1 - door.u0) / n;
+      for (let k = 0; k < n; k++) el("rect", { x: U(door.u0 + k * pw), y: Z(door.h), width: pw * S, height: door.h * S, class: "leaf" }, g);
+      marks.push({ z: door.roH, label: "Door R.O." });
+      continue;
+    }
     const a = door.u0 + 1, b = door.u1 - 1, nearA = Math.abs(door.hingeU - a) < Math.abs(door.hingeU - b);
     const hU = nearA ? a : b, lU = nearA ? b : a, inward = door.swing === "in";
     el("rect", { x: U(a), y: Z(door.h), width: (b - a) * S, height: door.h * S, class: inward ? "leafin" : "leaf" }, g);

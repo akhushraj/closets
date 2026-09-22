@@ -5,7 +5,7 @@ import { renderSchedule } from "./views/schedule.js";
 import { renderWiring } from "./views/wiring.js";
 import { frac, ftin } from "./lib/units.js";
 
-const UPCOMING = ["Maya's closet", "Guest closet", "Laundry / mudroom", "Pantry", "Master bath closet"];
+const UPCOMING = [];
 const FMT = { ftin, int: v => v };
 
 function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }
@@ -88,7 +88,7 @@ function render() {
   const I = mod.INFO;
   document.title = `${I.name} — Closets`;
   $("title").textContent = `${I.name} — ${I.room}`;
-  $("eyebrow").textContent = `Closets · Shop Drawing Set · ${I.concept} · ${I.rev}`;
+  $("eyebrow").textContent = ["Closets · Shop Drawing Set", I.concept, I.rev].filter(Boolean).join(" · ");
   $("meta").innerHTML = model.titleMeta.map(m => `<div><span class="k">${m.k}</span><span class="v">${m.v}</span></div>`).join("");
   renderPlan($("plan"), model);
   renderElevations($("elevs"), model);

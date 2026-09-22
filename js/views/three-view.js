@@ -80,6 +80,9 @@ export function createThreeView(host) {
     door: new THREE.MeshStandardMaterial({ color: 0xf4f2ee, roughness: 0.5, transparent: true, opacity: 0.28, depthWrite: false }),
     hatch: new THREE.MeshStandardMaterial({ color: 0x5f574c, roughness: 0.9 }),
     metal: new THREE.MeshStandardMaterial({ color: 0x2c2e33, metalness: 0.5, roughness: 0.45 }),
+    appliance: new THREE.MeshStandardMaterial({ color: 0xeeece8, roughness: 0.35, metalness: 0.1 }),
+    stone: new THREE.MeshStandardMaterial({ color: 0xdcd8d0, roughness: 0.25 }),
+    panel: new THREE.MeshStandardMaterial({ color: 0x8c8f94, metalness: 0.6, roughness: 0.4 }),
     board: new THREE.MeshStandardMaterial({ color: 0xd9d5cc, roughness: 0.9 }),
     garments: GARMENT.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 })),
   };
@@ -144,6 +147,9 @@ export function createThreeView(host) {
         case "nosing": case "cleat": addBox(part, wood, true); break;
         case "casing": addBox(part, mats.white); break;
         case "board": addBox(part, mats.board); break;
+        case "appliance": case "sink": case "dresser": addBox(part, mats.appliance); break;
+        case "counter": addBox(part, mats.stone); break;
+        case "elpanel": addBox(part, mats.panel); break;
         case "garment": addBox(part, mats.garments[part.tone % GARMENT.length]); break;
         case "led": addBox(part, p.lights ? mats.ledOn : mats.ledOff).castShadow = false; lights.push(part); break;
         case "rod": {
@@ -153,6 +159,7 @@ export function createThreeView(host) {
           m.position.set((part.x0 + part.x1) / 2, (part.z0 + part.z1) / 2, (part.y0 + part.y1) / 2);
           m.castShadow = true; root.add(m); break;
         }
+        default: addBox(part, wood, true);
       }
     }
 
@@ -172,6 +179,7 @@ export function createThreeView(host) {
 
     // doors, standing open 90 degrees (see-through so they never hide the closet)
     for (const d of model.doors) {
+      if (d.swing === "slide") continue;   // sliding panels sit in the opening; nothing to show open
       const w = c.walls.find(x => x.id === d.wall), f = frame(w), out = d.swing === "out";
       const v = out ? -c.wallT : 0, s = out ? -1 : 1, other = d.hingeU < (d.u0 + d.u1) / 2 ? 1 : -1;
       const hx = f.ax + f.dx * d.hingeU + f.nx * v, hy = f.ay + f.dy * d.hingeU + f.ny * v;

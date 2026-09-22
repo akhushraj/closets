@@ -132,6 +132,66 @@ export function drawerTower(w, o) {
   return { parts, module: mod, drawers, counterZ };
 }
 
+/* ---------- hanging over drawers: plywood gables full height, drawer base with a counter,
+   one rod + hat shelf above, and upper shelves. `fronts` run bottom -> top. ---------- */
+export function dressSection(w, o) {
+  const { u0, u1, depth = 24, fronts = [10, 9, 8, 7], kick = 4, rodZ = 80, hatDepth = 14, upper = [96, 110],
+    top = 116, label = "Section", prefix = "D", garment = "shirt", seed = 3 } = o;
+  const parts = [], drawers = [], W = u1 - u0, cD = depth - FRONT;
+  parts.push(box(w, "carcass", u0, u0 + PLY, 0, depth, 0, top));
+  parts.push(box(w, "carcass", u1 - PLY, u1, 0, depth, 0, top));
+  parts.push(box(w, "carcass", u0 + PLY, u1 - PLY, 0, cD, kick, kick + PLY));
+  parts.push(box(w, "kick", u0 + PLY, u1 - PLY, cD - 3 - PLY, cD - 3, 0, kick, { mark: true, label: "Toe kick" }));
+  const slide = slideFor(cD - 0.5);
+  let z = kick;
+  fronts.forEach((h, i) => {
+    const lab = prefix + (fronts.length - i);
+    parts.push(box(w, "front", u0 + 1 / 16, u1 - 1 / 16, cD, depth, z + 1 / 16, z + h - 1 / 16, { idx: i + 1, label: lab, h, mark: true }));
+    const zc = z + h / 2, um = (u0 + u1) / 2, pw = Math.min(3, W / 2 - 2);
+    parts.push(box(w, "pull", um - pw, um + pw, depth, depth + 1.1, zc - 0.25, zc + 0.25));
+    const boxH = Math.max(2.5, Math.floor((h - 1.25) * 2) / 2), boxW = W - 2 * PLY - 1;
+    drawers.push({ idx: i + 1, label: lab, z0: z, frontH: h - 1 / 8, frontW: W - 1 / 8,
+      boxH, boxW, boxL: slide, inH: boxH - 0.5, inW: boxW - 1, inL: slide - 1, slide });
+    z += h;
+  });
+  parts.push(box(w, "shelf", u0 + PLY, u1 - PLY, 0, depth, z, z + PLY, { mark: true, label: "Counter" }));
+  const counterZ = z + PLY, ia = u0 + PLY, ib = u1 - PLY, rodV = Math.min(12, depth / 2);
+  parts.push(box(w, "rod", ia + 0.25, ib - 0.25, rodV - 0.625, rodV + 0.625, rodZ - 0.625, rodZ + 0.625, { axis: "u", mark: true, label: "Rod" }));
+  parts.push(box(w, "shelf", ia, ib, 0, hatDepth, rodZ + 2, rodZ + 2 + PLY, { mark: true, label: "Hat shelf" }));
+  parts.push(box(w, "led", ia + 1, ib - 1, hatDepth - 1.4, hatDepth - 0.6, rodZ + 2 - 0.35, rodZ + 2));
+  garmentsOnRod(parts, w, rng(seed), ia, ib, rodV, rodZ, garment, seed);
+  for (const zt of upper) if (zt < top - 1)
+    parts.push(box(w, "shelf", ia, ib, 0, depth - 0.5, zt - PLY, zt, { mark: true, label: "Upper shelf" }));
+  return { parts, drawers, counterZ, module: module(w, "dress", u0, u1, 0, depth,
+    { label, sub: `${fronts.length} drawers · rod ${frac(rodZ, 8)}`, rods: [{ v: rodV }], slide }) };
+}
+
+/* ---------- run of shelf cabinets with hinged doors (lower + upper), swing shown in plan ---------- */
+export function cabinetRun(w, o) {
+  const { u0, u1, depth = 15, units = 4, top = 96, kick = 4, split = 48, levels = [20, 34, 62, 76], label = "Cab" } = o;
+  const parts = [], modules = [], cD = depth - FRONT, uw = (u1 - u0) / units;
+  for (let i = 0; i < units; i++) {
+    const a = u0 + i * uw, b = a + uw;
+    parts.push(box(w, "carcass", a, a + PLY, 0, cD, 0, top));
+    parts.push(box(w, "carcass", b - PLY, b, 0, cD, 0, top));
+    parts.push(box(w, "carcass", a + PLY, b - PLY, 0, cD, top - PLY, top, { mark: i === 0, label: "Cabinet top" }));
+    parts.push(box(w, "carcass", a + PLY, b - PLY, 0, cD, kick, kick + PLY));
+    parts.push(box(w, "kick", a + PLY, b - PLY, cD - 3 - PLY, cD - 3, 0, kick));
+    for (const zt of levels) if (zt > kick + 2 && zt < top - 2 && Math.abs(zt - split) > 1)
+      parts.push(box(w, "shelf", a + PLY, b - PLY, 0, cD - 0.5, zt - PLY, zt, { mark: i === 0, label: "Shelf" }));
+    const hingeRight = i % 2 === 1;
+    for (const [z0, z1] of [[kick, split], [split, top]]) {
+      parts.push(box(w, "cabdoor", a + 1 / 16, b - 1 / 16, cD, depth, z0 + 1 / 16, z1 - 1 / 16,
+        { mark: i === 0, label: z0 === kick ? "Lower door" : "Upper door" }));
+      const pu = hingeRight ? a + 1.5 : b - 1.5, pz = z0 === kick ? z1 - 4 : z0 + 4;
+      parts.push(box(w, "pull", pu - 0.4, pu + 0.4, depth, depth + 1.1, pz - 2.5, pz + 2.5));
+    }
+    modules.push(module(w, "cabinets", a, b, 0, depth, { label: `${label} ${i + 1}`, sub: `${frac(b - a, 8)} doors`,
+      ghost: { u0: a, u1: b, v0: depth, v1: depth + (b - a), label: "door swing" } }));
+  }
+  return { parts, modules };
+}
+
 /* ---------- open shelf stack between two gables (floor stays open below `bottom`) ---------- */
 export function shelfStack(w, o) {
   const { u0, u1, depth = 14, bottom = 30, top = 88.75, count = 4, label = "Open shelves" } = o;
