@@ -1,27 +1,29 @@
-// Master bath reach-in: fixed plywood shelves wall to wall, like Rohan's. Door swings out.
+// Master bath linen closet: fixed birch-plywood shelves wall to wall on cleats, no lights
+// (there's no outlet). Door is 1'-10" x 8'-0" and swings out; nothing above the header is reachable.
 import { fixedShelves, collector } from "../model/builders.js";
-import { frac, ftin } from "../lib/units.js";
-import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, PLYWOOD_NOTE } from "./common.js";
+import { PLY, frac, ftin } from "../lib/units.js";
+import { shelfSlots, shelfControls, readShelves, spacingWarnings } from "./common.js";
 
-export const INFO = { id: "masterbath", name: "Master Bath Closet", room: "Master bath", concept: "Fixed plywood shelves", rev: "" };
+export const INFO = { id: "masterbath", name: "Master Bath Closet", room: "Master bath", concept: "Birch plywood shelves", rev: "" };
 
 export const FIELD = { W: 27.9, D: 23.7, ceiling: 120, opening: 24.3, doorSlab: 22, doorH: 96 };
 
 export const DEFAULTS = {
-  depth: 20,
-  ...shelfSlots("s", [12, 26, 40, 54, 68, 82, 96, 110], []),
-  finish: "white", lights: false,
+  depth: 22, edge: "poplar",
+  ...shelfSlots("s", [18, 31, 44, 57, 70, 83, 94], [106]),
+  finish: "white",
 };
 
 export const CONTROLS = [
   shelfControls("s", 8, "Shelves · top of each, AFF", [
     { key: "depth", label: "Shelf depth", min: 12, max: 23, step: 0.5 },
+    { key: "edge", label: "Front edge", type: "select", options: [["poplar", "1/4\" × 3/4\" poplar strip"], ["none", "None: fill, sand, paint"]] },
   ]),
-  LOOK,
+  ["Look", [{ key: "finish", label: "Finish", type: "select", options: [["white", "Painted white"], ["oak", "White oak"], ["walnut", "Walnut"]] }]],
 ];
 
 export function build(p) {
-  p = { ...p, ...FIELD };
+  p = { ...p, ...FIELD, lights: false };
   const W = p.W, D = p.D, t = 4.5, stub = (W - p.opening) / 2;
   const outline = [[0, 0], [W, 0], [W, D], [0, D]];
   const walls = [
@@ -33,9 +35,16 @@ export function build(p) {
   const w = Object.fromEntries(walls.map(x => [x.id, x]));
   const { parts, modules, add } = collector();
   const lv = readShelves(p, "s", 8);
-  add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.depth, levels: lv, label: "Shelves" }));
-  const u0 = stub, u1 = W - stub;
-  const door = { wall: "F", u0, u1, slab: p.doorSlab, h: p.doorH, roH: p.doorH + 2.5, swing: "out", hingeU: u1 - 0.5, label: "1'-10\" × 8'" };
+  add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.depth, levels: lv, label: "Shelves",
+    nosing: p.edge === "poplar" ? PLY : 0, nosingT: 0.25, led: false }));
+
+  const door = { wall: "F", u0: stub, u1: W - stub, slab: p.doorSlab, h: p.doorH, roH: p.doorH + 2.5, swing: "out", hingeU: W - stub - 0.5, label: "1'-10\" × 8'" };
+  const warnings = spacingWarnings(lv, "Shelves");
+  const blocked = lv.filter(z => z > p.doorH - 1.5);
+  if (blocked.length) warnings.push(`Shelves at ${blocked.join(", ")}" sit above the door header (about ${p.doorH}"), so you can't reach them through the opening.`);
+  if (p.depth > D - 1.5) warnings.push(`At ${frac(p.depth, 8)} deep the shelves reach the door jamb. The walls run ${frac(D, 8)}–24", so leave about 1-1/2".`);
+
+  const sheets = Math.ceil(lv.length * (W * p.depth) / (48 * 96) * 1.25);
   return {
     info: INFO, params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
@@ -49,14 +58,27 @@ export function build(p) {
     drawerGroups: [],
     stats: [
       { k: "Shelves", v: `${lv.length} × ${frac(p.depth, 8)} deep`, s: lv.length ? `tops at ${lv.join(", ")}"` : "none on" },
-      { k: "Span", v: frac(W, 8), s: "wall to wall on cleats" },
+      { k: "Span", v: frac(W, 8), s: "wall to wall, cleats on three sides" },
+      { k: "Front edge", v: p.edge === "poplar" ? "poplar strip" : "filled + painted", s: p.edge === "poplar" ? "1/4\" × 3/4\", glued and pinned flush" : "no edging" },
+      { k: "Plywood", v: `~${sheets} sheets`, s: "3/4\" birch, 4 × 8" },
     ],
     titleMeta: [
       { k: "Closet", v: `${ftin(W)} × ${ftin(D)}` },
       { k: "Ceiling", v: ftin(p.ceiling) },
       { k: "Shelves", v: `${lv.length}` },
+      { k: "Depth", v: frac(p.depth, 8) },
     ],
-    warnings: spacingWarnings(lv, "Shelves"),
-    notes: ["For towels, toiletry backstock, cleaning supplies and toilet paper.", PLYWOOD_NOTE],
+    warnings,
+    notes: [
+      `SPEC — Shelves: ${lv.length}, 3/4" birch plywood, cut ${frac(p.depth, 8)} deep, full width wall to wall. Tops at ${lv.join(", ")}" above the floor. The floor to the first shelf stays open.`,
+      p.edge === "poplar"
+        ? "Front edge: 1/4\" × 3/4\" poplar strip, glued and pinned flush with a brad nailer, sanded flush. Backup if you'd rather skip it: fill the plywood edge, sand, prime and paint."
+        : "Front edge: none. Fill the plywood edge with sandable filler, sand smooth, then prime and paint.",
+      "Supports: 3/4\" × 1-1/2\" cleats under every shelf on all three walls, screwed into studs with 2-1/2\" screws plus construction adhesive. Where studs are scarce, run a vertical 1×3 up each side wall into the studs and land the cleats on that.",
+      "The shelves rest on the cleats. They are not glued or nailed down, so they lift out.",
+      "Finish: the same paint as the rest of the bathroom, satin, primer plus two coats, on every side of each shelf and on the cleats.",
+      "Sequence: fit the cleats and cut the shelves, add the front edge, then take the shelves out and give them to the painters flat. They go back on the cleats when dry.",
+      "No lights and no outlet in this closet.",
+    ],
   };
 }
