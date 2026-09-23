@@ -231,8 +231,10 @@ export function cabinetRun(w, o) {
 export const ES = 0.625;   // chipboard side, top and bottom
 
 export function esRun(w, o) {
-  const { u0 = 0, depth = 24, top = 94, doors = true, bays = [], prefix = "E", seed = 4 } = o;
+  const { u0 = 0, depth = 24, top = 94, doors = true, bays = [], prefix = "E", seed = 4,
+          doorsOpen = false, drawersOut = false } = o;
   const parts = [], modules = [], drawers = [], r = rng(seed), cD = depth - FRONT;
+  const f = frame(w), P = (u, v) => [f.ax + f.dx * u + f.nx * v, f.ay + f.dy * u + f.ny * v];
   const oak = x => ({ ...x, mat: "oak" });
   const rodV = Math.min(12, cD / 2), slide = slideFor(cD - 1);
   let u = u0, n = 0;
@@ -247,10 +249,17 @@ export function esRun(w, o) {
     let z = 0;
     for (const [i, h] of (bay.fronts || []).entries()) {
       const lab = `${prefix}${n}-${bay.fronts.length - i}`, um = (a + b) / 2, pw = Math.min(3, bay.w / 2 - 2);
-      parts.push(box(w, "front", ia + 1 / 16, ib - 1 / 16, cD, depth, z + 1 / 16, z + h - 1 / 16,
-        oak({ idx: i + 1, label: lab, h, mark: true })));
-      parts.push(box(w, "pull", um - pw, um + pw, depth, depth + 1.1, z + h / 2 - 0.25, z + h / 2 + 0.25));
       const boxH = Math.max(2.5, Math.floor((h - 1.25) * 2) / 2), boxW = bay.w - 2 * ES - 1;
+      const out = drawersOut ? slide : 0;
+      parts.push(box(w, "front", ia + 1 / 16, ib - 1 / 16, cD + out, depth + out, z + 1 / 16, z + h - 1 / 16,
+        oak({ idx: i + 1, label: lab, h, mark: true })));
+      parts.push(box(w, "pull", um - pw, um + pw, depth + out, depth + out + 1.1, z + h / 2 - 0.25, z + h / 2 + 0.25));
+      if (out) {   // the tray that comes with it: bottom and two sides
+        const zb = z + 0.75;
+        parts.push(box(w, "carcass", ia + 0.5, ib - 0.5, cD - slide + out, cD + out, zb, zb + 0.5, oak({})));
+        parts.push(box(w, "carcass", ia + 0.5, ia + 1, cD - slide + out, cD + out, zb, zb + boxH, oak({})));
+        parts.push(box(w, "carcass", ib - 1, ib - 0.5, cD - slide + out, cD + out, zb, zb + boxH, oak({})));
+      }
       drawers.push({ idx: i + 1, label: lab, z0: z, frontH: h - 1 / 8, frontW: bay.w - 1 / 8,
         boxH, boxW, boxL: slide, inH: boxH - 0.5, inW: boxW - 1, inL: slide - 1, slide });
       z += h;
@@ -268,6 +277,12 @@ export function esRun(w, o) {
     const leaves = doors ? (bay.w > 24 ? 2 : 1) : 0, lw = leaves ? (bay.w - 1 / 8) / leaves : 0;
     for (let k = 0; k < leaves; k++) {
       const da = a + 1 / 16 + k * lw, pz = Math.min(top - 8, base + 42);
+      if (doorsOpen) {   // swung 90 degrees: a pair opens from the middle out
+        const hinge = leaves === 2 ? (k === 0 ? da : da + lw) : da;
+        parts.push(diagPanel(w, "cabdoor", P(hinge, depth), P(hinge, depth + lw), FRONT, base + 1 / 16, top - 1 / 16,
+          oak({ mark: n === 1, label: "Door, open" })));
+        continue;
+      }
       parts.push(box(w, "cabdoor", da, da + lw, cD, depth, base + 1 / 16, top - 1 / 16,
         oak({ mark: n === 1, label: "Door" })));
       const pu = leaves === 2 ? (k === 0 ? da + lw - 1.5 : da + 1.5) : da + lw - 1.5;

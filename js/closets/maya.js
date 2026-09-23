@@ -11,12 +11,12 @@ import { ES_WIDTHS } from "./master.js";
 export const INFO = { id: "maya", name: "Maya's Closet", room: "Maya's room",
   concept: "East Star ends + plywood middle", rev: "" };
 
-export const FIELD = { W: 112.4, D: 29.8, ceiling: 120, stubL: 8.6, opening: 95.8, stubR: 8.1, wallAtOpening: 6.3, doorH: 80 };
+export const FIELD = { W: 112.4, D: 29.8, ceiling: 120, stubL: 8.6, opening: 95.8, stubR: 8.1, wallAtOpening: 6.3, doorH: 96 };
 
 export const DEFAULTS = {
   esW: 36, esTop: 94, depth: 24, fronts: "7, 8, 9", rodZ: 62, esShelf: 78,
-  ...shelfSlots("s", [30, 44, 58, 72, 86], [16, 100]),
-  divider: true, aboveOn: true, aboveZ: 107, maxBay: 20,
+  ...shelfSlots("s", [30, 44, 58, 72, 86], [16, 94]),
+  divider: true, aboveOn: false, aboveZ: 107, maxBay: 20, drawersOut: false,
   finish: "white", lights: true,
 };
 
@@ -28,12 +28,13 @@ export const CONTROLS = [
     { key: "rodZ", label: "Rod height (moves up as she grows)", min: 40, max: 80, step: 0.5 },
     { key: "fronts", label: "Drawer fronts, top → bottom", type: "text" },
     { key: "esShelf", label: "Shelf above the rod", min: 60, max: 92, step: 1 },
+    { key: "drawersOut", label: "Show the drawers open", type: "check" },
   ]],
   shelfControls("s", 7, "Middle · plywood shelves", [
     { key: "divider", label: "Centre divider (halves the span)", type: "check" },
   ]),
   ["Plywood above the cabinets", [
-    { key: "aboveOn", label: "Deck and one long shelf", type: "check" },
+    { key: "aboveOn", label: "Deck and one long shelf (above the header - see the note)", type: "check" },
     { key: "aboveZ", label: "Its height", min: 100, max: 116, step: 1 },
     { key: "maxBay", label: "Widest bay between dividers", min: 14, max: 30, step: 1 },
   ]],
@@ -57,8 +58,8 @@ export function build(p) {
   const fronts = [...parseFronts(p.fronts, [7, 8, 9])].reverse();
   const bay = { w: ew, fronts, rods: [p.rodZ], levels: [p.esShelf] };
 
-  const es1 = add(esRun(w.T, { u0: 0, depth: d, top, doors: false, bays: [{ ...bay, label: "East Star · left" }], prefix: "L", seed: 5 }));
-  const es2 = add(esRun(w.T, { u0: m1, depth: d, top, doors: false, bays: [{ ...bay, label: "East Star · right" }], prefix: "R", seed: 11 }));
+  const es1 = add(esRun(w.T, { u0: 0, depth: d, top, doors: false, drawersOut: p.drawersOut, bays: [{ ...bay, label: "East Star · left" }], prefix: "L", seed: 5 }));
+  const es2 = add(esRun(w.T, { u0: m1, depth: d, top, doors: false, drawersOut: p.drawersOut, bays: [{ ...bay, label: "East Star · right" }], prefix: "R", seed: 11 }));
 
   // middle: plywood shelves on cleats, the lowest one left high for a laundry basket
   const lv = readShelves(p, "s", 7);
@@ -94,7 +95,7 @@ export function build(p) {
   if (span > 36) warnings.push(`The middle shelves span ${frac(span, 8)}. Past about 36" a 3/4" plywood shelf sags; turn the centre divider on.`);
   if (basket < 24) warnings.push(`Only ${frac(basket, 8)} under the lowest middle shelf. A tall hamper wants about 28".`);
   const high = [...lv.filter(z => z > p.doorH - 2), ...(p.aboveOn ? [deck, p.aboveZ] : []), ...(p.esShelf > p.doorH - 2 ? [p.esShelf] : [])];
-  if (high.length) warnings.push(`The opening is only ${frac(p.doorH, 8)} tall, so ${high.map(z => frac(z, 8)).join(", ")} can't be reached through it. Taller door panels would fix that - the ceiling is ${ftin(p.ceiling)}.`);
+  if (high.length) warnings.push(`This is a reach-in, so the ${frac(p.doorH, 8)} header is the ceiling as far as your arms are concerned. ${high.map(z => frac(z, 8)).join(", ")} sit above it and can't be reached: there is ${frac(p.ceiling - p.doorH, 8)} of wall in the way.`);
   if (d > D - 5) warnings.push(`At ${frac(d, 8)} deep there is only ${frac(D - d, 8)} in front of the boxes. A 3-track slider needs about 5".`);
   warnings.push(...spacingWarnings(lv, "Middle shelves"));
 
@@ -141,6 +142,7 @@ export function build(p) {
       `A 3/4" plywood shelf spanning ${frac(mid, 8)} sags about 1/8" loaded. The centre divider brings it to ${frac(span, 8)}, where it is a hundredth of an inch.`,
       `Bought boxes show as white oak in the 3D, site-built plywood in the finish you pick, so it is easy to see which is which.`,
       `The rod starts at ${frac(p.rodZ, 8)} for now and moves up as she grows - it is a slider in the panel, and the box has holes the whole way up.`,
+      `The opening is ${frac(p.doorH, 8)} tall in a ${ftin(p.ceiling)} room, so ${frac(p.ceiling - p.doorH, 8)} of wall sits above it. A ${frac(top, 8)} box already uses every inch you can reach through the opening; anything higher is behind that wall. That is why the deck and long shelf are off here, and on in the master, which you walk into.`,
     ],
   };
 }

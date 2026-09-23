@@ -7,7 +7,7 @@ import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, PLYWOOD_
 
 export const INFO = { id: "pantry", name: "Pantry", room: "Kitchen", concept: "L counter + open shelves", rev: "" };
 
-export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9, doorSlab: 26, doorH: 80, outletZ: 42.4,
+export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9, doorSlab: 26, doorH: 96, outletZ: 42.4,
   outBack: 29.9,        // back wall, from the left
   outLeft: 9.6,         // left wall, from the back wall (height not recorded)
   outRightB: 8.5,       // right wall, from the back wall

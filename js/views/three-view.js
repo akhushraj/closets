@@ -90,6 +90,7 @@ export function createThreeView(host) {
   };
 
   let root = null, framedFor = null, last = null, bounds = null, showWalls = true;
+  const hiddenSides = new Set();   // wall ids whose contents are hidden, so you can look past them
 
   function addBox(p, mat, wood = false) {
     if (p.poly) {   // a flat part cut to a plan polygon: extrude it and lay it down
@@ -149,6 +150,7 @@ export function createThreeView(host) {
     const lights = [];
     for (const part of model.parts) {
       const wood = part.mat ? (mats[part.mat] || wood0) : wood0;   // bought boxes read differently
+      const before = root.children.length;
       switch (part.kind) {
         case "carcass": case "shelf": case "front": addBox(part, wood, true); break;
         case "kick": addBox(part, mats.kick); break;
@@ -177,6 +179,7 @@ export function createThreeView(host) {
         }
         default: addBox(part, wood, true);
       }
+      for (let i = before; i < root.children.length; i++) root.children[i].userData.side = part.wall;
     }
 
     // LED strips light the space below them
@@ -209,8 +212,19 @@ export function createThreeView(host) {
     const xs = c.outline.map(q => q[0]), ys = c.outline.map(q => q[1]);
     bounds = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
     key.target.position.set((bounds.x0 + bounds.x1) / 2, 40, (bounds.y0 + bounds.y1) / 2);
-    if (framedFor !== model.info.id) { view("overview"); framedFor = model.info.id; }
+    if (framedFor !== model.info.id) { hiddenSides.clear(); view("overview"); framedFor = model.info.id; }
+    applySides();
   }
+
+  // hide one wall's fittings so you can look straight at the one behind it
+  function applySides() {
+    if (root) root.traverse(o => { if (o.userData.side) o.visible = !hiddenSides.has(o.userData.side); });
+  }
+  function setSide(id, on) {
+    if (on) hiddenSides.delete(id); else hiddenSides.add(id);
+    applySides();
+  }
+  function sideShown(id) { return !hiddenSides.has(id); }
 
   function view(name) {
     if (!last || !bounds) return;
@@ -244,5 +258,5 @@ export function createThreeView(host) {
     if (root) root.traverse(o => { if (o.userData.wall) o.visible = showWalls; });
   }
 
-  return { update, resize, view, setWalls };
+  return { update, resize, view, setWalls, setSide, sideShown };
 }

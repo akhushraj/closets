@@ -13,14 +13,15 @@ export const INFO = { id: "master", name: "Master Closet", room: "Master bedroom
 
 // Measured in the field (2026-09-18), sketch orientation. Always overrides stored values.
 export const FIELD = { W: 72.3, Lh: 104.5, rightTo: 76.8, nookD: 12.4, ceiling: 120,
-  doorAt: 25.8, doorRO: 32, doorSlab: 30, doorH: 80,
+  doorAt: 25.8, doorRO: 32, doorSlab: 30, doorH: 96,
   hatchX0: 40.7, hatchY0: 78.65, hatchX1: 69.8, hatchY1: 102.85 };
 
 // East Star only makes these widths, so every run is a sum of them plus a filler.
 export const ES_WIDTHS = [15, 18, 21, 24, 30, 36];
 
 export const DEFAULTS = {
-  esTop: 94, leftDepth: 24, leftPlan: "30, 36, 36",
+  esTop: 94, leftDepth: 24, leftPlan: "30, 36, 36", leftDoors: true, rightDoors: true,
+  doorsOpen: false, drawersOut: false,
   fronts2: "7, 8, 9, 10", fronts3: "7, 8, 9, 10", rod2: 84, rod3: 84,
   ...shelfSlots("a", [14, 28, 42, 56, 70, 84], [98]),
   rightDepth: 15.5, rightPlan: "36, 24, 15",
@@ -36,6 +37,10 @@ export const CONTROLS = [
     { key: "leftDepth", label: "Left wall depth", min: 15.5, max: 24, step: 8.5 },
     { key: "rightPlan", label: "Right wall widths, from the back", type: "text" },
     { key: "rightDepth", label: "Right wall depth", min: 15.5, max: 24, step: 8.5 },
+    { key: "leftDoors", label: "Doors on the left wall", type: "check" },
+    { key: "rightDoors", label: "Doors on the right wall", type: "check" },
+    { key: "doorsOpen", label: "Show the doors open", type: "check" },
+    { key: "drawersOut", label: "Show the drawers open", type: "check" },
   ]],
   ["Left wall · inside the cabinets", [
     { key: "rod2", label: "Cabinet 2 rod height", min: 66, max: 90, step: 0.5 },
@@ -93,16 +98,16 @@ export function build(p) {
     { fronts: fr(p.fronts2), rods: [p.rod2], label: "Daily 1" },
     { fronts: fr(p.fronts3), rods: [p.rod3], label: "Daily 2" },
   ];
-  const left = add(esRun(w.L, { u0: 0, depth: d, top,
+  const left = add(esRun(w.L, { u0: 0, depth: d, top, doors: p.leftDoors, doorsOpen: p.doorsOpen, drawersOut: p.drawersOut,
     bays: lw.map((width, i) => ({ w: width, ...(inside[i] || { levels: aLv }) })), prefix: "L", seed: 5 }));
 
   // ---- right wall, filler in the back corner so the run starts flush at the nook end
   const rw = parsePlan(p.rightPlan, RT), rRun = rw.reduce((a, b) => a + b, 0), rFill = RT - rRun;
-  const right = add(esRun(w.R, { u0: rFill, depth: rd, top,
+  const right = add(esRun(w.R, { u0: rFill, depth: rd, top, doors: p.rightDoors, doorsOpen: p.doorsOpen, drawersOut: p.drawersOut,
     bays: rw.map(width => ({ w: width, levels: [20, 34, 48, 62, 76] })), prefix: "R", seed: 9 }));
 
   const aisle = W - d - rd;
-  const swing = Math.max(...[...lw, ...rw].map(x => (x > 24 ? x / 2 : x)));
+  const swing = Math.max(0, ...[...(p.leftDoors ? lw : []), ...(p.rightDoors ? rw : [])].map(x => (x > 24 ? x / 2 : x)));
   if (swing > aisle - 3) warnings.push(`A ${frac(swing, 8)} door nearly fills the ${frac(aisle, 8)} aisle when open. Split the widest box into two doors.`);
   for (const [name, run, fill] of [["Left", Lh, lFill], ["Right", RT, rFill]])
     if (fill > 6) warnings.push(`${name} wall: ${frac(fill, 8)} of filler. East Star widths are ${ES_WIDTHS.join(", ")}" and only add up to multiples of 3.`);

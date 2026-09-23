@@ -117,7 +117,27 @@ function render() {
   const wtab = document.querySelector('[data-tab="pWiring"]');
   if (model.wiring && model.wiring.levels.length) { wtab.hidden = false; renderWiring($("wiring"), model); }
   else { wtab.hidden = true; if (wtab.classList.contains("on")) document.querySelector('[data-tab="pPlan"]').click(); }
-  if (three) three.update(model);
+  if (three) { three.update(model); buildSideBtns(); }
+}
+
+// one chip per wall that carries fittings: click to face it, click again to hide it
+function buildSideBtns() {
+  const host = $("sidebtns");
+  if (!host || !three) return;
+  const order = [...(model.elevations || []), ...model.closet.walls.map(w => w.id)];
+  const ids = [...new Set(model.parts.map(p => p.wall))].filter(Boolean)
+    .sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  host.innerHTML = ids.length > 1 ? `<span class="lbl">Sides</span>` : "";
+  if (ids.length < 2) return;
+  for (const id of ids) {
+    const wall = model.closet.walls.find(x => x.id === id);
+    const b = document.createElement("button");
+    b.textContent = (wall?.name || id).split("·")[0].trim().replace(/ wall$| end$/i, "");
+    b.title = `${wall?.name || id} — click to hide it so you can see past it`;
+    b.classList.toggle("off", !three.sideShown(id));
+    b.onclick = () => { three.setSide(id, !three.sideShown(id)); buildSideBtns(); };
+    host.append(b);
+  }
 }
 
 document.querySelectorAll(".tabbtn").forEach(b => b.onclick = () => {
@@ -134,6 +154,7 @@ render();
 import("./views/three-view.js").then(m => {
   three = m.createThreeView($("three"));
   three.update(model);
+  buildSideBtns();
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => three.view(b.dataset.view));
   const wb = document.querySelector("[data-toggle=walls]");
   let walls = lsGet("closets.walls") ?? true;

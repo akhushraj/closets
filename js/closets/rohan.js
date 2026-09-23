@@ -10,7 +10,7 @@ export const INFO = {
 
 // Measured in the field (2026-09-18). These always override stored or default values.
 export const FIELD = { closetW: 46.2, mainD: 52.1, alcoveW: 25.2, totalL: 78.7, ceiling: 120,
-  doorAt: 31.1, doorRO: 30.3, doorSlab: 28, doorH: 80, hinge: "near" };
+  doorAt: 31.1, doorRO: 30.3, doorSlab: 28, doorH: 96, hinge: "near" };
 
 export const DEFAULTS = {
   hangDepth: 24, rodZ: 70, hatDepth: 14,
