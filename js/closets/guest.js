@@ -9,7 +9,7 @@ export const INFO = { id: "guest", name: "Guest Closet", room: "Guest room", con
 export const FIELD = { W: 54.1, D: 22.3, ceiling: 120, stubL: 2.1, opening: 50.1, stubR: 1.8, doorH: 96 };
 
 export const DEFAULTS = {
-  rodZ: 70, lowOn: true, lowZ: 34, lowDepth: 19, upDepth: 16, dresser: true,
+  rodZ: 71, lowOn: true, lowZ: 35, lowDepth: 19, upDepth: 16, dresser: true,
   topOn: true, topZ: 88, topDepth: 12,
   ...shelfSlots("u", [72], [60, 84, 94]),
   finish: "white",
