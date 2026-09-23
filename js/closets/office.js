@@ -1,7 +1,7 @@
 // Office reach-in: network + security gear at the left end, where the cables arrive (two boxes at
 // 75.2" AFF on the left end wall). A plywood divider separates it from fixed plywood shelves across the
 // rest; the lowest shelf clears a space heater. No clothes rod, no desk. Louvered double doors swing out.
-import { box, fixedShelves, collector, hatchClashes } from "../model/builders.js";
+import { box, fixedShelves, floorItem, collector, hatchClashes } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, PLYWOOD_NOTE } from "./common.js";
 
@@ -11,10 +11,12 @@ export const INFO = { id: "office", name: "Office Closet", room: "Office", conce
 export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9, doorH: 96, returnD: 4.9,
   boxZ: 75.2, boxBack1: 5.9, boxBack2: 12.9, topOutletZ: 98, topOutletBack: 14.6, upsOutletZ: 15.6 };
 
+const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
+
 export const DEFAULTS = {
   gearW: 22, rackU: 12, rackZ: 56, rackDepth: 12, boardTop: 90, upsW: 7, upsD: 17, upsH: 10,
-  shelfDepth: 18, gearTopOn: true, gearTop: 102,
-  ...shelfSlots("s", [32, 46, 60, 74, 88, 102], [18, 112]),
+  shelfDepth: 18, dresser: true, topOn: true, topZ: 92, topDepth: 12,
+  ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
   finish: "white", lights: true,
 };
@@ -26,12 +28,16 @@ export const CONTROLS = [
     { key: "rackZ", label: "Rack bottom height", min: 40, max: 70, step: 0.5 },
     { key: "rackDepth", label: "Rack depth", min: 10, max: 18, step: 0.5 },
     { key: "upsW", label: "UPS width (on the floor)", min: 5, max: 12, step: 0.5 },
-    { key: "gearTopOn", label: "Shelf above the gear", type: "check" },
-    { key: "gearTop", label: "Its height", min: 92, max: 112, step: 0.5 },
   ]],
-  shelfControls("s", 8, "Shelves · top of each, AFF", [
+  shelfControls("s", 6, "Shelves · right of the divider", [
     { key: "shelfDepth", label: "Shelf depth", min: 12, max: 18.5, step: 0.5 },
+    { key: "dresser", label: "Dresser under the bottom shelf (MALM 3-drawer)", type: "check" },
   ]),
+  ["Top shelf · full width", [
+    { key: "topOn", label: "Shelf just under the header", type: "check" },
+    { key: "topZ", label: "Its height (top)", min: 80, max: 95, step: 1 },
+    { key: "topDepth", label: "Its depth", min: 8, max: 18, step: 0.5 },
+  ]],
   ["Crawl-space hatch (until measured)", [
     { key: "hatchX", label: "From the left wall", min: 0, max: 40, step: 0.5 },
     { key: "hatchY", label: "From the back wall", min: 0, max: 10, step: 0.5 },
@@ -77,13 +83,23 @@ export function build(p) {
   modules.push(box(w.T, "equip", 0, G, 0, p.rackDepth + 0.75, 0, 0, { label: "Network gear", sub: `backboard + ${p.rackU}U rack` }));
   modules.push(box(w.L, "ups", D - p.upsD - 1, D - 1, 0.5, 0.5 + p.upsW, 0, 0, { label: "UPS" }));
 
-  // plywood divider, then fixed shelves across the rest; one shelf above the gear
-  const lv = readShelves(p, "s", 8);
-  // wall-hung divider: starts just under the lowest shelf so the floor (and hatch) stays open
-  const divBottom = Math.max(0, Math.min(lv[0] ?? 100, p.gearTopOn ? p.gearTop : 100) - PLY - 3);
-  parts.push(box(w.T, "carcass", G, G + PLY, 0, sd, divBottom, 116));
-  add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, levels: lv, label: "Shelves" }));
-  if (p.gearTopOn) add(fixedShelves(w.T, { u0: 0, u1: G, depth: sd, levels: [p.gearTop], label: "Above the gear" }));
+  // plywood divider, shelves to the right of it, one full-width shelf under the header
+  const lv = readShelves(p, "s", 6);
+  const divTop = p.topOn ? p.topZ : (lv[lv.length - 1] || 88);
+  const divBottom = Math.max(0, (lv[0] ?? 35) - PLY - 3);   // hangs on the wall; floor stays open for the hatch
+  parts.push(box(w.T, "carcass", G, G + PLY, 0, sd, divBottom, divTop));
+  add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, levels: lv, label: "Shelves", led: false }));
+  if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, levels: [p.topZ], label: "Top shelf", led: false }));
+  if (p.dresser) {   // MALM 3-drawer under the bottom shelf
+    const a = G + PLY + 1, b = a + MALM.w, v1 = 0.5 + MALM.d, fh = (MALM.h - 2.5) / 3;
+    parts.push(box(w.T, "dresser", a, b, 0.5, v1 - 0.6, 0, MALM.h - 0.75, { label: "Dresser" }));
+    parts.push(box(w.T, "dresser", a, b, 0.5, v1, MALM.h - 0.75, MALM.h, { mark: true, label: "Dresser top" }));
+    for (let i = 0; i < 3; i++) {
+      const z0 = 1 + i * (fh + 0.4);
+      parts.push(box(w.T, "dresserfront", a + 0.4, b - 0.4, v1 - 0.6, v1, z0, z0 + fh));
+    }
+    modules.push(box(w.T, "dresser", a, b, 0.5, v1, 0, 0, { label: "Dresser", sub: `MALM 3-drawer · ${MALM.w} × ${MALM.d}` }));
+  }
 
   // louvered double doors, swinging out
   const f0 = W - (p.doorAt + p.doorRO), f1 = W - p.doorAt, mid = (f0 + f1) / 2, slab = p.doorRO / 2 - 1;
@@ -96,6 +112,10 @@ export function build(p) {
   if (p.hatchX < p.upsW + 1) warnings.push("The UPS sits on the crawl-space hatch. Move one or the other.");
   if (hatchClashes(parts, hatches).length) warnings.push("Something that stands on the floor covers the crawl-space hatch.");
   if (base < 24 || p.rackZ + rackH > p.boardTop) warnings.push("The rack and the devices below it don't fit on the backboard.");
+  const blocked = [...lv, ...(p.topOn ? [p.topZ] : [])].filter(z => z > p.doorH - 1.5);
+  if (blocked.length) warnings.push(`Shelves at ${blocked.join(", ")}" sit above the door header (${p.doorH}"), so you can't reach them.`);
+  if (p.dresser && lv.length && lv[0] - PLY - 1.5 < MALM.h + 0.5)
+    warnings.push(`The dresser (${MALM.h}") doesn't fit under the bottom shelf's cleats (${frac(lv[0] - PLY - 1.5, 8)}).`);
   if (sd > D - p.returnD) warnings.push(`At ${frac(sd, 8)} deep, the shelves run into the ${frac(p.returnD, 8)} wall returns at the door.`);
   if (p.gearTopOn && p.gearTop < p.rackZ + rackH + 12) warnings.push("The shelf above the gear sits close to the rack. Leave room for heat and cables.");
   warnings.push(...spacingWarnings(lv, "Shelves"));
@@ -118,7 +138,7 @@ export function build(p) {
       { k: "Gear zone", v: `${frac(G, 8)} wide`, s: `${p.rackU}U rack ${frac(p.rackZ, 8)}–${frac(p.rackZ + rackH, 8)}; cables arrive at ${p.boxZ}"` },
       { k: "Shelves", v: `${lv.length} × ${frac(sd, 8)} deep`, s: lv.length ? `tops at ${lv.join(", ")}"` : "none on" },
       { k: "Under the lowest shelf", v: frac(Math.max(0, clear1), 8), s: "clear height at the cleats (space heater, etc.)" },
-      { k: "Above the gear", v: p.gearTopOn ? frac(p.gearTop, 8) : "off", s: "long-term storage" },
+      { k: "Top shelf", v: p.topOn ? `${frac(p.topZ, 8)} × ${frac(p.topDepth, 8)} deep` : "off", s: "full width, under the header" },
     ],
     titleMeta: [
       { k: "Closet", v: `${ftin(W)} × ${ftin(D)}` },
@@ -126,6 +146,14 @@ export function build(p) {
       { k: "Rack", v: `${p.rackU}U` },
       { k: "Shelves", v: `${lv.length}` },
     ],
+    gcText: [
+      `Office closet, all plywood (3/4" birch). Left ${frac(G, 8)} is network gear; the rest is shelves.`,
+      `Gear: 3/4" plywood backboard screwed to the studs, ${p.rackU}U wall rack on it, UPS on the floor.`,
+      `Shelves right of a 3/4" plywood divider: tops at ${lv.map(z => frac(z, 8)).join(", ")}, ${frac(sd, 8)} deep.`,
+      ...(p.topOn ? [`One full-width shelf at ${frac(p.topZ, 8)}, ${frac(p.topDepth, 8)} deep.`] : []),
+      ...(p.dresser ? [`IKEA MALM 3-drawer sits under the bottom shelf.`] : []),
+      `1x2 cleats screwed into studs (and the divider); shelves sit loose. Louvered doors for airflow.`,
+    ].join("\n"),
     warnings,
     notes: [
       "The desk is gone. At 23.6\" deep, next to gear that runs warm around the clock, and over a crawl hatch, the space works better as storage.",
