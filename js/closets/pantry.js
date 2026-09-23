@@ -15,7 +15,7 @@ export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9
 
 export const DEFAULTS = {
   counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 12, maxBay: 20, diagCorner: true,
-  ...shelfSlots("u", [54, 68, 82, 96, 110], [48]),
+  ...shelfSlots("u", [54, 70, 86, 102], [48, 116]),
   finish: "white", lights: true,
 };
 
