@@ -9,9 +9,9 @@ export const INFO = { id: "guest", name: "Guest Closet", room: "Guest room", con
 export const FIELD = { W: 54.1, D: 22.3, ceiling: 120, stubL: 2.1, opening: 50.1, stubR: 1.8, doorH: 96 };
 
 export const DEFAULTS = {
-  rodZ: 70, lowOn: true, lowZ: 34.5, lowDepth: 16, upDepth: 16, dresser: true,
-  ...shelfSlots("u", [72, 86, 100], [112]),
-  finish: "white", lights: false,
+  rodZ: 70, lowOn: true, lowZ: 34.5, lowDepth: 19, upDepth: 16, dresser: true,
+  ...shelfSlots("u", [72, 84], [60, 94]),
+  finish: "white",
 };
 
 export const CONTROLS = [
@@ -31,7 +31,7 @@ export const CONTROLS = [
 const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
 
 export function build(p) {
-  p = { ...p, ...FIELD };
+  p = { ...p, ...FIELD, lights: false };   // no outlet in this closet
   const W = p.W, D = p.D, t = 4.5;
   const outline = [[0, 0], [W, 0], [W, D], [0, D]];
   const walls = [
@@ -55,17 +55,25 @@ export function build(p) {
   modules.push(box(w.T, "hang", 0, W, 0, D, 0, 0, { label: "Hanging", sub: `rod ${frac(W - 0.5, 8)} at ${frac(p.rodZ, 8)}`, rods: [{ v: rodV }] }));
 
   const up = readShelves(p, "u", 4);
-  add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.upDepth, levels: up, label: "Upper shelves" }));
-  if (p.lowOn) {
-    const r = fixedShelves(w.T, { u0: 0, u1: W, depth: p.lowDepth, levels: [p.lowZ], label: "Low shelf" });
-    parts.push(...r.parts);
+  add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.upDepth, levels: up, label: "Upper shelves", led: false }));
+  if (p.lowOn) parts.push(...fixedShelves(w.T, { u0: 0, u1: W, depth: p.lowDepth, levels: [p.lowZ], label: "Low shelf", led: false }).parts);
+  if (p.dresser) {   // MALM 3-drawer: body, top, and three flush fronts
+    const a = 1, b = a + MALM.w, v1 = 0.5 + MALM.d, fh = (MALM.h - 2.5) / 3;
+    parts.push(box(w.T, "dresser", a, b, 0.5, v1 - 0.6, 0, MALM.h - 0.75, { label: "IKEA dresser" }));
+    parts.push(box(w.T, "dresser", a, b, 0.5, v1, MALM.h - 0.75, MALM.h, { mark: true, label: "Dresser top" }));
+    for (let i = 0; i < 3; i++) {
+      const z0 = 1 + i * (fh + 0.4);
+      parts.push(box(w.T, "dresserfront", a + 0.4, b - 0.4, v1 - 0.6, v1, z0, z0 + fh));
+    }
+    modules.push(box(w.T, "dresser", a, b, 0.5, v1, 0, 0, { label: "IKEA dresser", sub: `MALM 3-drawer · ${MALM.w} × ${MALM.d}` }));
   }
-  if (p.dresser) add(floorItem(w.T, "dresser", { u0: 1, u1: 1 + MALM.w, v0: 0.5, v1: 0.5 + MALM.d, h: MALM.h, label: "IKEA dresser" }));
 
   const clothesBottom = p.rodZ - 1.2 - 34;
   if (p.lowOn && p.lowZ > clothesBottom) warnings.push(`Jackets hang down to about ${frac(clothesBottom, 8)}, so the low shelf at ${frac(p.lowZ, 8)} is in their way.`);
   if (p.lowOn && p.dresser && p.lowZ - PLY - 1.5 < MALM.h + 0.5) warnings.push(`The dresser (${MALM.h}") doesn't fit under the low shelf's cleats (${frac(p.lowZ - PLY - 1.5, 8)}).`);
   if (up.length && up[0] < p.rodZ + 2) warnings.push("The first shelf above the rod is below the rod.");
+  const blocked = up.filter(z => z > p.doorH - 1.5);
+  if (blocked.length) warnings.push(`Shelves at ${blocked.join(", ")}" sit above the door header (about ${p.doorH}"), so you can't reach them through the opening.`);
   warnings.push(...spacingWarnings(up, "Upper shelves"));
 
   const f0 = W - (p.stubL + p.opening), f1 = W - p.stubL, mid = (f0 + f1) / 2, slab = p.opening / 2 - 1;
@@ -98,9 +106,12 @@ export function build(p) {
     ],
     warnings,
     notes: [
-      "A 54\" rod needs a middle support: a bracket hung from the shelf above, or a 1-5/16\" rod with a center bracket.",
-      `The dresser shown is an IKEA MALM 3-drawer (${MALM.w}" W × ${MALM.d}" D × ${MALM.h}" H). The rest of the floor is for suitcases and bags.`,
-      PLYWOOD_NOTE,
+      `Rod at ${frac(p.rodZ, 8)}, wall to wall. A 54" rod needs a middle support hung from the shelf above.`,
+      `${up.length + (p.lowOn ? 1 : 0)} shelves, 3/4" birch veneer-core plywood (paint grade), resting loose on 1×2 cleats screwed into the studs on three walls.`,
+      "Front edge: 1/4\" × 3/4\" poplar strip, glued and pinned flush.",
+      "Paint: same as the room, primer + 2 coats, all sides. Paint the shelves flat, then set them in.",
+      `Floor: an IKEA MALM 3-drawer (${MALM.w}" × ${MALM.d}" × ${MALM.h}") fits under the low shelf, with ${frac(W - 2 - MALM.w, 8)} beside it for suitcases.`,
+      "No lights, no outlet.",
     ],
   };
 }
