@@ -10,7 +10,7 @@ export const FIELD = { W: 27.9, D: 23.7, ceiling: 120, opening: 24.3, doorSlab: 
 
 export const DEFAULTS = {
   depth: 22, edge: "poplar",
-  ...shelfSlots("s", [18, 31, 44, 57, 70, 83, 94], [106]),
+  ...shelfSlots("s", [24.75, 39.25, 53.75, 68.25, 82.75], [10, 17, 94]),
   finish: "white",
 };
 
@@ -70,15 +70,11 @@ export function build(p) {
     ],
     warnings,
     notes: [
-      `SPEC — Shelves: ${lv.length}, 3/4" birch plywood, cut ${frac(p.depth, 8)} deep, full width wall to wall. Tops at ${lv.join(", ")}" above the floor. The floor to the first shelf stays open.`,
-      p.edge === "poplar"
-        ? "Front edge: 1/4\" × 3/4\" poplar strip, glued and pinned flush with a brad nailer, sanded flush. Backup if you'd rather skip it: fill the plywood edge, sand, prime and paint."
-        : "Front edge: none. Fill the plywood edge with sandable filler, sand smooth, then prime and paint.",
-      "Supports: 3/4\" × 1-1/2\" cleats under every shelf on all three walls, screwed into studs with 2-1/2\" screws plus construction adhesive. Where studs are scarce, run a vertical 1×3 up each side wall into the studs and land the cleats on that.",
-      "The shelves rest on the cleats. They are not glued or nailed down, so they lift out.",
-      "Finish: the same paint as the rest of the bathroom, satin, primer plus two coats, on every side of each shelf and on the cleats.",
-      "Sequence: fit the cleats and cut the shelves, add the front edge, then take the shelves out and give them to the painters flat. They go back on the cleats when dry.",
-      "No lights and no outlet in this closet.",
+      `${lv.length} shelves, 3/4" birch veneer-core plywood (paint grade), ${frac(p.depth, 8)} deep, full width. Tops at ${lv.join(", ")}" AFF.`,
+      "They rest loose on 1×2 cleats (3/4\" × 1-1/2\") screwed into the studs on all three walls. Add a vertical 1×3 on each side wall if studs are scarce.",
+      p.edge === "poplar" ? "Front edge: 1/4\" × 3/4\" poplar strip, glued and pinned flush." : "Front edge: none. Fill, sand and paint the plywood edge.",
+      "Paint: bathroom paint, satin, primer + 2 coats, all sides. Paint the shelves flat, then set them in.",
+      "No lights, no outlet.",
     ],
   };
 }
