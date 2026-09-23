@@ -53,7 +53,6 @@ export function build(p) {
   const rodV = Math.min(12, D / 2);
 
   const cx = W / 2, dv = p.divider;
-  if (dv) parts.push(box(w.T, "carcass", cx - PLY / 2, cx + PLY / 2, 0, p.upDepth, p.lowOn ? p.lowZ : 0, p.topOn ? p.topZ : (up[up.length - 1] || 88), { mark: false }));
   for (const [a, b] of dv ? [[0.25, cx - PLY / 2], [cx + PLY / 2, W - 0.25]] : [[0.25, W - 0.25]])
     parts.push(box(w.T, "rod", a, b, rodV - 0.625, rodV + 0.625, p.rodZ - 0.625, p.rodZ + 0.625, { axis: "u", mark: true, label: "Rod" }));
   let g = 1.5, k = 0;
@@ -65,6 +64,11 @@ export function build(p) {
   modules.push(box(w.T, "hang", 0, W, 0, D, 0, 0, { label: "Hanging", sub: `rod ${frac(W - 0.5, 8)} at ${frac(p.rodZ, 8)}`, rods: [{ v: rodV }] }));
 
   const up = readShelves(p, "u", 4);
+  if (dv) {   // steps back to the top shelf's depth so its front edge lines up
+    const base = p.lowOn ? p.lowZ : 0, stepAt = up.length ? up[up.length - 1] : (p.topOn ? p.topZ : 88);
+    parts.push(box(w.T, "carcass", cx - PLY / 2, cx + PLY / 2, 0, p.upDepth, base, stepAt));
+    if (p.topOn && p.topZ > stepAt) parts.push(box(w.T, "carcass", cx - PLY / 2, cx + PLY / 2, 0, p.topDepth, stepAt, p.topZ));
+  }
   add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.upDepth, levels: up, label: "Upper shelves", led: false }));
   if (p.lowOn) parts.push(...fixedShelves(w.T, { u0: 0, u1: W, depth: p.lowDepth, levels: [p.lowZ], label: "Low shelf", led: false }).parts);
   if (p.dresser) {   // MALM 3-drawer: body, top, and three flush fronts
@@ -129,7 +133,7 @@ export function build(p) {
     notes: [
       dv ? `Rod at ${frac(p.rodZ, 8)}, in two ${frac((W - 0.5 - PLY) / 2, 8)} sections either side of a centre divider.`
          : `Rod at ${frac(p.rodZ, 8)}, wall to wall. A ${frac(W, 8)} rod needs a centre support.`,
-      ...(dv ? [`Centre divider: 3/4" plywood, ${frac(p.upDepth, 8)} deep, from the low shelf up to the top shelf. Shelf cleats land on it.`] : []),
+      ...(dv ? [`Centre divider: 3/4" plywood, ${frac(p.upDepth, 8)} deep up to the ${frac(up[up.length - 1] || 0, 8)} shelf, then ${frac(p.topDepth, 8)} deep to the top shelf, so its front edge follows the shelves. Fix it with a vertical 1x2 cleat screwed into the back-wall studs, plus screws up through the shelf below.`] : []),
       `${up.length + (p.lowOn ? 1 : 0)} shelves, 3/4" birch veneer-core plywood (paint grade), resting loose on 1×2 cleats screwed into the studs on three walls.`,
       "Front edge: 1/4\" × 3/4\" poplar strip, glued and pinned flush.",
       "Paint: same as the room, primer + 2 coats, all sides. Paint the shelves flat, then set them in.",

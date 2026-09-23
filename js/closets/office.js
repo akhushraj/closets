@@ -87,7 +87,9 @@ export function build(p) {
   const lv = readShelves(p, "s", 6);
   const divTop = p.topOn ? p.topZ : (lv[lv.length - 1] || 88);
   const divBottom = Math.max(0, (lv[0] ?? 35) - PLY - 3);   // hangs on the wall; floor stays open for the hatch
-  parts.push(box(w.T, "carcass", G, G + PLY, 0, sd, divBottom, divTop));
+  const stepAt = lv.length ? lv[lv.length - 1] : divTop;   // divider steps back to the top shelf's depth
+  parts.push(box(w.T, "carcass", G, G + PLY, 0, sd, divBottom, stepAt));
+  if (p.topOn && p.topZ > stepAt) parts.push(box(w.T, "carcass", G, G + PLY, 0, p.topDepth, stepAt, p.topZ));
   add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, levels: lv, label: "Shelves", led: false }));
   if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, levels: [p.topZ], label: "Top shelf", led: false }));
   if (p.dresser) {   // MALM 3-drawer under the bottom shelf
@@ -152,6 +154,7 @@ export function build(p) {
       `Shelves right of a 3/4" plywood divider: tops at ${lv.map(z => frac(z, 8)).join(", ")}, ${frac(sd, 8)} deep.`,
       ...(p.topOn ? [`One full-width shelf at ${frac(p.topZ, 8)}, ${frac(p.topDepth, 8)} deep.`] : []),
       ...(p.dresser ? [`IKEA MALM 3-drawer sits under the bottom shelf.`] : []),
+      `Divider steps back to ${frac(p.topDepth, 8)} above the ${frac(lv[lv.length - 1] || 0, 8)} shelf; fix it with a vertical 1x2 cleat into the back-wall studs.`,
       `1x2 cleats screwed into studs (and the divider); shelves sit loose. Louvered doors for airflow.`,
     ].join("\n"),
     warnings,
