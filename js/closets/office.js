@@ -38,7 +38,7 @@ export const CONTROLS = [
   ]),
   ["Top shelf · full width", [
     { key: "topOn", label: "Shelf just under the header", type: "check" },
-    { key: "topZ", label: "Its height (top)", min: 80, max: 95, step: 1 },
+    { key: "topZ", label: "Its height (top)", min: 80, max: 95, step: 1, gapFrom: "s", onKey: "topOn" },
     { key: "topDepth", label: "Its depth", min: 8, max: 18, step: 0.5 },
   ]],
   ["Crawl-space hatch (until measured)", [

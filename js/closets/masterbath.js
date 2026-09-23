@@ -21,7 +21,7 @@ export const CONTROLS = [
   ]),
   ["Shallow top shelf", [
     { key: "topOn", label: "Shelf just under the header", type: "check" },
-    { key: "topZ", label: "Its height (top)", min: 80, max: 95, step: 1 },
+    { key: "topZ", label: "Its height (top)", min: 80, max: 95, step: 1, gapFrom: "s", onKey: "topOn" },
     { key: "topDepth", label: "Its depth", min: 8, max: 23, step: 0.5 },
   ]],
   ["Look", [{ key: "finish", label: "Finish", type: "select", options: [["white", "Painted white"], ["oak", "White oak"], ["walnut", "Walnut"]] }]],

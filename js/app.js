@@ -31,9 +31,24 @@ function buildPicker() {
   };
 }
 
+// shelf prefix -> the rows in that bank, so each row can show the clear space down to the one below
+let banks = {};
+function showGaps() {
+  for (const rows of Object.values(banks)) {
+    for (const r of rows) r.gap.textContent = "";
+    const on = rows.filter(r => r.on()).map(r => ({ r, z: +r.inp.value })).sort((a, b) => a.z - b.z);
+    for (let i = 1; i < on.length; i++) {
+      const c = on[i].z - on[i - 1].z - 0.75;
+      on[i].r.gap.textContent = c > 0 ? `${frac(c, 8)} clear` : "clashes below";
+      on[i].r.gap.classList.toggle("bad", c <= 0);
+    }
+  }
+}
+
 function buildControls() {
   const host = $("controls");
   host.innerHTML = "";
+  banks = {};
   for (const [title, items] of mod.CONTROLS) {
     const grp = document.createElement("div"); grp.className = "cgroup";
     grp.innerHTML = `<h4>${title}</h4>`;
@@ -49,28 +64,34 @@ function buildControls() {
         const inp = row.querySelector("select"); inp.value = state[c.key];
         inp.onchange = () => set(c.key, inp.value);
       } else if (c.type === "shelf") {
-        // on/off checkbox plus a height slider
-        row.innerHTML = `<label for="${id}"><span><input type="checkbox" id="${id}_on"> ${c.label}</span><output></output></label><input type="range" id="${id}" min="${c.min}" max="${c.max}" step="${c.step}">`;
-        const cb = row.querySelector("input[type=checkbox]"), inp = row.querySelector("input[type=range]"), out = row.querySelector("output");
+        // on/off checkbox, the height, and the clear space down to the shelf below
+        row.innerHTML = `<label for="${id}"><span><input type="checkbox" id="${id}_on"> ${c.label}</span><span class="vals"><output class="gap"></output><output></output></span></label><input type="range" id="${id}" min="${c.min}" max="${c.max}" step="${c.step}">`;
+        const cb = row.querySelector("input[type=checkbox]"), inp = row.querySelector("input[type=range]");
+        const gap = row.querySelector("output.gap"), out = row.querySelector("output:not(.gap)");
         const sync = () => { inp.disabled = !cb.checked; row.classList.toggle("off", !cb.checked); };
         cb.checked = !!state[c.onKey]; inp.value = state[c.key]; out.textContent = frac(+inp.value, 8); sync();
         cb.onchange = () => { sync(); set(c.onKey, cb.checked); };
         inp.oninput = () => { out.textContent = frac(+inp.value, 8); set(c.key, +inp.value); };
+        (banks[c.key.replace(/\d+$/, "")] ??= []).push({ on: () => cb.checked, inp, gap });
       } else if (c.type === "text") {
         row.innerHTML = `<label for="${id}">${c.label}</label><input type="text" id="${id}" spellcheck="false">`;
         const inp = row.querySelector("input"); inp.value = state[c.key];
         inp.oninput = () => set(c.key, inp.value);
       } else {
         const fmt = FMT[c.fmt] || (v => frac(v, 8));
-        row.innerHTML = `<label for="${id}">${c.label}<output></output></label><input type="range" id="${id}" min="${c.min}" max="${c.max}" step="${c.step}">`;
-        const inp = row.querySelector("input"), out = row.querySelector("output");
+        const vals = c.gapFrom ? `<span class="vals"><output class="gap"></output><output></output></span>` : `<output></output>`;
+        row.innerHTML = `<label for="${id}">${c.label}${vals}</label><input type="range" id="${id}" min="${c.min}" max="${c.max}" step="${c.step}">`;
+        const inp = row.querySelector("input"), out = row.querySelector("output:not(.gap)");
         inp.value = state[c.key]; out.textContent = fmt(+inp.value);
         inp.oninput = () => { out.textContent = fmt(+inp.value); set(c.key, +inp.value); };
+        if (c.gapFrom) (banks[c.gapFrom] ??= []).push({ on: () => !c.onKey || !!state[c.onKey], inp, gap: row.querySelector("output.gap") });
       }
       grp.append(row);
     }
     host.append(grp);
   }
+  showGaps();
+
   const reset = document.createElement("button");
   reset.className = "resetbtn"; reset.textContent = "Reset to defaults";
   reset.onclick = () => { state = { ...mod.DEFAULTS }; lsSet(storeKey(), state); buildControls(); render(); };
@@ -79,7 +100,7 @@ function buildControls() {
 
 let pending = 0;
 function set(key, value) {
-  state[key] = value; lsSet(storeKey(), state);
+  state[key] = value; lsSet(storeKey(), state); showGaps();
   cancelAnimationFrame(pending); pending = requestAnimationFrame(render);
 }
 
