@@ -69,9 +69,19 @@ export function renderPlan(svg, model) {
     const f = frame(w);
     txt(lx, ly, m.ghost.label || "", "lbs", 9.5, Math.abs(f.dx) > 0.5 ? false : false);
   }
+  const placed = [];
   for (const m of mods) {
     if (m.kind === "band" || !m.label) continue;
-    const cx = (m.x0 + m.x1) / 2, cy = (m.y0 + m.y1) / 2, pw = (m.x1 - m.x0) * S, ph = (m.y1 - m.y0) * S;
+    const pw = (m.x1 - m.x0) * S, ph = (m.y1 - m.y0) * S;
+    let cx = (m.x0 + m.x1) / 2, cy = (m.y0 + m.y1) / 2;
+    // if another label already sits here, step down until it doesn't
+    for (let guard = 0; guard < 8; guard++) {
+      const hit = placed.some(q => Math.abs(X(q.x) - X(cx)) < 90 && Math.abs(Y(q.y) - Y(cy)) < 17);
+      if (!hit) break;
+      cy += 17 / S;
+    }
+    if (Y(cy) > Y(m.y1) - 6) cy = (m.y0 + m.y1) / 2;
+    placed.push({ x: cx, y: cy });
     const need = Math.max(m.label.length * 6.6, (m.sub || "").length * 5.4);
     const rot = need > pw - 6 && ph > pw;
     const room = rot ? ph : pw;
