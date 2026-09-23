@@ -7,7 +7,11 @@ import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, PLYWOOD_
 
 export const INFO = { id: "pantry", name: "Pantry", room: "Kitchen", concept: "L counter + open shelves", rev: "" };
 
-export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9, doorSlab: 26, doorH: 80, outletZ: 42.4 };
+export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9, doorSlab: 26, doorH: 80, outletZ: 42.4,
+  outBack: 29.9,        // back wall, from the left
+  outLeft: 9.6,         // left wall, from the back wall (height not recorded)
+  outRightB: 8.5,       // right wall, from the back wall
+  outRightF: 11.3 };    // right wall, from the front (height not recorded)
 
 export const DEFAULTS = {
   counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 12,
@@ -43,6 +47,14 @@ export function build(p) {
   const { parts, modules, add } = collector();
   const warnings = [];
   const topT = p.top === "quartz" ? 1.25 : 0.5, sub = cz - topT;
+
+  // outlets, as measured in the field. A duplex plate is about 2-3/4" x 4-1/2".
+  const outlet = (wall, u, z, label) =>
+    parts.push(box(wall, "outlet", u - 1.375, u + 1.375, 0, 0.6, z - 2.25, z + 2.25, { mark: true, label }));
+  outlet(w.T, p.outBack, p.outletZ, "Outlet");
+  outlet(w.R, p.outRightB, p.outletZ, "Outlet");
+  outlet(w.R, D - p.outRightF, p.outletZ, "Outlet");
+  outlet(w.L, D - p.outLeft, p.outletZ, "Outlet");
 
   // counter: plywood sub-top on wall cleats + a plywood upright under the inside corner
   const corner = W - cd;
@@ -99,7 +111,8 @@ export function build(p) {
     ],
     warnings,
     notes: [
-      `The outlets at ${p.outletZ}" AFF land about ${frac(p.outletZ - cz, 8)} above the counter, which is good for appliances.`,
+      `Four outlets, marked amber: back wall ${frac(p.outBack, 8)} from the left; right wall ${frac(p.outRightB, 8)} from the back and ${frac(p.outRightF, 8)} from the front; left wall ${frac(p.outLeft, 8)} from the back.`,
+      `At ${p.outletZ}" AFF they land about ${frac(p.outletZ - cz, 8)} above the counter, which is good for appliances. Only the back-wall and right-wall-back heights were measured; re-check the other two.`,
       "The counter sits on a 3/4\" plywood sub-top resting on wall cleats. A plywood upright under the inside corner carries the front edges.",
       "Quartz is usually cheapest as a remnant for a small L. A thin porcelain slab needs the full plywood sub-top under it.",
       PLYWOOD_NOTE,

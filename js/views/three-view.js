@@ -85,6 +85,7 @@ export function createThreeView(host) {
     stone: new THREE.MeshStandardMaterial({ color: 0xdcd8d0, roughness: 0.25 }),
     panel: new THREE.MeshStandardMaterial({ color: 0x8c8f94, metalness: 0.6, roughness: 0.4 }),
     board: new THREE.MeshStandardMaterial({ color: 0xd9d5cc, roughness: 0.9 }),
+    outlet: new THREE.MeshStandardMaterial({ color: 0xc8821f, emissive: 0x3a2405, roughness: 0.5 }),
     garments: GARMENT.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 })),
   };
 
@@ -141,7 +142,8 @@ export function createThreeView(host) {
         case "kick": addBox(part, mats.kick); break;
         case "pull": addBox(part, mats.pull); break;
         case "hamper": addBox(part, mats.hamper); break;
-        case "cabinet": case "backboard": case "outlet": addBox(part, mats.white); break;
+        case "cabinet": case "backboard": addBox(part, mats.white); break;
+        case "outlet": addBox(part, mats.outlet).castShadow = false; break;
         case "rack": case "ups": addBox(part, mats.metal); break;
         case "device": addBox(part, part.tone === "light" ? mats.white : mats.metal); break;
         case "desktop": addBox(part, wood, true); break;
