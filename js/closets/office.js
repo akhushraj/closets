@@ -15,7 +15,7 @@ const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
 
 export const DEFAULTS = {
   gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
-  shelfDepth: 22, dresser: true, topOn: true, topZ: 92, topDepth: 12,
+  shelfDepth: 22, dresser: true, topOn: false, topZ: 92, topDepth: 12,
   ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
   finish: "white", lights: true,
@@ -156,7 +156,8 @@ export function build(p) {
       { k: "Rack", v: `${p.rackU}U · ${frac(p.rackW, 8)} wide`, s: `4U used, ${p.rackU - 4}U spare · ${frac(rackPad, 8)} each side for cables` },
       { k: "Shelves", v: `${lv.length + leftLv.length} × ${frac(sd, 8)} deep`, s: `right side at ${lv.join(", ")}"; gear side at ${leftLv.join(", ") || "none"}` },
       { k: "Under the lowest shelf", v: frac(Math.max(0, clear1), 8), s: "clear height at the cleats (space heater, etc.)" },
-      { k: "Top shelf", v: p.topOn ? `${frac(p.topZ, 8)} × ${frac(p.topDepth, 8)} deep` : "off", s: "full width, under the header" },
+      p.topOn ? { k: "Top shelf", v: `${frac(p.topZ, 8)} × ${frac(p.topDepth, 8)} deep`, s: "full width, under the header" }
+              : { k: "Above the top shelf", v: frac(p.doorH - (lv[lv.length - 1] || 0), 8), s: "open to the header; no shallow shelf" },
     ],
     titleMeta: [
       { k: "Closet", v: `${ftin(W)} × ${ftin(D)}` },
@@ -171,7 +172,8 @@ export function build(p) {
       ...(leftLv.length ? [`Same shelves continue over the gear side at ${leftLv.map(z => frac(z, 8)).join(", ")}.`] : []),
       ...(p.topOn ? [`One full-width shelf at ${frac(p.topZ, 8)}, ${frac(p.topDepth, 8)} deep.`] : []),
       ...(p.dresser ? [`IKEA MALM 3-drawer sits under the bottom shelf.`] : []),
-      `Divider steps back to ${frac(p.topDepth, 8)} above the ${frac(lv[lv.length - 1] || 0, 8)} shelf; fix it with a vertical 1x2 cleat into the back-wall studs.`,
+      p.topOn ? `Divider steps back to ${frac(p.topDepth, 8)} above the ${frac(lv[lv.length - 1] || 0, 8)} shelf; fix it with a vertical 1x2 cleat into the back-wall studs.`
+              : `Divider: 3/4" plywood, ${frac(sd, 8)} deep, from ${frac(divBottom, 8)} up to the ${frac(lv[lv.length - 1] || 0, 8)} shelf, slotted between two vertical 1x2 cleats screwed into the back-wall studs.`,
       `1x2 cleats screwed into studs (and the divider); shelves sit loose. Louvered doors for airflow.`,
     ].join("\n"),
     warnings,

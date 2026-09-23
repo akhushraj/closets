@@ -14,7 +14,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch
 const $ = id => document.getElementById(id);
 let mod = byId(location.hash.slice(1) || lsGet("closets.last"));
 let state = {}, model = null, three = null;
-const storeKey = () => `closets.${mod.INFO.id}.v2`;
+const storeKey = () => `closets.${mod.INFO.id}.v3`;
 
 function loadState() { state = { ...mod.DEFAULTS, ...(lsGet(storeKey()) || {}) }; }
 
