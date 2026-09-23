@@ -100,7 +100,7 @@ export function build(p) {
   add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, levels: lv, label: "Shelves", led: false }));
   // the same shelves continue over the gear zone wherever the devices and rack leave room
   const rackTop = p.rackZ + rackH;
-  const clearOfRack = z => z + 2 < p.rackZ || z > rackTop + 2;
+  const clearOfRack = z => z + 1.5 <= p.rackZ || z >= rackTop + 2;
   const leftLv = [...lv.filter(z => (z < base - 1 || z > rackTop + 3) && clearOfRack(z)),
     ...(p.gearShelfOn && clearOfRack(p.gearShelfZ) ? [p.gearShelfZ] : [])].sort((a, b) => a - b);
   if (leftLv.length) add(fixedShelves(w.T, { u0: 0, u1: G, depth: sd, levels: leftLv, label: "Gear-side shelves", led: false }));
