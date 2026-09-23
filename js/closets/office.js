@@ -14,7 +14,7 @@ export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9
 const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
 
 export const DEFAULTS = {
-  gearW: 22, rackU: 12, rackZ: 56, rackDepth: 12, boardTop: 90, upsW: 7, upsD: 17, upsH: 10,
+  gearW: 22, rackU: 9, rackZ: 58, rackDepth: 14, boardTop: 90, upsW: 7, upsD: 17, upsH: 10,
   shelfDepth: 18, dresser: true, topOn: true, topZ: 92, topDepth: 12,
   ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
@@ -24,7 +24,7 @@ export const DEFAULTS = {
 export const CONTROLS = [
   ["Network gear · left end", [
     { key: "gearW", label: "Gear zone width", min: 20, max: 30, step: 0.5 },
-    { key: "rackU", label: "Wall rack size (U)", min: 6, max: 18, step: 1, fmt: "int" },
+    { key: "rackU", label: "Wall rack size (U)", min: 4, max: 15, step: 1, fmt: "int" },
     { key: "rackZ", label: "Rack bottom height", min: 40, max: 70, step: 0.5 },
     { key: "rackDepth", label: "Rack depth", min: 10, max: 18, step: 0.5 },
     { key: "upsW", label: "UPS width (on the floor)", min: 5, max: 12, step: 0.5 },
@@ -74,11 +74,11 @@ export function build(p) {
   // gear zone on the back wall, left end: backboard, rack, devices below it, UPS on the floor
   parts.push(box(w.T, "backboard", 0.25, G - 0.25, 0, 0.75, 24, p.boardTop, { mark: true, label: "Backboard top" }));
   parts.push(box(w.T, "rack", 1.25, G - 1.25, 0.75, 0.75 + p.rackDepth, p.rackZ, p.rackZ + rackH, { mark: true, label: `${p.rackU}U rack` }));
-  const base = p.rackZ - 22;
+  const base = p.rackZ - 20;
   const dev = (u0, u1, z0, z1, label, tone = "dark") => parts.push(box(w.T, "device", u0, u1, 0.75, 3, z0, z1, { label, tone }));
   dev(1.5, 9.5, base, base + 10, "Fiber ONT", "light");
   dev(10.5, G - 1.5, base, base + 9, "Gateway");
-  dev(1.5, 7.5, base + 12, base + 17, "Blinds hub", "light");
+  dev(1.5, 8.5, base + 12, base + 17, "Blinds hub + power supply", "light");
   parts.push(box(w.L, "ups", D - p.upsD - 1, D - 1, 0.5, 0.5 + p.upsW, 0, p.upsH, { label: "UPS" }));
   modules.push(box(w.T, "equip", 0, G, 0, p.rackDepth + 0.75, 0, 0, { label: "Network gear", sub: `backboard + ${p.rackU}U rack` }));
   modules.push(box(w.L, "ups", D - p.upsD - 1, D - 1, 0.5, 0.5 + p.upsW, 0, 0, { label: "UPS" }));
@@ -94,6 +94,10 @@ export function build(p) {
   for (const [a, b] of [[G - 1.5, G], [G + PLY, G + PLY + 1.5]])
     parts.push(box(w.T, "cleat", a, b, 0, PLY, divBottom, p.topOn ? p.topZ : stepAt));
   add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, levels: lv, label: "Shelves", led: false }));
+  // the same shelves continue over the gear zone wherever the devices and rack leave room
+  const rackTop = p.rackZ + rackH;
+  const leftLv = lv.filter(z => z < base - 2 || z > rackTop + 3);
+  if (leftLv.length) add(fixedShelves(w.T, { u0: 0, u1: G, depth: sd, levels: leftLv, label: "Gear-side shelves", led: false }));
   if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, levels: [p.topZ], label: "Top shelf", led: false }));
   if (p.dresser) {   // MALM 3-drawer under the bottom shelf
     const a = G + PLY + 1, b = a + MALM.w, v1 = 0.5 + MALM.d, fh = (MALM.h - 2.5) / 3;
@@ -140,8 +144,8 @@ export function build(p) {
     ],
     drawerGroups: [],
     stats: [
-      { k: "Gear zone", v: `${frac(G, 8)} wide`, s: `${p.rackU}U rack ${frac(p.rackZ, 8)}–${frac(p.rackZ + rackH, 8)}; cables arrive at ${p.boxZ}"` },
-      { k: "Shelves", v: `${lv.length} × ${frac(sd, 8)} deep`, s: lv.length ? `tops at ${lv.join(", ")}"` : "none on" },
+      { k: "Rack", v: `${p.rackU}U`, s: `4U used (patch panel, switch, NVR shelf), ${p.rackU - 4}U spare · ${frac(p.rackZ, 8)}–${frac(rackTop, 8)}` },
+      { k: "Shelves", v: `${lv.length + leftLv.length} × ${frac(sd, 8)} deep`, s: `right side at ${lv.join(", ")}"; gear side at ${leftLv.join(", ") || "none"}` },
       { k: "Under the lowest shelf", v: frac(Math.max(0, clear1), 8), s: "clear height at the cleats (space heater, etc.)" },
       { k: "Top shelf", v: p.topOn ? `${frac(p.topZ, 8)} × ${frac(p.topDepth, 8)} deep` : "off", s: "full width, under the header" },
     ],
@@ -153,8 +157,9 @@ export function build(p) {
     ],
     gcText: [
       `Office closet, all plywood (3/4" birch). Left ${frac(G, 8)} is network gear; the rest is shelves.`,
-      `Gear: 3/4" plywood backboard screwed to the studs, ${p.rackU}U wall rack on it, UPS on the floor.`,
+      `Gear: 3/4" plywood backboard screwed to the studs, ${p.rackU}U wall rack at ${frac(p.rackZ, 8)}, UPS on the floor.`,
       `Shelves right of a 3/4" plywood divider: tops at ${lv.map(z => frac(z, 8)).join(", ")}, ${frac(sd, 8)} deep.`,
+      ...(leftLv.length ? [`Same shelves continue over the gear side at ${leftLv.map(z => frac(z, 8)).join(", ")}.`] : []),
       ...(p.topOn ? [`One full-width shelf at ${frac(p.topZ, 8)}, ${frac(p.topDepth, 8)} deep.`] : []),
       ...(p.dresser ? [`IKEA MALM 3-drawer sits under the bottom shelf.`] : []),
       `Divider steps back to ${frac(p.topDepth, 8)} above the ${frac(lv[lv.length - 1] || 0, 8)} shelf; fix it with a vertical 1x2 cleat into the back-wall studs.`,
