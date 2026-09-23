@@ -15,7 +15,7 @@ const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
 
 export const DEFAULTS = {
   gearW: 25, rackW: 21, rackU: 9, rackZ: 58, rackDepth: 14, boardTop: 90, upsW: 7, upsD: 17, upsH: 10,
-  shelfDepth: 18, dresser: true, topOn: true, topZ: 92, topDepth: 12,
+  shelfDepth: 22, dresser: true, topOn: true, topZ: 92, topDepth: 12,
   ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
   finish: "white", lights: true,
@@ -31,7 +31,7 @@ export const CONTROLS = [
     { key: "upsW", label: "UPS width (on the floor)", min: 5, max: 12, step: 0.5 },
   ]],
   shelfControls("s", 6, "Shelves · right of the divider", [
-    { key: "shelfDepth", label: "Shelf depth", min: 12, max: 18.5, step: 0.5 },
+    { key: "shelfDepth", label: "Shelf depth", min: 12, max: 22.5, step: 0.5 },
     { key: "dresser", label: "Dresser under the bottom shelf (MALM 3-drawer)", type: "check" },
   ]),
   ["Top shelf · full width", [
@@ -128,7 +128,7 @@ export function build(p) {
   if (blocked.length) warnings.push(`Shelves at ${blocked.join(", ")}" sit above the door header (${p.doorH}"), so you can't reach them.`);
   if (p.dresser && lv.length && lv[0] - PLY - 1.5 < MALM.h + 0.5)
     warnings.push(`The dresser (${MALM.h}") doesn't fit under the bottom shelf's cleats (${frac(lv[0] - PLY - 1.5, 8)}).`);
-  if (sd > D - p.returnD) warnings.push(`At ${frac(sd, 8)} deep, the shelves run into the ${frac(p.returnD, 8)} wall returns at the door.`);
+
   if (p.gearTopOn && p.gearTop < p.rackZ + rackH + 12) warnings.push("The shelf above the gear sits close to the rack. Leave room for heat and cables.");
   warnings.push(...spacingWarnings(lv, "Shelves"));
   const clear1 = lv.length ? lv[0] - PLY - 1.5 : 0;
@@ -161,7 +161,7 @@ export function build(p) {
     gcText: [
       `Office closet, all plywood (3/4" birch). Left ${frac(G, 8)} is network gear; the rest is shelves.`,
       `Gear: 3/4" plywood backboard screwed to the studs. ${p.rackU}U wall rack (19" equipment, ~${frac(p.rackW, 8)} frame) at ${frac(p.rackZ, 8)}, with ${frac(rackPad, 8)} each side for cables. UPS on the floor.`,
-      `Shelves right of a 3/4" plywood divider: tops at ${lv.map(z => frac(z, 8)).join(", ")}, ${frac(sd, 8)} deep.`,
+      `Shelves right of a 3/4" plywood divider: tops at ${lv.map(z => frac(z, 8)).join(", ")}, ${frac(sd, 8)} deep${sd > D - p.returnD ? " (notch the front corners around the wall returns)" : ""}.`,
       ...(leftLv.length ? [`Same shelves continue over the gear side at ${leftLv.map(z => frac(z, 8)).join(", ")}.`] : []),
       ...(p.topOn ? [`One full-width shelf at ${frac(p.topZ, 8)}, ${frac(p.topDepth, 8)} deep.`] : []),
       ...(p.dresser ? [`IKEA MALM 3-drawer sits under the bottom shelf.`] : []),
@@ -170,6 +170,9 @@ export function build(p) {
     ].join("\n"),
     warnings,
     notes: [
+      sd > D - p.returnD
+        ? `Shelves are ${frac(sd, 8)} deep, so notch the front corner at each end around the wall returns: about ${frac(p.doorAt, 8)} and ${frac(W - p.doorAt - p.doorRO, 8)} wide by ${frac(sd - (D - p.returnD), 8)} deep.`
+        : `Shelves are ${frac(sd, 8)} deep, which clears the ${frac(p.returnD, 8)} wall returns at the door with no notching.`,
       "The desk is gone. At 23.6\" deep, next to gear that runs warm around the clock, and over a crawl hatch, the space works better as storage.",
       `The cables arrive in two boxes on the left end wall at ${p.boxZ}", right beside the top of the rack. That's a short, tidy run.`,
       "Heat: the NVR, switch and UPS run all the time. Louvered doors, or a door undercut plus a small thermostat fan, keep the closet from cooking them.",
