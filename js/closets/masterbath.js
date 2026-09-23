@@ -9,7 +9,7 @@ export const INFO = { id: "masterbath", name: "Master Bath Closet", room: "Maste
 export const FIELD = { W: 27.9, D: 23.7, ceiling: 120, opening: 24.3, doorSlab: 22, doorH: 96 };
 
 export const DEFAULTS = {
-  depth: 22, edge: "poplar", topOn: true, topZ: 88, topDepth: 12,
+  depth: 22, edge: "poplar", topOn: true, topZ: 88, topDepth: 18,
   ...shelfSlots("s", [24, 40, 56, 72], [10, 16, 88, 94]),
   finish: "white",
 };
