@@ -25,6 +25,19 @@ export function box(w, kind, u0, u1, v0, v1, z0, z1, extra = {}) {
 
 const module = (w, kind, u0, u1, v0, v1, extra = {}) => box(w, kind, u0, u1, v0, v1, 0, 0, extra);
 
+/* ---------- a flat part whose plan outline is a polygon: a shelf cut to a diagonal.
+   `pts` are plan points in order; z0/z1 are its underside and top. ---------- */
+export function polyPart(w, kind, pts, z0, z1, extra = {}) {
+  const f = frame(w);
+  const us = pts.map(([x, y]) => (x - f.ax) * f.dx + (y - f.ay) * f.dy);
+  const vs = pts.map(([x, y]) => (x - f.ax) * f.nx + (y - f.ay) * f.ny);
+  const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
+  return { kind, wall: w.id, z0, z1,
+    u0: Math.min(...us), u1: Math.max(...us), v0: Math.min(...vs), v1: Math.max(...vs),
+    x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys),
+    poly: pts, ...extra };
+}
+
 /* ---------- a panel that runs on the diagonal in plan (across a blind corner).
    `a` and `b` are plan points; the panel is `thick` thick, centred on that line.
    It carries the same bbox/u/v fields as box() so elevations and bounds still work,

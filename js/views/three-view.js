@@ -92,6 +92,15 @@ export function createThreeView(host) {
   let root = null, framedFor = null, last = null, bounds = null, showWalls = true;
 
   function addBox(p, mat, wood = false) {
+    if (p.poly) {   // a flat part cut to a plan polygon: extrude it and lay it down
+      const shape = new THREE.Shape(p.poly.map(([x, y]) => new THREE.Vector2(x, -y)));
+      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: p.z1 - p.z0, bevelEnabled: false }), mat);
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(0, p.z0, 0);
+      m.castShadow = m.receiveShadow = true;
+      root.add(m);
+      return m;
+    }
     const turned = p.yaw != null;
     const w = turned ? p.len : p.x1 - p.x0, h = p.z1 - p.z0, d = turned ? p.thick : p.y1 - p.y0;
     const geo = new THREE.BoxGeometry(w, h, d);

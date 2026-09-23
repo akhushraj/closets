@@ -1,7 +1,7 @@
 // Pantry, oriented like the field sketch: door at the lower left (LHI, swings in).
 // L-shaped 24"-deep quartz/porcelain counter on the back and right walls, outside the door swing;
 // open plywood shelves under it (first shelf raised off the floor) and 12"-deep open shelves above.
-import { box, diagPanel, fixedShelves, collector } from "../model/builders.js";
+import { box, diagPanel, polyPart, fixedShelves, collector } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, PLYWOOD_NOTE } from "./common.js";
 
@@ -86,19 +86,28 @@ export function build(p) {
   modules.push(box(w.R, "counter", cd, D, 0, cd, 0, 0, { label: "Counter", sub: "right leg" }));
 
   if (p.underOn) {   // one shelf per bay, so nothing spans past an upright
-    const shelf = (wall, u0, u1) => add(fixedShelves(wall, { u0, u1, depth: cd - 1, levels: [p.underZ],
+    const sd = cd - 1, z0 = p.underZ - PLY;   // 1" shy of the front edge
+    const shelf = (wall, u0, u1) => add(fixedShelves(wall, { u0, u1, depth: sd, levels: [p.underZ],
       label: "Under-counter shelf", nosing: 0.75, nosingT: 0.25, led: false }));
     const be = [0, ...backG.flatMap(g => [g - PLY / 2, g + PLY / 2]), corner - PLY];
-    for (let i = 0; i < be.length; i += 2) shelf(w.T, be[i], be[i + 1]);
     const re = [cd, ...rightG.flatMap(g => [g - PLY / 2, g + PLY / 2]), D];
-    for (let i = 0; i < re.length; i += 2) shelf(w.R, re[i], re[i + 1]);
-    if (p.diagCorner) {   // one shelf in each wedge either side of the diagonal
-      const wedge = cd / 2;
-      add(fixedShelves(w.T, { u0: corner, u1: corner + wedge, depth: wedge, levels: [p.underZ],
-        label: "Corner wedge", nosing: 0, led: false }));
-      add(fixedShelves(w.R, { u0: wedge, u1: cd, depth: wedge, levels: [p.underZ],
-        label: "Corner wedge", nosing: 0, led: false }));
-    } else shelf(w.T, corner, W);   // the blind corner, reached from the right leg
+    if (p.diagCorner) {
+      // the bays that meet the diagonal are single shelves cut to it, not rectangles with gaps
+      for (let i = 0; i + 2 < be.length; i += 2) shelf(w.T, be[i], be[i + 1]);
+      for (let i = 2; i + 1 < re.length; i += 2) shelf(w.R, re[i], re[i + 1]);
+      const bEnd = be[be.length - 2], rEnd = re[1];   // the uprights either side of the corner
+      const dxAt = y => corner + (cd - y);            // the diagonal's x at a given plan y
+      parts.push(polyPart(w.T, "shelf", [[bEnd, 0], [W, 0], [dxAt(sd), sd], [bEnd, sd]], z0, p.underZ,
+        { mark: true, label: "Corner shelf, cut to the diagonal" }));
+      parts.push(polyPart(w.R, "shelf", [[W, 0], [dxAt(sd), sd], [W - sd, rEnd], [W, rEnd]], z0, p.underZ,
+        { mark: true, label: "Corner shelf, cut to the diagonal" }));
+      for (const [wall, u0, u1] of [[w.T, bEnd, W], [w.R, 0, rEnd]])   // the wall cleats under them
+        parts.push(box(wall, "cleat", u0, u1, 0, PLY, z0 - 1.5, z0));
+    } else {
+      for (let i = 0; i < be.length; i += 2) shelf(w.T, be[i], be[i + 1]);
+      for (let i = 0; i < re.length; i += 2) shelf(w.R, re[i], re[i + 1]);
+      shelf(w.T, corner, W);   // the blind corner, reached from the right leg
+    }
   }
   const up = readShelves(p, "u", 6);
   const edge = { nosing: 1.25, nosingT: 0.25 };   // 1/4" x 1-1/4" poplar: just deep enough to hide the LED channel
@@ -148,7 +157,8 @@ export function build(p) {
     gcText: [
       `Pantry: L-shaped counter, ${frac(cd, 8)} deep, top at ${frac(cz, 8)}. Built as open plywood boxes, no doors.`,
       `${backG.length + rightG.length + (p.diagCorner ? 0 : 1)} uprights, 3/4" birch plywood, ${frac(uD, 8)} deep, floor to ${frac(tz, 8)}: at ${backG.map(g => frac(g, 8)).join(" and ")}${p.diagCorner ? "" : ` and ${frac(corner, 8)}`} from the left wall on the back run, and ${rightG.map(g => frac(g, 8)).join(", ")} from the back wall on the right run.`,
-      ...(p.diagCorner ? [`At the corner, one more upright on the diagonal: from the inside corner of the counter straight to the corner of the two walls, ${frac(Math.hypot(cd, cd), 8)} long, both ends cut at 45 degrees.`] : []),
+      ...(p.diagCorner ? [`At the corner, one more upright on the diagonal: from the inside corner of the counter straight to the corner of the two walls, ${frac(Math.hypot(cd, cd), 8)} long, both ends cut at 45 degrees.`,
+        `The two shelves either side of that diagonal are cut to match it - one 45-degree edge each, not rectangles. 1x2 along the diagonal panel for them to sit on.`] : []),
       `1x2 on edge across the front of both runs, screwed and glued to the front edge of each upright, ends into the side walls.`,
       `3/4" plywood sub-top over the whole L, resting on the uprights, the 1x2 and 1x2 wall cleats. ${p.top === "quartz" ? "Quartz" : "Porcelain"} on top, 1" overhang.`,
       ...(p.underOn ? [`One shelf per bay at ${frac(p.underZ, 8)}.`] : []),
@@ -161,7 +171,8 @@ export function build(p) {
       `Four outlets, marked amber: back wall ${frac(p.outBack, 8)} from the left; right wall ${frac(p.outRightB, 8)} from the back and ${frac(p.outRightF, 8)} from the front; left wall ${frac(p.outLeft, 8)} from the back.`,
       `At ${p.outletZ}" AFF they land about ${frac(p.outletZ - cz, 8)} above the counter, which is good for appliances. Only the back-wall and right-wall-back heights were measured; re-check the other two.`,
       `The counter is a row of open boxes: ${backG.length + rightG.length + 1} plywood uprights standing on the floor, a 1x2 on edge across their front edges, and the sub-top laid over the lot. Widest bay ${frac(widest, 8)}.`,
-      ...(p.diagCorner ? [`The corner upright runs on the diagonal, from the inside corner of the counter to the corner of the two walls. That splits the ${frac(cd, 8)} square corner between the two runs, so each run ends in a wedge it can reach into instead of one deep blind box. Each wedge gets a ${frac(cd / 2, 8)} shelf.`] : []),
+      ...(p.diagCorner ? [`The corner upright runs on the diagonal, from the inside corner of the counter to the corner of the two walls. That splits the ${frac(cd, 8)} square corner between the two runs, so each run ends in a wedge it can reach into instead of one deep blind box.`,
+        `The shelf in each of those two bays is one piece cut to the diagonal, not a rectangle: a four-sided panel with one 45-degree edge. It sits on wall cleats and on a 1x2 run along the face of the diagonal panel.`] : []),
       "The 1x2 must be on edge (1-1/2\" tall), not laid flat. Flat it sags about 1/16\" and the stone cracks.",
       "Open-shelf front edge: 1/4\" x 1-1/4\" poplar, glued and pinned flush with the shelf top. It drops 1/2\" below the shelf, which hides the LED channel tucked up behind it.",
       "Quartz is usually cheapest as a remnant for a small L. A thin porcelain slab needs the full plywood sub-top under it.",
