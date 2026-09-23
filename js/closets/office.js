@@ -14,7 +14,7 @@ export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9
 const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
 
 export const DEFAULTS = {
-  gearW: 25, rackW: 21, rackU: 9, rackZ: 56, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 78, upsW: 7, upsD: 17, upsH: 10,
+  gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
   shelfDepth: 22, dresser: true, topOn: true, topZ: 92, topDepth: 12,
   ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
@@ -29,8 +29,8 @@ export const CONTROLS = [
     { key: "rackZ", label: "Rack bottom height", min: 40, max: 70, step: 0.5 },
     { key: "rackDepth", label: "Rack depth", min: 10, max: 18, step: 0.5 },
     { key: "upsW", label: "UPS width (on the floor)", min: 5, max: 12, step: 0.5 },
-    { key: "gearShelfOn", label: "Shelf just above the rack", type: "check" },
-    { key: "gearShelfZ", label: "Its height (top)", min: 70, max: 88, step: 1 },
+    { key: "gearShelfOn", label: "Middle shelf on the gear side", type: "check" },
+    { key: "gearShelfZ", label: "Its height (top)", min: 40, max: 88, step: 1 },
   ]],
   shelfControls("s", 6, "Shelves · right of the divider", [
     { key: "shelfDepth", label: "Shelf depth", min: 12, max: 23, step: 0.5 },
@@ -78,7 +78,7 @@ export function build(p) {
   parts.push(box(w.T, "backboard", 0.25, G - 0.25, 0, 0.75, 24, p.boardTop, { mark: true, label: "Backboard top" }));
   const rackPad = (G - p.rackW) / 2;
   parts.push(box(w.T, "rack", rackPad, G - rackPad, 0.75, 0.75 + p.rackDepth, p.rackZ, p.rackZ + rackH, { mark: true, label: `${p.rackU}U rack` }));
-  const base = Math.max(p.rackZ - 19, (readShelves(p, "s", 6)[0] ?? 0) + 2);
+  const base = (readShelves(p, "s", 6)[0] ?? 33) + 2;   // devices start just above the bottom shelf
   const dev = (u0, u1, z0, z1, label, tone = "dark") => parts.push(box(w.T, "device", u0, u1, 0.75, 3, z0, z1, { label, tone }));
   dev(1.5, 9.5, base, base + 10, "Fiber ONT", "light");
   dev(10.5, G - 1.5, base, base + 9, "Gateway");
@@ -100,7 +100,9 @@ export function build(p) {
   add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, levels: lv, label: "Shelves", led: false }));
   // the same shelves continue over the gear zone wherever the devices and rack leave room
   const rackTop = p.rackZ + rackH;
-  const leftLv = [...lv.filter(z => z < base - 1 || z > rackTop + 3), ...(p.gearShelfOn && p.gearShelfZ > rackTop + 2 ? [p.gearShelfZ] : [])].sort((a, b) => a - b);
+  const clearOfRack = z => z + 2 < p.rackZ || z > rackTop + 2;
+  const leftLv = [...lv.filter(z => (z < base - 1 || z > rackTop + 3) && clearOfRack(z)),
+    ...(p.gearShelfOn && clearOfRack(p.gearShelfZ) ? [p.gearShelfZ] : [])].sort((a, b) => a - b);
   if (leftLv.length) add(fixedShelves(w.T, { u0: 0, u1: G, depth: sd, levels: leftLv, label: "Gear-side shelves", led: false }));
   if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, levels: [p.topZ], label: "Top shelf", led: false }));
   if (p.dresser) {   // MALM 3-drawer under the bottom shelf
@@ -125,7 +127,8 @@ export function build(p) {
   if (p.hatchX < p.upsW + 1) warnings.push("The UPS sits on the crawl-space hatch. Move one or the other.");
   if (hatchClashes(parts, hatches).length) warnings.push("Something that stands on the floor covers the crawl-space hatch.");
   if (base < 24 || p.rackZ + rackH > p.boardTop) warnings.push("The rack and the devices below it don't fit on the backboard.");
-  if (p.gearShelfOn && p.gearShelfZ <= rackTop + 2) warnings.push(`The gear-side shelf at ${frac(p.gearShelfZ, 8)} is too close to the top of the rack (${frac(rackTop, 8)}). Leave about 4" for cables.`);
+  if (p.gearShelfOn && !clearOfRack(p.gearShelfZ)) warnings.push(`The gear-side shelf at ${frac(p.gearShelfZ, 8)} lands on the rack (${frac(p.rackZ, 8)}–${frac(rackTop, 8)}).`);
+  if (base + 17 > (p.gearShelfOn && p.gearShelfZ > base ? p.gearShelfZ : p.rackZ)) warnings.push("The fiber box, gateway and hub need about 17\" of backboard below the next shelf or the rack.");
   if (rackPad < 1.5) warnings.push(`Only ${frac(Math.max(0, rackPad), 8)} beside the rack for cables. Widen the gear zone to about ${frac(p.rackW + 4, 8)}.`);
   const blocked = [...lv, ...(p.topOn ? [p.topZ] : [])].filter(z => z > p.doorH - 1.5);
   if (blocked.length) warnings.push(`Shelves at ${blocked.join(", ")}" sit above the door header (${p.doorH}"), so you can't reach them.`);
