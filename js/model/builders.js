@@ -228,7 +228,7 @@ export function fixedShelves(w, o) {
     if (led) parts.push(box(w, "led", u0 + 1, u1 - 1, depth - nosingT - 1.2, depth - nosingT - 0.4, z0 - 0.35, z0));
   }
   return { parts, shelfZs: zs, module: module(w, "shelves", u0, u1, 0, depth,
-    { label, sub: `${zs.length} shelves · ${frac(depth, 8)} deep`, levels: zs }) };
+    { label, sub: `${zs.length} ${zs.length === 1 ? "shelf" : "shelves"} · ${frac(depth, 8)} deep`, levels: zs }) };
 }
 
 /* ---------- high storage band: plain shelves on cleats ---------- */

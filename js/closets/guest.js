@@ -25,12 +25,12 @@ export const CONTROLS = [
     { key: "divider", label: "Centre divider (carries shelves, splits the rod)", type: "check" },
   ]],
   shelfControls("u", 4, "Shelves above the rod", [
-    { key: "upDepth", label: "Their depth", min: 10, max: 20, step: 0.5 },
+    { key: "upDepth", label: "Their depth", min: 10, max: 22, step: 0.5 },
   ]),
   ["Shallow top shelf", [
     { key: "topOn", label: "Shelf just under the header", type: "check" },
     { key: "topZ", label: "Its height (top)", min: 80, max: 95, step: 1 },
-    { key: "topDepth", label: "Its depth", min: 8, max: 16, step: 0.5 },
+    { key: "topDepth", label: "Its depth", min: 8, max: 22, step: 0.5 },
   ]],
   LOOK,
 ];
