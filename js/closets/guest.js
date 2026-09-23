@@ -68,6 +68,10 @@ export function build(p) {
     const base = p.lowOn ? p.lowZ : 0, stepAt = up.length ? up[up.length - 1] : (p.topOn ? p.topZ : 88);
     parts.push(box(w.T, "carcass", cx - PLY / 2, cx + PLY / 2, 0, p.upDepth, base, stepAt));
     if (p.topOn && p.topZ > stepAt) parts.push(box(w.T, "carcass", cx - PLY / 2, cx + PLY / 2, 0, p.topDepth, stepAt, p.topZ));
+    // the pair of wall cleats the divider slots between
+    const dTop = p.topOn ? p.topZ : stepAt;
+    parts.push(box(w.T, "cleat", cx - PLY / 2 - 1.5, cx - PLY / 2, 0, PLY, base, dTop));
+    parts.push(box(w.T, "cleat", cx + PLY / 2, cx + PLY / 2 + 1.5, 0, PLY, base, dTop));
   }
   add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.upDepth, levels: up, label: "Upper shelves", led: false }));
   if (p.lowOn) parts.push(...fixedShelves(w.T, { u0: 0, u1: W, depth: p.lowDepth, levels: [p.lowZ], label: "Low shelf", led: false }).parts);

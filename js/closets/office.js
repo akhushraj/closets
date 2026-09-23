@@ -90,6 +90,9 @@ export function build(p) {
   const stepAt = lv.length ? lv[lv.length - 1] : divTop;   // divider steps back to the top shelf's depth
   parts.push(box(w.T, "carcass", G, G + PLY, 0, sd, divBottom, stepAt));
   if (p.topOn && p.topZ > stepAt) parts.push(box(w.T, "carcass", G, G + PLY, 0, p.topDepth, stepAt, p.topZ));
+  // the pair of wall cleats the divider slots between
+  for (const [a, b] of [[G - 1.5, G], [G + PLY, G + PLY + 1.5]])
+    parts.push(box(w.T, "cleat", a, b, 0, PLY, divBottom, p.topOn ? p.topZ : stepAt));
   add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, levels: lv, label: "Shelves", led: false }));
   if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, levels: [p.topZ], label: "Top shelf", led: false }));
   if (p.dresser) {   // MALM 3-drawer under the bottom shelf
