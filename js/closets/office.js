@@ -8,7 +8,7 @@ import { shelfSlots, shelfControls, readShelves, spacingWarnings, PLYWOOD_NOTE }
 export const INFO = { id: "office", name: "Office Closet", room: "Office", concept: "Network gear + plywood shelves", rev: "" };
 
 // Measured in the field (2026-09-18). Always overrides stored values.
-export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9, doorH: 96, returnD: 4.9,
+export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9, doorH: 96, jambD: 4.9,   // wall thickness at the door, not a return into the closet
   boxZ: 75.2, boxBack1: 5.9, boxBack2: 12.9, topOutletZ: 98, topOutletBack: 14.6, upsOutletZ: 15.6 };
 
 const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
@@ -31,7 +31,7 @@ export const CONTROLS = [
     { key: "upsW", label: "UPS width (on the floor)", min: 5, max: 12, step: 0.5 },
   ]],
   shelfControls("s", 6, "Shelves · right of the divider", [
-    { key: "shelfDepth", label: "Shelf depth", min: 12, max: 22.5, step: 0.5 },
+    { key: "shelfDepth", label: "Shelf depth", min: 12, max: 23, step: 0.5 },
     { key: "dresser", label: "Dresser under the bottom shelf (MALM 3-drawer)", type: "check" },
   ]),
   ["Top shelf · full width", [
@@ -161,7 +161,7 @@ export function build(p) {
     gcText: [
       `Office closet, all plywood (3/4" birch). Left ${frac(G, 8)} is network gear; the rest is shelves.`,
       `Gear: 3/4" plywood backboard screwed to the studs. ${p.rackU}U wall rack (19" equipment, ~${frac(p.rackW, 8)} frame) at ${frac(p.rackZ, 8)}, with ${frac(rackPad, 8)} each side for cables. UPS on the floor.`,
-      `Shelves right of a 3/4" plywood divider: tops at ${lv.map(z => frac(z, 8)).join(", ")}, ${frac(sd, 8)} deep${sd > D - p.returnD ? " (notch the front corners around the wall returns)" : ""}.`,
+      `Shelves right of a 3/4" plywood divider: tops at ${lv.map(z => frac(z, 8)).join(", ")}, ${frac(sd, 8)} deep.`,
       ...(leftLv.length ? [`Same shelves continue over the gear side at ${leftLv.map(z => frac(z, 8)).join(", ")}.`] : []),
       ...(p.topOn ? [`One full-width shelf at ${frac(p.topZ, 8)}, ${frac(p.topDepth, 8)} deep.`] : []),
       ...(p.dresser ? [`IKEA MALM 3-drawer sits under the bottom shelf.`] : []),
@@ -170,9 +170,7 @@ export function build(p) {
     ].join("\n"),
     warnings,
     notes: [
-      sd > D - p.returnD
-        ? `Shelves are ${frac(sd, 8)} deep, so notch the front corner at each end around the wall returns: about ${frac(p.doorAt, 8)} and ${frac(W - p.doorAt - p.doorRO, 8)} wide by ${frac(sd - (D - p.returnD), 8)} deep.`
-        : `Shelves are ${frac(sd, 8)} deep, which clears the ${frac(p.returnD, 8)} wall returns at the door with no notching.`,
+      `Shelves are ${frac(sd, 8)} deep, plain rectangles wall to wall. Nothing projects into the closet; the 4.9" at the door is just the wall thickness.`,
       "The desk is gone. At 23.6\" deep, next to gear that runs warm around the clock, and over a crawl hatch, the space works better as storage.",
       `The cables arrive in two boxes on the left end wall at ${p.boxZ}", right beside the top of the rack. That's a short, tidy run.`,
       "Heat: the NVR, switch and UPS run all the time. Louvered doors, or a door undercut plus a small thermostat fan, keep the closet from cooking them.",
