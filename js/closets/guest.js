@@ -10,6 +10,7 @@ export const FIELD = { W: 54.1, D: 22.3, ceiling: 120, stubL: 2.1, opening: 50.1
 
 export const DEFAULTS = {
   rodZ: 70, lowOn: true, lowZ: 34.5, lowDepth: 19, upDepth: 16, dresser: true,
+  topOn: true, topZ: 93, topDepth: 12,
   ...shelfSlots("u", [72, 84], [60, 94]),
   finish: "white",
 };
@@ -25,6 +26,11 @@ export const CONTROLS = [
   shelfControls("u", 4, "Shelves above the rod", [
     { key: "upDepth", label: "Their depth", min: 10, max: 20, step: 0.5 },
   ]),
+  ["Shallow top shelf", [
+    { key: "topOn", label: "Shelf just under the header", type: "check" },
+    { key: "topZ", label: "Its height (top)", min: 86, max: 95, step: 0.5 },
+    { key: "topDepth", label: "Its depth", min: 8, max: 16, step: 0.5 },
+  ]],
   LOOK,
 ];
 
@@ -68,6 +74,8 @@ export function build(p) {
     modules.push(box(w.T, "dresser", a, b, 0.5, v1, 0, 0, { label: "IKEA dresser", sub: `MALM 3-drawer · ${MALM.w} × ${MALM.d}` }));
   }
 
+  if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, levels: [p.topZ], label: "Top shelf", led: false }));
+
   const clothesBottom = p.rodZ - 1.2 - 34;
   if (p.lowOn && p.lowZ > clothesBottom) warnings.push(`Jackets hang down to about ${frac(clothesBottom, 8)}, so the low shelf at ${frac(p.lowZ, 8)} is in their way.`);
   if (p.lowOn && p.dresser && p.lowZ - PLY - 1.5 < MALM.h + 0.5) warnings.push(`The dresser (${MALM.h}") doesn't fit under the low shelf's cleats (${frac(p.lowZ - PLY - 1.5, 8)}).`);
@@ -107,6 +115,7 @@ export function build(p) {
     gcText: [
       `Guest closet: rod at ${frac(p.rodZ, 8)} wall to wall, with a shelf at ${frac(p.lowZ, 8)} under it (IKEA dresser fits below).`,
       `Shelves above the rod at ${up.map(z => frac(z, 8)).join(", ")}. All 3/4" birch plywood, ${frac(p.upDepth, 8)} deep.`,
+      ...(p.topOn ? [`Plus one ${frac(p.topDepth, 8)}-deep shelf at ${frac(p.topZ, 8)}.`] : []),
       `1x2 cleats screwed into studs on all 3 walls; shelves sit loose on them.`,
       `1/4" x 3/4" poplar strip on each front edge.`,
       `Paint same as room, all sides. No lights.`,

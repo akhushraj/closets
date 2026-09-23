@@ -9,7 +9,7 @@ export const INFO = { id: "masterbath", name: "Master Bath Closet", room: "Maste
 export const FIELD = { W: 27.9, D: 23.7, ceiling: 120, opening: 24.3, doorSlab: 22, doorH: 96 };
 
 export const DEFAULTS = {
-  depth: 22, edge: "poplar",
+  depth: 22, edge: "poplar", topOn: true, topZ: 93, topDepth: 12,
   ...shelfSlots("s", [24.75, 39.25, 53.75, 68.25, 82.75], [10, 17, 94]),
   finish: "white",
 };
@@ -19,6 +19,11 @@ export const CONTROLS = [
     { key: "depth", label: "Shelf depth", min: 12, max: 23, step: 0.5 },
     { key: "edge", label: "Front edge", type: "select", options: [["poplar", "1/4\" × 3/4\" poplar strip"], ["none", "None: fill, sand, paint"]] },
   ]),
+  ["Shallow top shelf", [
+    { key: "topOn", label: "Shelf just under the header", type: "check" },
+    { key: "topZ", label: "Its height (top)", min: 86, max: 95, step: 0.5 },
+    { key: "topDepth", label: "Its depth", min: 8, max: 16, step: 0.5 },
+  ]],
   ["Look", [{ key: "finish", label: "Finish", type: "select", options: [["white", "Painted white"], ["oak", "White oak"], ["walnut", "Walnut"]] }]],
 ];
 
@@ -36,6 +41,9 @@ export function build(p) {
   const { parts, modules, add } = collector();
   const lv = readShelves(p, "s", 8);
   add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.depth, levels: lv, label: "Shelves",
+    nosing: p.edge === "poplar" ? PLY : 0, nosingT: 0.25, led: false }));
+
+  if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, levels: [p.topZ], label: "Top shelf",
     nosing: p.edge === "poplar" ? PLY : 0, nosingT: 0.25, led: false }));
 
   const door = { wall: "F", u0: stub, u1: W - stub, slab: p.doorSlab, h: p.doorH, roH: p.doorH + 2.5, swing: "out", hingeU: W - stub - 0.5, label: "1'-10\" × 8'" };
@@ -71,6 +79,7 @@ export function build(p) {
     gcText: [
       `Master bath closet: ${lv.length} shelves, 3/4" birch plywood, ${frac(p.depth, 8)} deep, full width.`,
       `Shelf tops (from floor): ${lv.map(z => frac(z, 8)).join(", ")}.`,
+      ...(p.topOn ? [`Plus one ${frac(p.topDepth, 8)}-deep shelf at ${frac(p.topZ, 8)}.`] : []),
       `1x2 cleats screwed into studs on all 3 walls; shelves sit loose on them.`,
       p.edge === "poplar" ? `1/4" x 3/4" poplar strip on each front edge.` : `No edge strip: fill and sand the plywood edge.`,
       `Paint same as bathroom, all sides. No lights.`,
