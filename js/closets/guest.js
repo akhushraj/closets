@@ -104,6 +104,13 @@ export function build(p) {
       { k: "Rod", v: frac(p.rodZ, 8) },
       { k: "Shelves", v: `${up.length + (p.lowOn ? 1 : 0)}` },
     ],
+    gcText: [
+      `Guest closet: rod at ${frac(p.rodZ, 8)} wall to wall, with a shelf at ${frac(p.lowZ, 8)} under it (IKEA dresser fits below).`,
+      `Shelves above the rod at ${up.map(z => frac(z, 8)).join(", ")}. All 3/4" birch plywood, ${frac(p.upDepth, 8)} deep.`,
+      `1x2 cleats screwed into studs on all 3 walls; shelves sit loose on them.`,
+      `1/4" x 3/4" poplar strip on each front edge.`,
+      `Paint same as room, all sides. No lights.`,
+    ].join("\n"),
     warnings,
     notes: [
       `Rod at ${frac(p.rodZ, 8)}, wall to wall. A 54" rod needs a middle support hung from the shelf above.`,

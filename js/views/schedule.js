@@ -23,6 +23,7 @@ export function renderSchedule(root, model) {
   </table></div>`;
 
   root.innerHTML = `
+  ${model.gcText ? `<div class="gcbox"><div class="gchead"><b>For the GC</b><button class="copybtn" type="button">Copy</button></div><pre class="gctext">${model.gcText}</pre></div>` : ""}
   <div class="stats">${model.stats.map(card).join("")}</div>
   ${(model.notes || []).length ? `<ul class="notes">${model.notes.map(n => `<li>${n}</li>`).join("")}</ul>` : ""}
   ${model.drawerGroups.map(table).join("")}
@@ -30,4 +31,11 @@ export function renderSchedule(root, model) {
   Full-extension side-mount slides take 1/2" per side. The fronts overlay the carcass with 1/8" reveals between them.
   Everything follows the controls. Field-verify before cutting.</p>
   ${model.warnings.map(w => `<div class="warn">${w}</div>`).join("")}`;
+
+  const btn = root.querySelector(".copybtn");
+  if (btn) btn.onclick = async () => {
+    try { await navigator.clipboard.writeText(model.gcText); btn.textContent = "Copied"; }
+    catch { const r = document.createRange(); r.selectNode(root.querySelector(".gctext")); getSelection().removeAllRanges(); getSelection().addRange(r); btn.textContent = "Select + copy"; }
+    setTimeout(() => (btn.textContent = "Copy"), 1800);
+  };
 }
