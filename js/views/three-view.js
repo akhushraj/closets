@@ -92,11 +92,13 @@ export function createThreeView(host) {
   let root = null, framedFor = null, last = null, bounds = null, showWalls = true;
 
   function addBox(p, mat, wood = false) {
-    const w = p.x1 - p.x0, h = p.z1 - p.z0, d = p.y1 - p.y0;
+    const turned = p.yaw != null;
+    const w = turned ? p.len : p.x1 - p.x0, h = p.z1 - p.z0, d = turned ? p.thick : p.y1 - p.y0;
     const geo = new THREE.BoxGeometry(w, h, d);
     if (wood) woodUV(geo, w, h, d);
     const m = new THREE.Mesh(geo, mat);
-    m.position.set((p.x0 + p.x1) / 2, (p.z0 + p.z1) / 2, (p.y0 + p.y1) / 2);
+    if (turned) m.rotation.y = p.yaw;
+    m.position.set(turned ? p.cx : (p.x0 + p.x1) / 2, (p.z0 + p.z1) / 2, turned ? p.cy : (p.y0 + p.y1) / 2);
     m.castShadow = m.receiveShadow = true;
     root.add(m);
     return m;

@@ -25,6 +25,25 @@ export function box(w, kind, u0, u1, v0, v1, z0, z1, extra = {}) {
 
 const module = (w, kind, u0, u1, v0, v1, extra = {}) => box(w, kind, u0, u1, v0, v1, 0, 0, extra);
 
+/* ---------- a panel that runs on the diagonal in plan (across a blind corner).
+   `a` and `b` are plan points; the panel is `thick` thick, centred on that line.
+   It carries the same bbox/u/v fields as box() so elevations and bounds still work,
+   plus yaw/len/thick for the 3D view and `diag` for the plan. ---------- */
+export function diagPanel(w, kind, a, b, thick, z0, z1, extra = {}) {
+  const f = frame(w);
+  const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+  const hx = -(dy / len) * thick / 2, hy = (dx / len) * thick / 2;
+  const xs = [a[0] + hx, a[0] - hx, b[0] + hx, b[0] - hx];
+  const ys = [a[1] + hy, a[1] - hy, b[1] + hy, b[1] - hy];
+  const us = xs.map((x, i) => (x - f.ax) * f.dx + (ys[i] - f.ay) * f.dy);
+  const vs = xs.map((x, i) => (x - f.ax) * f.nx + (ys[i] - f.ay) * f.ny);
+  return { kind, wall: w.id, z0, z1,
+    u0: Math.min(...us), u1: Math.max(...us), v0: Math.min(...vs), v1: Math.max(...vs),
+    x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys),
+    yaw: Math.atan2(-dy, dx), len, thick, cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2,
+    diag: [a, b], ...extra };
+}
+
 // Tiny deterministic PRNG so garments look the same on every render.
 function rng(seed) { return () => ((seed = (seed * 16807) % 2147483647) / 2147483647); }
 

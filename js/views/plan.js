@@ -93,6 +93,12 @@ export function renderPlan(svg, model) {
     } else txt(cx, cy, m.label, "lb b", m.label.length * 6.6 < room - 4 ? 11 : 9.5, rot);
   }
 
+  // panels that run on the diagonal in plan
+  for (const q of model.parts.filter(x => x.diag)) {
+    const [a, b] = q.diag;
+    el("line", { x1: X(a[0]), y1: Y(a[1]), x2: X(b[0]), y2: Y(b[1]), class: "diagpanel" }, g);
+  }
+
   // hatches
   for (const h of model.hatches || []) {
     el("rect", { x: X(h.x0), y: Y(h.y0), width: (h.x1 - h.x0) * S, height: (h.y1 - h.y0) * S, class: "hatch" }, g);

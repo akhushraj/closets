@@ -1,7 +1,7 @@
 // Pantry, oriented like the field sketch: door at the lower left (LHI, swings in).
 // L-shaped 24"-deep quartz/porcelain counter on the back and right walls, outside the door swing;
 // open plywood shelves under it (first shelf raised off the floor) and 12"-deep open shelves above.
-import { box, fixedShelves, collector } from "../model/builders.js";
+import { box, diagPanel, fixedShelves, collector } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, PLYWOOD_NOTE } from "./common.js";
 
@@ -14,7 +14,7 @@ export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9
   outRightF: 11.3 };    // right wall, from the front (height not recorded)
 
 export const DEFAULTS = {
-  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 12, maxBay: 20,
+  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 12, maxBay: 20, diagCorner: true,
   ...shelfSlots("u", [54, 68, 82, 96, 110], [48]),
   finish: "white", lights: true,
 };
@@ -27,6 +27,7 @@ export const CONTROLS = [
     { key: "underOn", label: "Shelf under the counter", type: "check" },
     { key: "underZ", label: "Its height (top)", min: 8, max: 24, step: 0.5 },
     { key: "maxBay", label: "Widest bay between uprights", min: 14, max: 30, step: 1 },
+    { key: "diagCorner", label: "Split the corner on the diagonal", type: "check" },
   ]],
   shelfControls("u", 6, "Open shelves above the counter", [
     { key: "upDepth", label: "Their depth", min: 10, max: 16, step: 0.5 },
@@ -71,7 +72,8 @@ export function build(p) {
   parts.push(box(w.T, "counter", 0, W, 0, cd + 1, sub, cz, { mark: true, label: p.top === "quartz" ? "Quartz top" : "Porcelain top" }));
   parts.push(box(w.R, "counter", cd + 1, D, 0, cd + 1, sub, cz));
 
-  parts.push(box(w.T, "carcass", corner - PLY, corner, 0, uD, 0, tz, { mark: true, label: "Upright" }));
+  if (p.diagCorner) parts.push(diagPanel(w.T, "carcass", [corner, cd], [W, 0], PLY, 0, tz, { mark: true, label: "Diagonal" }));
+  else parts.push(box(w.T, "carcass", corner - PLY, corner, 0, uD, 0, tz, { mark: true, label: "Upright" }));
   for (const g of backG) parts.push(box(w.T, "carcass", g - PLY / 2, g + PLY / 2, 0, uD, 0, tz));
   for (const g of rightG) parts.push(box(w.R, "carcass", g - PLY / 2, g + PLY / 2, 0, uD, 0, tz));
   parts.push(box(w.T, "cleat", 0, corner, uD, cd, tz - 1.5, tz, { mark: true, label: "1x2 on edge" }));
@@ -88,9 +90,15 @@ export function build(p) {
       label: "Under-counter shelf", nosing: 0.75, nosingT: 0.25, led: false }));
     const be = [0, ...backG.flatMap(g => [g - PLY / 2, g + PLY / 2]), corner - PLY];
     for (let i = 0; i < be.length; i += 2) shelf(w.T, be[i], be[i + 1]);
-    shelf(w.T, corner, W);   // the blind corner, reached from the right leg
     const re = [cd, ...rightG.flatMap(g => [g - PLY / 2, g + PLY / 2]), D];
     for (let i = 0; i < re.length; i += 2) shelf(w.R, re[i], re[i + 1]);
+    if (p.diagCorner) {   // one shelf in each wedge either side of the diagonal
+      const wedge = cd / 2;
+      add(fixedShelves(w.T, { u0: corner, u1: corner + wedge, depth: wedge, levels: [p.underZ],
+        label: "Corner wedge", nosing: 0, led: false }));
+      add(fixedShelves(w.R, { u0: wedge, u1: cd, depth: wedge, levels: [p.underZ],
+        label: "Corner wedge", nosing: 0, led: false }));
+    } else shelf(w.T, corner, W);   // the blind corner, reached from the right leg
   }
   const up = readShelves(p, "u", 6);
   const edge = { nosing: 1.25, nosingT: 0.25 };   // 1/4" x 1-1/4" poplar: just deep enough to hide the LED channel
@@ -124,7 +132,9 @@ export function build(p) {
     drawerGroups: [],
     stats: [
       { k: "Counter", v: `${frac(W, 8)} + ${frac(D - cd, 8)}`, s: `L-shaped, ${frac(cd, 8)} deep, top at ${frac(cz, 8)}` },
-      { k: "Uprights", v: `${backG.length + rightG.length + 1}`, s: `3/4" plywood on the floor, widest bay ${frac(widest, 8)}` },
+      { k: "Uprights", v: `${backG.length + rightG.length + 1}`, s: p.diagCorner
+        ? `widest bay ${frac(widest, 8)}; the corner one runs on the diagonal`
+        : `3/4" plywood on the floor, widest bay ${frac(widest, 8)}` },
       { k: "Under the counter", v: p.underOn ? `shelf at ${frac(p.underZ, 8)}` : "open", s: p.underOn ? `${frac(p.underZ - PLY - 1.5, 8)} clear below it` : "" },
       { k: "Open shelves", v: `${up.length} × ${frac(p.upDepth, 8)} deep`, s: up.length ? `tops at ${up.join(", ")}"` : "none on" },
       { k: "Door swing", v: "clear", s: `back leg stops ${frac(swingTop - cd, 8)} short of the swing` },
@@ -137,7 +147,8 @@ export function build(p) {
     ],
     gcText: [
       `Pantry: L-shaped counter, ${frac(cd, 8)} deep, top at ${frac(cz, 8)}. Built as open plywood boxes, no doors.`,
-      `${backG.length + rightG.length + 1} uprights, 3/4" birch plywood, ${frac(uD, 8)} deep, floor to ${frac(tz, 8)}: at ${[...backG.map(g => frac(g, 8)), frac(corner, 8)].join(" and ")} from the left wall on the back run, and ${rightG.map(g => frac(g, 8)).join(", ")} from the back wall on the right run.`,
+      `${backG.length + rightG.length + (p.diagCorner ? 0 : 1)} uprights, 3/4" birch plywood, ${frac(uD, 8)} deep, floor to ${frac(tz, 8)}: at ${backG.map(g => frac(g, 8)).join(" and ")}${p.diagCorner ? "" : ` and ${frac(corner, 8)}`} from the left wall on the back run, and ${rightG.map(g => frac(g, 8)).join(", ")} from the back wall on the right run.`,
+      ...(p.diagCorner ? [`At the corner, one more upright on the diagonal: from the inside corner of the counter straight to the corner of the two walls, ${frac(Math.hypot(cd, cd), 8)} long, both ends cut at 45 degrees.`] : []),
       `1x2 on edge across the front of both runs, screwed and glued to the front edge of each upright, ends into the side walls.`,
       `3/4" plywood sub-top over the whole L, resting on the uprights, the 1x2 and 1x2 wall cleats. ${p.top === "quartz" ? "Quartz" : "Porcelain"} on top, 1" overhang.`,
       ...(p.underOn ? [`One shelf per bay at ${frac(p.underZ, 8)}.`] : []),
@@ -150,6 +161,7 @@ export function build(p) {
       `Four outlets, marked amber: back wall ${frac(p.outBack, 8)} from the left; right wall ${frac(p.outRightB, 8)} from the back and ${frac(p.outRightF, 8)} from the front; left wall ${frac(p.outLeft, 8)} from the back.`,
       `At ${p.outletZ}" AFF they land about ${frac(p.outletZ - cz, 8)} above the counter, which is good for appliances. Only the back-wall and right-wall-back heights were measured; re-check the other two.`,
       `The counter is a row of open boxes: ${backG.length + rightG.length + 1} plywood uprights standing on the floor, a 1x2 on edge across their front edges, and the sub-top laid over the lot. Widest bay ${frac(widest, 8)}.`,
+      ...(p.diagCorner ? [`The corner upright runs on the diagonal, from the inside corner of the counter to the corner of the two walls. That splits the ${frac(cd, 8)} square corner between the two runs, so each run ends in a wedge it can reach into instead of one deep blind box. Each wedge gets a ${frac(cd / 2, 8)} shelf.`] : []),
       "The 1x2 must be on edge (1-1/2\" tall), not laid flat. Flat it sags about 1/16\" and the stone cracks.",
       "Open-shelf front edge: 1/4\" x 1-1/4\" poplar, glued and pinned flush with the shelf top. It drops 1/2\" below the shelf, which hides the LED channel tucked up behind it.",
       "Quartz is usually cheapest as a remnant for a small L. A thin porcelain slab needs the full plywood sub-top under it.",
