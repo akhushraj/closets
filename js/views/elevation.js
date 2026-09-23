@@ -72,6 +72,11 @@ function drawWall(svg, w, len, model) {
     else marks.push({ z: p.z1, label: p.label || "" });
   }
 
+  const hz = Math.min(...model.doors.map(d => d.h));
+  if (isFinite(hz)) {
+    el("line", { x1: U(0), y1: Z(hz), x2: U(len), y2: Z(hz), class: "headerline" }, g);
+    el("text", { x: U(len) - 3, y: Z(hz) - 4, class: "lbs", "font-size": 9.5, "text-anchor": "end" }, g, `door header ${frac(hz, 8)}`);
+  }
   el("line", { x1: U(0) - 8, y1: Z(0), x2: U(len) + 8, y2: Z(0), class: "ob floorline" }, g);
   el("line", { x1: U(0) - 8, y1: Z(ceil), x2: U(len) + 8, y2: Z(ceil), class: "ob" }, g);
 

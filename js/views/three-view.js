@@ -70,6 +70,7 @@ export function createThreeView(host) {
     walnut: new THREE.MeshStandardMaterial({ map: oakTex, color: 0x7a5236, roughness: 0.55 }),
     white: new THREE.MeshStandardMaterial({ color: 0xf1eee8, roughness: 0.55 }),
     wall: new THREE.MeshStandardMaterial({ color: 0xe6e2da, roughness: 0.95 }),
+    header: new THREE.MeshStandardMaterial({ color: 0xded9d0, roughness: 0.95, side: THREE.DoubleSide }),
     floor: new THREE.MeshStandardMaterial({ color: 0xc9b596, roughness: 0.8, side: THREE.DoubleSide }),
     kick: new THREE.MeshStandardMaterial({ color: 0x3a3530, roughness: 0.8 }),
     pull: new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.6, roughness: 0.35 }),
@@ -100,14 +101,14 @@ export function createThreeView(host) {
     return m;
   }
 
-  function wallPiece(w, u0, u1, z0, z1) {
+  function wallPiece(w, u0, u1, z0, z1, header = false) {
     const f = frame(w), len = u1 - u0;
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(len, z1 - z0), mats.wall);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(len, z1 - z0), header ? mats.header : mats.wall);
     const um = (u0 + u1) / 2;
     m.position.set(f.ax + f.dx * um, (z0 + z1) / 2, f.ay + f.dy * um);
     m.rotation.y = Math.atan2(f.nx, f.ny);   // plane normal -> inward, so near walls cull away
     m.receiveShadow = true;
-    m.userData.wall = true;
+    m.userData.wall = !header;   // headers stay put when walls are hidden
     m.visible = showWalls;
     root.add(m);
   }
@@ -127,7 +128,7 @@ export function createThreeView(host) {
       const len = frame(w).len;
       const ds = model.doors.filter(d => d.wall === w.id).sort((a, b) => a.u0 - b.u0);
       let u = 0;
-      for (const d of ds) { if (d.u0 > u) wallPiece(w, u, d.u0, 0, ceil); wallPiece(w, d.u0, d.u1, d.roH, ceil); u = d.u1; }
+      for (const d of ds) { if (d.u0 > u) wallPiece(w, u, d.u0, 0, ceil); wallPiece(w, d.u0, d.u1, d.roH, ceil, true); u = d.u1; }
       if (u < len) wallPiece(w, u, len, 0, ceil);
     }
     for (const h of model.hatches || [])

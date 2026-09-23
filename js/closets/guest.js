@@ -9,8 +9,8 @@ export const INFO = { id: "guest", name: "Guest Closet", room: "Guest room", con
 export const FIELD = { W: 54.1, D: 22.3, ceiling: 120, stubL: 2.1, opening: 50.1, stubR: 1.8, doorH: 96 };
 
 export const DEFAULTS = {
-  rodZ: 71, lowOn: true, lowZ: 35, lowDepth: 19, upDepth: 16, dresser: true,
-  topOn: true, topZ: 88, topDepth: 16,
+  rodZ: 71, lowOn: true, lowZ: 35, lowDepth: 21, upDepth: 16, dresser: true, divider: true,
+  topOn: true, topZ: 88, topDepth: 12,
   ...shelfSlots("u", [73], [60, 84, 94]),
   finish: "white",
 };
@@ -22,6 +22,7 @@ export const CONTROLS = [
     { key: "lowZ", label: "Its height (top)", min: 24, max: 44, step: 0.5 },
     { key: "lowDepth", label: "Its depth", min: 10, max: 22, step: 0.5 },
     { key: "dresser", label: "Show an IKEA dresser (MALM 3-drawer)", type: "check" },
+    { key: "divider", label: "Centre divider (carries shelves, splits the rod)", type: "check" },
   ]],
   shelfControls("u", 4, "Shelves above the rod", [
     { key: "upDepth", label: "Their depth", min: 10, max: 20, step: 0.5 },
@@ -51,7 +52,10 @@ export function build(p) {
   const warnings = [];
   const rodV = Math.min(12, D / 2);
 
-  parts.push(box(w.T, "rod", 0.25, W - 0.25, rodV - 0.625, rodV + 0.625, p.rodZ - 0.625, p.rodZ + 0.625, { axis: "u", mark: true, label: "Rod" }));
+  const cx = W / 2, dv = p.divider;
+  if (dv) parts.push(box(w.T, "carcass", cx - PLY / 2, cx + PLY / 2, 0, p.upDepth, p.lowOn ? p.lowZ : 0, p.topOn ? p.topZ : (up[up.length - 1] || 88), { mark: false }));
+  for (const [a, b] of dv ? [[0.25, cx - PLY / 2], [cx + PLY / 2, W - 0.25]] : [[0.25, W - 0.25]])
+    parts.push(box(w.T, "rod", a, b, rodV - 0.625, rodV + 0.625, p.rodZ - 0.625, p.rodZ + 0.625, { axis: "u", mark: true, label: "Rod" }));
   let g = 1.5, k = 0;
   while (g < W - 3) {
     const t2 = k % 3 === 1 ? 2.1 : 1.1, len = k % 3 === 1 ? 33 : 30;
@@ -113,16 +117,19 @@ export function build(p) {
       { k: "Shelves", v: `${up.length + (p.lowOn ? 1 : 0)}` },
     ],
     gcText: [
-      `Guest closet: rod at ${frac(p.rodZ, 8)} wall to wall, with a shelf at ${frac(p.lowZ, 8)} under it (IKEA dresser fits below).`,
+      `Guest closet: rod at ${frac(p.rodZ, 8)}${dv ? " in two sections" : " wall to wall"}, with a shelf at ${frac(p.lowZ, 8)} under it (IKEA MALM dresser fits below).`,
       `Shelves above the rod at ${up.map(z => frac(z, 8)).join(", ")}. All 3/4" birch plywood, ${frac(p.upDepth, 8)} deep.`,
       ...(p.topOn ? [`Plus one ${frac(p.topDepth, 8)}-deep shelf at ${frac(p.topZ, 8)}.`] : []),
-      `1x2 cleats screwed into studs on all 3 walls; shelves sit loose on them.`,
+      dv ? `Centre divider: 3/4" plywood, ${frac(p.upDepth, 8)} deep, from the low shelf to the top shelf.` : ``,
+      `1x2 cleats screwed into studs on all 3 walls (and on the divider); shelves sit loose on them.`,
       `1/4" x 3/4" poplar strip on each front edge.`,
       `Paint same as room, all sides. No lights.`,
     ].join("\n"),
     warnings,
     notes: [
-      `Rod at ${frac(p.rodZ, 8)}, wall to wall. A 54" rod needs a middle support hung from the shelf above.`,
+      dv ? `Rod at ${frac(p.rodZ, 8)}, in two ${frac((W - 0.5 - PLY) / 2, 8)} sections either side of a centre divider.`
+         : `Rod at ${frac(p.rodZ, 8)}, wall to wall. A ${frac(W, 8)} rod needs a centre support.`,
+      ...(dv ? [`Centre divider: 3/4" plywood, ${frac(p.upDepth, 8)} deep, from the low shelf up to the top shelf. Shelf cleats land on it.`] : []),
       `${up.length + (p.lowOn ? 1 : 0)} shelves, 3/4" birch veneer-core plywood (paint grade), resting loose on 1×2 cleats screwed into the studs on three walls.`,
       "Front edge: 1/4\" × 3/4\" poplar strip, glued and pinned flush.",
       "Paint: same as the room, primer + 2 coats, all sides. Paint the shelves flat, then set them in.",
