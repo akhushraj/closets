@@ -130,7 +130,7 @@ export function createThreeView(host) {
     if (root) { root.traverse(o => o.geometry && o.geometry.dispose()); scene.remove(root); }
     root = new THREE.Group(); scene.add(root);
     const c = model.closet, p = model.params, ceil = c.ceiling;
-    const wood = mats[p.finish] || mats.oak;
+    const wood0 = mats[p.finish] || mats.oak;
 
     const shape = new THREE.Shape(c.outline.map(([x, y]) => new THREE.Vector2(x, -y)));
     const floor = new THREE.Mesh(new THREE.ShapeGeometry(shape), mats.floor);
@@ -148,6 +148,7 @@ export function createThreeView(host) {
 
     const lights = [];
     for (const part of model.parts) {
+      const wood = part.mat ? (mats[part.mat] || wood0) : wood0;   // bought boxes read differently
       switch (part.kind) {
         case "carcass": case "shelf": case "front": addBox(part, wood, true); break;
         case "kick": addBox(part, mats.kick); break;

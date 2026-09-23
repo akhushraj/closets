@@ -224,6 +224,63 @@ export function cabinetRun(w, o) {
   return { parts, modules };
 }
 
+/* ---------- East Star factory closet cabinets: stock widths in an 84" or 94" box, chipboard
+   carcass on a 1/4" plywood back, floor-standing (the back is too thin to hang from).
+   `bays` is a list of { w, rods, levels, fronts, label }; fronts run bottom -> top.
+   Every part carries mat:"oak" so the 3D view tells the bought boxes from site-built plywood. ---------- */
+export const ES = 0.625;   // chipboard side, top and bottom
+
+export function esRun(w, o) {
+  const { u0 = 0, depth = 24, top = 94, doors = true, bays = [], prefix = "E", seed = 4 } = o;
+  const parts = [], modules = [], drawers = [], r = rng(seed), cD = depth - FRONT;
+  const oak = x => ({ ...x, mat: "oak" });
+  const rodV = Math.min(12, cD / 2), slide = slideFor(cD - 1);
+  let u = u0, n = 0;
+  for (const bay of bays) {
+    const a = u, b = u + bay.w, ia = a + ES, ib = b - ES; u = b; n++;
+    parts.push(box(w, "carcass", a, a + ES, 0, cD, 0, top, oak({})));
+    parts.push(box(w, "carcass", b - ES, b, 0, cD, 0, top, oak({})));
+    parts.push(box(w, "carcass", ia, ib, 0, cD, 0, ES, oak({})));
+    parts.push(box(w, "carcass", ia, ib, 0, cD, top - ES, top, oak({ mark: n === 1, label: `East Star ${frac(top, 8)} cabinet` })));
+    parts.push(box(w, "carcass", ia, ib, 0, 0.25, ES, top - ES, oak({})));   // 1/4" back
+
+    let z = 0;
+    for (const [i, h] of (bay.fronts || []).entries()) {
+      const lab = `${prefix}${n}-${bay.fronts.length - i}`, um = (a + b) / 2, pw = Math.min(3, bay.w / 2 - 2);
+      parts.push(box(w, "front", ia + 1 / 16, ib - 1 / 16, cD, depth, z + 1 / 16, z + h - 1 / 16,
+        oak({ idx: i + 1, label: lab, h, mark: true })));
+      parts.push(box(w, "pull", um - pw, um + pw, depth, depth + 1.1, z + h / 2 - 0.25, z + h / 2 + 0.25));
+      const boxH = Math.max(2.5, Math.floor((h - 1.25) * 2) / 2), boxW = bay.w - 2 * ES - 1;
+      drawers.push({ idx: i + 1, label: lab, z0: z, frontH: h - 1 / 8, frontW: bay.w - 1 / 8,
+        boxH, boxW, boxL: slide, inH: boxH - 0.5, inW: boxW - 1, inL: slide - 1, slide });
+      z += h;
+    }
+    const base = z;
+
+    for (const zt of bay.levels || []) if (zt > base + 2 && zt < top - 2)
+      parts.push(box(w, "shelf", ia, ib, 0, cD - 0.5, zt - ES, zt, oak({ mark: n === 1, label: "Shelf" })));
+    for (const zr of bay.rods || []) {
+      parts.push(box(w, "rod", ia + 0.25, ib - 0.25, rodV - 0.625, rodV + 0.625, zr - 0.625, zr + 0.625,
+        { axis: "u", mark: n === 1, label: "Rod" }));
+      garmentsOnRod(parts, w, r, ia, ib, rodV, zr, zr < 60 ? "pants" : "shirt", n * 3);
+    }
+
+    const leaves = doors ? (bay.w > 24 ? 2 : 1) : 0, lw = leaves ? (bay.w - 1 / 8) / leaves : 0;
+    for (let k = 0; k < leaves; k++) {
+      const da = a + 1 / 16 + k * lw, pz = Math.min(top - 8, base + 42);
+      parts.push(box(w, "cabdoor", da, da + lw, cD, depth, base + 1 / 16, top - 1 / 16,
+        oak({ mark: n === 1, label: "Door" })));
+      const pu = leaves === 2 ? (k === 0 ? da + lw - 1.5 : da + 1.5) : da + lw - 1.5;
+      parts.push(box(w, "pull", pu - 0.4, pu + 0.4, depth, depth + 1.1, pz - 2.5, pz + 2.5));
+    }
+
+    modules.push(module(w, "cabinets", a, b, 0, depth, { label: bay.label || `East Star ${frac(bay.w, 8)}`,
+      sub: `${frac(bay.w, 8)} × ${frac(top, 8)}${leaves ? `, ${leaves} door${leaves > 1 ? "s" : ""}` : ""}`,
+      ...(leaves ? { ghost: { u0: a, u1: b, v0: depth, v1: depth + bay.w / leaves, label: "door swing" } } : {}) }));
+  }
+  return { parts, modules, drawers, end: u, slide };
+}
+
 /* ---------- open shelf stack between two gables (floor stays open below `bottom`) ---------- */
 export function shelfStack(w, o) {
   const { u0, u1, depth = 14, bottom = 30, top = 88.75, count = 4, label = "Open shelves" } = o;
