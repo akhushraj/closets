@@ -14,8 +14,8 @@ export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9
   outRightF: 11.3 };    // right wall, from the front (height not recorded)
 
 export const DEFAULTS = {
-  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 12, maxBay: 20, diagCorner: true,
-  ...shelfSlots("u", [54, 70, 86, 102], [48, 116]),
+  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 15, maxBay: 20, diagCorner: true,
+  ...shelfSlots("u", [54, 68, 82, 96, 110], [48]),
   finish: "white", lights: true,
 };
 
