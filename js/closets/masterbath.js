@@ -9,8 +9,8 @@ export const INFO = { id: "masterbath", name: "Master Bath Closet", room: "Maste
 export const FIELD = { W: 27.9, D: 23.7, ceiling: 120, opening: 24.3, doorSlab: 22, doorH: 96 };
 
 export const DEFAULTS = {
-  depth: 22, edge: "poplar", topOn: true, topZ: 93, topDepth: 12,
-  ...shelfSlots("s", [24.75, 39.25, 53.75, 68.25, 82.75], [10, 17, 94]),
+  depth: 22, edge: "poplar", topOn: true, topZ: 88, topDepth: 12,
+  ...shelfSlots("s", [24, 40, 56, 72], [10, 16, 88, 94]),
   finish: "white",
 };
 
@@ -21,7 +21,7 @@ export const CONTROLS = [
   ]),
   ["Shallow top shelf", [
     { key: "topOn", label: "Shelf just under the header", type: "check" },
-    { key: "topZ", label: "Its height (top)", min: 86, max: 95, step: 0.5 },
+    { key: "topZ", label: "Its height (top)", min: 80, max: 95, step: 1 },
     { key: "topDepth", label: "Its depth", min: 8, max: 16, step: 0.5 },
   ]],
   ["Look", [{ key: "finish", label: "Finish", type: "select", options: [["white", "Painted white"], ["oak", "White oak"], ["walnut", "Walnut"]] }]],
