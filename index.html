@@ -101,7 +101,13 @@
   th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--hair)}
   thead th{background:color-mix(in srgb,var(--blue) 12%,var(--panel));font-size:10px;letter-spacing:.08em;text-transform:uppercase;border-bottom:1.5px solid var(--blue)}
   .tag2{display:inline-block;font-size:10px;font-family:ui-monospace,Menlo,monospace;font-weight:700;padding:1px 6px;border-radius:2px;background:var(--blue);color:var(--paper)}
-  .warn{background:color-mix(in srgb,var(--amber) 22%,var(--panel));border:1px solid color-mix(in srgb,var(--amber) 55%,var(--hair));border-radius:4px;padding:9px 13px;font-size:12.5px;margin-top:10px}
+  details.more{margin-top:14px;border-top:1px solid var(--hair);padding-top:10px}
+  details.more>summary{cursor:pointer;font-size:12px;color:var(--ink-soft);letter-spacing:.04em;list-style:none}
+  details.more>summary::-webkit-details-marker{display:none}
+  details.more>summary::before{content:"▸ ";font-size:10px}
+  details.more[open]>summary::before{content:"▾ "}
+  details.more>summary:hover{color:var(--ink)}
+    .warn{background:color-mix(in srgb,var(--amber) 22%,var(--panel));border:1px solid color-mix(in srgb,var(--amber) 55%,var(--hair));border-radius:4px;padding:9px 13px;font-size:12.5px;margin-top:10px}
   .info{color:var(--ink-soft);font-size:12px;margin-top:10px;line-height:1.55}
 
   /* drawing classes */

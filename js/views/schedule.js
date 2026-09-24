@@ -23,14 +23,15 @@ export function renderSchedule(root, model) {
   </table></div>`;
 
   root.innerHTML = `
-  ${model.gcText ? `<div class="gcbox"><div class="gchead"><b>For the GC</b><button class="copybtn" type="button">Copy</button></div><pre class="gctext">${model.gcText}</pre></div>` : ""}
-  <div class="stats">${model.stats.map(card).join("")}</div>
-  ${(model.notes || []).length ? `<ul class="notes">${model.notes.map(n => `<li>${n}</li>`).join("")}</ul>` : ""}
-  ${model.drawerGroups.map(table).join("")}
-  <p class="info">Boxes are 1/2" plywood with a 1/4" bottom set in a groove, so the usable height is 1/2" less than the box.
-  Full-extension side-mount slides take 1/2" per side. The fronts overlay the carcass with 1/8" reveals between them.
-  Everything follows the controls. Field-verify before cutting.</p>
-  ${model.warnings.map(w => `<div class="warn">${w}</div>`).join("")}`;
+  ${model.gcText ? `<div class="gcbox"><div class="gchead"><b>Send to Amir</b><button class="copybtn" type="button">Copy</button></div><pre class="gctext">${model.gcText}</pre></div>` : ""}
+  ${model.warnings.map(w => `<div class="warn">${w}</div>`).join("")}
+  <details class="more"><summary>Everything else &mdash; numbers, notes${model.drawerGroups.length ? ", drawer boxes" : ""}</summary>
+    <div class="stats">${model.stats.map(card).join("")}</div>
+    ${(model.notes || []).length ? `<ul class="notes">${model.notes.map(n => `<li>${n}</li>`).join("")}</ul>` : ""}
+    ${model.drawerGroups.map(table).join("")}
+    ${model.drawerGroups.length ? `<p class="info">Boxes are 1/2" plywood with a 1/4" bottom set in a groove, so the usable height is 1/2" less than the box.
+    Full-extension slides take 1/2" per side. Fronts overlay the carcass with 1/8" reveals.</p>` : ""}
+  </details>`;
 
   const btn = root.querySelector(".copybtn");
   if (btn) btn.onclick = async () => {

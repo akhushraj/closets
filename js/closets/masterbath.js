@@ -77,12 +77,12 @@ export function build(p) {
       { k: "Depth", v: frac(p.depth, 8) },
     ],
     gcText: [
-      `Master bath closet: ${lv.length} shelves, 3/4" birch plywood, ${frac(p.depth, 8)} deep, full width.`,
-      `Shelf tops (from floor): ${lv.map(z => frac(z, 8)).join(", ")}.`,
-      ...(p.topOn ? [`Plus one ${frac(p.topDepth, 8)}-deep shelf at ${frac(p.topZ, 8)}.`] : []),
-      `1x2 cleats screwed into studs on all 3 walls; shelves sit loose on them.`,
-      p.edge === "poplar" ? `1/4" x 3/4" poplar strip on each front edge.` : `No edge strip: fill and sand the plywood edge.`,
-      `Paint same as bathroom, all sides. No lights.`,
+      `MASTER BATH CLOSET - ${lv.length + (p.topOn ? 1 : 0)} plywood shelves.`,
+      `Tops at ${lv.map(z => frac(z, 8)).join(", ")}. ${frac(p.depth, 8)} deep, full ${frac(W, 8)} width.`,
+      ...(p.topOn ? [`Plus one at ${frac(p.topZ, 8)}, ${frac(p.topDepth, 8)} deep.`] : []),
+      `3/4" birch ply on 1x2 cleats screwed into studs, all 3 walls. Shelves sit loose.`,
+      p.edge === "poplar" ? `Front edge: 1/4" x 3/4" poplar.` : `Front edge: fill and sand the ply.`,
+      `Paint: bathroom satin, primer + 2 coats, all sides. No lights.`,
     ].join("\n"),
     warnings,
     notes: [

@@ -166,15 +166,12 @@ export function build(p) {
       { k: "Shelves", v: `${lv.length}` },
     ],
     gcText: [
-      `Office closet, all plywood (3/4" birch). Left ${frac(G, 8)} is network gear; the rest is shelves.`,
-      `Gear: 3/4" plywood backboard screwed to the studs. ${p.rackU}U wall rack (19" equipment, ~${frac(p.rackW, 8)} frame) at ${frac(p.rackZ, 8)}, with ${frac(rackPad, 8)} each side for cables. UPS on the floor.`,
-      `Shelves right of a 3/4" plywood divider: tops at ${lv.map(z => frac(z, 8)).join(", ")}, ${frac(sd, 8)} deep.`,
-      ...(leftLv.length ? [`Same shelves continue over the gear side at ${leftLv.map(z => frac(z, 8)).join(", ")}.`] : []),
-      ...(p.topOn ? [`One full-width shelf at ${frac(p.topZ, 8)}, ${frac(p.topDepth, 8)} deep.`] : []),
-      ...(p.dresser ? [`IKEA MALM 3-drawer sits under the bottom shelf.`] : []),
-      p.topOn ? `Divider steps back to ${frac(p.topDepth, 8)} above the ${frac(lv[lv.length - 1] || 0, 8)} shelf; fix it with a vertical 1x2 cleat into the back-wall studs.`
-              : `Divider: 3/4" plywood, ${frac(sd, 8)} deep, from ${frac(divBottom, 8)} up to the ${frac(lv[lv.length - 1] || 0, 8)} shelf, slotted between two vertical 1x2 cleats screwed into the back-wall studs.`,
-      `1x2 cleats screwed into studs (and the divider); shelves sit loose. Louvered doors for airflow.`,
+      `OFFICE CLOSET - 3/4" birch ply, ${frac(sd, 8)} deep, painted.`,
+      `Left ${frac(G, 8)} is network gear: 3/4" ply backboard screwed to studs, ${p.rackU}U wall rack at ${frac(p.rackZ, 8)} (${frac(rackPad, 8)} clear each side), UPS on the floor.`,
+      `3/4" ply divider at ${frac(G, 8)} from the left, ${frac(divBottom, 8)} up to ${frac(stepAt, 8)}, slotted between two vertical 1x2 cleats into the studs.`,
+      `Shelves right of it: ${lv.map(z => frac(z, 8)).join(", ")}. Gear side: ${leftLv.map(z => frac(z, 8)).join(", ") || "none"}.`,
+      ...(p.dresser ? [`IKEA MALM 3-drawer under the bottom shelf.`] : []),
+      `1x2 cleats into studs; shelves sit loose. Louvered doors for airflow.`,
     ].join("\n"),
     warnings,
     notes: [

@@ -127,13 +127,11 @@ export function build(p) {
       { k: "Drawers", v: `${drawers.length}` },
     ],
     gcText: [
-      `Maya's closet, ${frac(W, 8)} wide. One East Star ${frac(top, 8)} box at each end, ${ew}" wide, ${frac(d, 8)} deep, NO doors. Floor-standing, screwed through the back into studs.`,
-      `Each box: ${fronts.length} drawers at the bottom (${fronts.slice().reverse().join(", ")}" fronts, top to bottom), rod at ${frac(p.rodZ, 8)} above them, one shelf at ${frac(p.esShelf, 8)}, open above.`,
-      `Middle ${frac(mid, 8)}: site-built 3/4" birch plywood shelves at ${lv.map(z => frac(z, 8)).join(", ")}, ${frac(d, 8)} deep, on 1x2 cleats into the studs and into the cabinet sides.`,
-      ...(p.divider ? [`One 3/4" plywood divider down the middle of that section, floor to ${frac(top, 8)} - the shelves span ${frac(span, 8)} either side of it.`] : []),
-      `Nothing below ${frac(lv[0] || 0, 8)} in the middle: that bay stays open for laundry baskets, ${frac(basket, 8)} clear.`,
-      ...(p.aboveOn ? [`Above the boxes: a 3/4" plywood deck at ${frac(deck, 8)} on the cabinet tops, ${nDiv} plywood dividers, and one long shelf at ${frac(p.aboveZ, 8)}. 1x2 cleats into the studs carry the back edge of both.`] : []),
-      `Paint same as the room. No doors on the cabinets.`,
+      `MAYA'S CLOSET - ${frac(W, 8)} wide, everything ${frac(d, 8)} deep.`,
+      `EAST STAR: one ${ew}" x ${frac(top, 8)} box at each end, NO doors. Each: ${fronts.length} drawers at the bottom (${fronts.slice().reverse().join(", ")}" fronts, top down), rod at ${frac(p.rodZ, 8)}, shelf at ${frac(p.esShelf, 8)}, open above. Floor-standing, screwed through the back into studs.`,
+      `AMIR: middle ${frac(mid, 8)}, 3/4" birch ply shelves at ${lv.map(z => frac(z, 8)).join(", ")} on 1x2 cleats${p.divider ? `, plus one 3/4" ply divider down its centre, floor to ${frac(top, 8)}` : ""}.`,
+      `Nothing below ${frac(lv[0] || 0, 8)} in the middle - ${frac(basket, 8)} clear for laundry baskets.`,
+      `Paint room colour, all sides.`,
     ].join("\n"),
     warnings,
     notes: [
