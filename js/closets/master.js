@@ -23,7 +23,7 @@ export const DEFAULTS = {
   grade: "shaker", esTop: 94,
   leftDepth: 24, leftPlan: "30, 36, 36", leftDoors: true, rightDoors: true,
   doorsOpen: false, drawersOut: false,
-  nookDepth: 18,
+  nookDepth: 26.5,
   fronts2: "7, 8, 9, 10", fronts3: "7, 8, 9, 10", rod2: 84, rod3: 84,
   ...shelfSlots("a", [14, 28, 42, 56, 70, 84], [98]),
   rightDepth: 15.5, rightPlan: "36, 24, 15",
@@ -59,7 +59,7 @@ export const CONTROLS = [
     { key: "aboveZ", label: "Upper shelf height", min: 100, max: 116, step: 1 },
   ]],
   ["Nook · plywood planks", [
-    { key: "nookDepth", label: "Shelf depth (past 12-3/8\" it needs a gable)", min: 12, max: 26, step: 0.5 },
+    { key: "nookDepth", label: "Shelf depth (past 12-3/8\" it needs a gable)", min: 12, max: 28, step: 0.5 },
   ]],
   shelfControls("n", 7, "Nook shelves"),
   LOOK,
@@ -143,13 +143,17 @@ export function build(p) {
   // ---- nook. Its shelves can run deeper than the 12.4" recess if a plywood gable extends the
   // NT-side wall out into the closet; the door wall carries the other end.
   const nookRun = Lh - RT, nLv = readShelves(p, "n", 7);
-  const nd = Math.min(p.nookDepth, XN - (W - rd));
+  // two things stop the nook coming further forward: the face of the right cabinets, and the
+  // near jamb of the entry door. Whichever is shallower wins.
+  const capCab = XN - (W - rd), capDoor = XN - (p.doorAt + p.doorRO), nookCap = Math.min(capCab, capDoor);
+  const nd = Math.min(p.nookDepth, nookCap);
   if (nd > p.nookD + 0.05)   // a plank on edge carries the open end where the shelves run past the recess
     parts.push(box(w.NT, "carcass", 0, nd - p.nookD, 0, PLY, 0, (nLv[nLv.length - 1] || 0) + PLY,
       { mark: true, label: "Gable, extends the nook" }));
   add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Nook shelves" }));
   const nose = XN - nd;
-  if (nose < p.hatchX1) warnings.push(`At ${frac(nd, 8)} the nook shelves overhang the crawl hatch by ${frac(p.hatchX1 - nose, 8)}. Fine in the air - the gable and the floor stay clear of it.`);
+  if (p.nookDepth > nookCap + 0.01) warnings.push(`The nook can only come forward to ${frac(nookCap, 8)} deep - past that it runs into ${capDoor < capCab ? "the entry door's near jamb" : "the face of the right cabinets"}.`);
+  if (nose < p.hatchX1) warnings.push(`At ${frac(nd, 8)} the nook shelves overhang the crawl hatch by ${frac(p.hatchX1 - nose, 8)}, in the air. The gable and the floor stay clear, but you will be tilting the hatch lid out from under them.`);
 
   // ---- entry door on the bottom wall, LHI: hinge on the jamb nearer the left wall, swings in
   const u0 = XN - (p.doorAt + p.doorRO), u1 = XN - p.doorAt;
@@ -179,7 +183,7 @@ export function build(p) {
       { k: "Grade", v: p.grade === "chip" ? "Chipboard" : "Shaker, plywood", s: `${lw.length + rw.length} boxes, ${frac(top, 8)} tall · ${frac(lFill + rFill, 8)} filler in total` },
       { k: "Left wall", v: lw.join(" + ") + '"', s: `${frac(d, 8)} deep${lFill ? ` · ${frac(lFill, 8)} filler` : ""}` },
       { k: "Right wall", v: rw.join(" + ") + '"', s: `${frac(rd, 8)} deep${rFill ? ` · ${frac(rFill, 8)} filler` : ""}` },
-      { k: "Nook", v: `${nLv.length} planks × ${frac(nd, 8)}`, s: nd > p.nookD + 0.05 ? `${frac(nd - p.nookD, 8)} past the recess, on a plywood gable` : "inside the recess" },
+      { k: "Nook", v: `${nLv.length} planks × ${frac(nd, 8)}`, s: `max is ${frac(nookCap, 8)} (${capDoor < capCab ? "door jamb" : "cabinet face"}); ${frac(nd - p.nookD, 8)} past the recess` },
       { k: "Above the cabinets", v: p.aboveOn ? `deck ${frac(deck, 8)} · shelf ${frac(p.aboveZ, 8)}` : "off", s: `plywood planks, ${frac(p.ceiling - p.aboveZ - PLY, 8)} left to the ceiling` },
       { k: "Drawers", v: `${left.drawers.length + right.drawers.length}`, s: `in the two ${lw[1] || 36}" boxes on the left wall` },
       { k: "Aisle", v: frac(aisle, 8), s: `widest door swings ${frac(swing, 8)}` },
@@ -201,7 +205,7 @@ export function build(p) {
       `Q: anything shallower than 15-1/2"? And a topper box for the ${frac(p.ceiling - top, 8)} above a ${frac(top, 8)} box?`,
       ``,
       `AMIR - 3/4" birch ply planks on 1x2 cleats, painted:`,
-      `  Nook: ${nLv.length} shelves at ${nLv.join('", ')}", ${frac(nd, 8)} deep. Recess is ${frac(p.nookD, 8)}, so one plank on edge at the corner carries the open end.`,
+      `  Nook: ${nLv.length} shelves at ${nLv.join('", ')}", ${frac(nd, 8)} deep. Recess is only ${frac(p.nookD, 8)}, so a 3/4" ply plank on edge runs out ${frac(nd - p.nookD, 8)} from the corner to carry the open end, floor to top shelf.`,
       ...(p.aboveOn ? [`  Over the cabinets: deck at ${frac(deck, 8)}, planks on edge at each seam, shelf at ${frac(p.aboveZ, 8)}.`] : []),
     ].join("\n"),
     warnings,
