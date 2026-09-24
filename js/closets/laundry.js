@@ -22,12 +22,15 @@ export const DEFAULTS = {
   ...shelfSlots("w", [56, 70, 84, 98], [110]),
   ...shelfSlots("a", [18, 32, 46, 60, 74, 88, 102], [114]),
   alcoveDepth: 16, coatW: 36, coatRod: 66, shoeW: 56, shoeTop: 48,
+  showClear: true, facingDepth: 24,
   finish: "white", lights: false,
 };
 
 export const CONTROLS = [
-  ["Washer / dryer", [
+  ["Washer / dryer · clearances", [
     { key: "backClear", label: "Space behind the machines", min: 2, max: 8, step: 0.5 },
+    { key: "showClear", label: "Dimension the critical clearances in plan", type: "check" },
+    { key: "facingDepth", label: "Depth of whatever faces them on the long wall", min: 0, max: 24, step: 0.5 },
   ]],
   shelfControls("w", 5, "Shelves above the machines"),
   shelfControls("a", 8, "Sink alcove shelves (back wall)", [
@@ -118,6 +121,13 @@ export function build(p) {
     warnings.push("Something stands in the clear space in front of the electrical panel.");
   warnings.push(...spacingWarnings(aLv, "Sink alcove"), ...spacingWarnings(wLv, "Over the machines"));
 
+  // the clearances worth dimensioning: machine depth, the run to the long wall, and the dryer door
+  const mFront = yWD + bc + Math.max(W1.d, D1.d), dOpen = yWD + bc + D1.open;
+  const xm = du0 + D1.w * 0.35 + X2, xd = du0 + D1.w * 0.75 + X2;
+  const gap = Yb - p.facingDepth - dOpen;
+  if (p.facingDepth > 0 && gap < 12)
+    warnings.push(`A ${frac(p.facingDepth, 8)} cabinet opposite the dryer leaves ${frac(gap, 8)} to its open door. Drop that run to about ${frac(Math.max(0, Yb - dOpen - 16), 8)} deep to keep 16".`);
+
   const lw = X3;
   return {
     info: INFO, params: p,
@@ -133,10 +143,19 @@ export function build(p) {
       { a: [X3, yWD], b: [X3, yWD + p.rightUpper], label: frac(p.rightUpper, 8), off: -(t + 2.3) },
       { a: [X3, yWD + p.rightUpper], b: [X3, yWD + p.rightUpper + p.garageRO], label: `${frac(p.garageRO, 8)} garage`, off: -(t + 2.3) },
       { a: [0, Yb], b: [X3, Yb], label: `${frac(lw, 8)} (measured 125.9)`, off: t + 2.3 },
+      ...(p.showClear ? [
+        { a: [xm, yWD], b: [xm, mFront], label: `${frac(D1.d, 8)} machine + ${frac(bc, 8)} behind`, off: 0 },
+        { a: [xm, mFront], b: [xm, Yb], label: `${frac(Yb - mFront, 8)} to the long wall`, off: 0 },
+        { a: [xd, yWD], b: [xd, dOpen], label: `${frac(D1.open, 8)} dryer door open`, off: 0 },
+        ...(p.facingDepth > 0 ? [{ a: [xd, dOpen], b: [xd, Yb - p.facingDepth],
+          label: `${frac(Yb - p.facingDepth - dOpen, 8)} past the open door`, off: 0 }] : []),
+      ] : []),
     ],
     drawerGroups: [],
     stats: [
       { k: "Washer + dryer", v: `${W1.w + D1.w}" in ${frac(p.wdW, 8)}`, s: `${frac(spare, 8)} to spare · ${frac(bc, 8)} behind` },
+      { k: "Machine to long wall", v: frac(Yb - mFront, 8), s: `dryer door open reaches ${frac(dOpen - yWD, 8)} off that wall` },
+      { k: "Facing that run", v: p.facingDepth ? frac(p.facingDepth, 8) : "nothing yet", s: p.facingDepth ? `${frac(gap, 8)} between it and the open dryer door` : "" },
       { k: "Coats", v: `${frac(p.coatW, 8)} open`, s: `rod at ${frac(p.coatRod, 8)}, on your right from the foyer` },
       { k: "Shoes", v: `${frac(su1 - su0, 8)} wide`, s: `5 shelves up to ${frac(p.shoeTop, 8)}` },
       { k: "Shelves", v: `${aLv.length} + ${wLv.length}`, s: "sink alcove + over the machines" },
