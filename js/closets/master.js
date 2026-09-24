@@ -3,13 +3,13 @@
 // Left and right walls are East Star factory cabinets (94" boxes, floor-standing, doors).
 // Site-built plywood does the rest: a deck and an upper shelf over the cabinets, and the nook,
 // whose side gable extends past the alcove so its shelves can be deeper than the 12.4" recess.
-import { box, esRun, ES, fixedShelves, collector, hatchClashes } from "../model/builders.js";
+import { box, esRun, dressSection, cabinetRun, fixedShelves, collector, hatchClashes } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK } from "./common.js";
 
 export const INFO = { id: "master", name: "Master Closet", room: "Master bedroom",
-  concept: "East Star cabinets + plywood above", rev: "" };
+  concept: "East Star or all plywood · switchable", rev: "" };
 
 // Measured in the field (2026-09-18), sketch orientation. Always overrides stored values.
 export const FIELD = { W: 72.3, Lh: 104.5, rightTo: 76.8, nookD: 12.4, ceiling: 120,
@@ -20,6 +20,7 @@ export const FIELD = { W: 72.3, Lh: 104.5, rightTo: 76.8, nookD: 12.4, ceiling: 
 export const ES_WIDTHS = [15, 18, 21, 24, 30, 36];
 
 export const DEFAULTS = {
+  system: "es", plyTop: 110,
   esTop: 94, leftDepth: 24, leftPlan: "30, 36, 36", leftDoors: true, rightDoors: true,
   doorsOpen: false, drawersOut: false,
   fronts2: "7, 8, 9, 10", fronts3: "7, 8, 9, 10", rod2: 84, rod3: 84,
@@ -31,6 +32,11 @@ export const DEFAULTS = {
 };
 
 export const CONTROLS = [
+  ["Which system", [
+    { key: "system", label: "Build it from", type: "select",
+      options: [["es", "East Star boxes + plywood above"], ["ply", "All site-built plywood"]] },
+    { key: "plyTop", label: "Plywood: how high the sections run", min: 84, max: 116, step: 1 },
+  ]],
   ["East Star cabinets", [
     { key: "esTop", label: "Cabinet height", type: "select", options: [["84", "84\""], ["94", "94\""]] },
     { key: "leftPlan", label: "Left wall widths, from the door", type: "text" },
@@ -90,7 +96,7 @@ export function build(p) {
   const warnings = [];
 
   // ---- left wall. u runs from the door wall up to the back wall, so cabinet 1 is by the door.
-  const lw = parsePlan(p.leftPlan, Lh), lRun = lw.reduce((a, b) => a + b, 0), lFill = Lh - lRun;
+  const lw = parsePlan(p.leftPlan, Lh), lRun = lw.reduce((a, b) => a + b, 0);
   const aLv = readShelves(p, "a", 8);
   const fr = s => [...parseFronts(s, [7, 8, 9, 10])].reverse();
   const inside = [
@@ -98,16 +104,34 @@ export function build(p) {
     { fronts: fr(p.fronts2), rods: [p.rod2], label: "Daily 1" },
     { fronts: fr(p.fronts3), rods: [p.rod3], label: "Daily 2" },
   ];
-  const left = add(esRun(w.L, { u0: 0, depth: d, top, doors: p.leftDoors, doorsOpen: p.doorsOpen, drawersOut: p.drawersOut,
-    bays: lw.map((width, i) => ({ w: width, ...(inside[i] || { levels: aLv }) })), prefix: "L", seed: 5 }));
-
-  // ---- right wall, filler in the back corner so the run starts flush at the nook end
-  const rw = parsePlan(p.rightPlan, RT), rRun = rw.reduce((a, b) => a + b, 0), rFill = RT - rRun;
-  const right = add(esRun(w.R, { u0: rFill, depth: rd, top, doors: p.rightDoors, doorsOpen: p.doorsOpen, drawersOut: p.drawersOut,
-    bays: rw.map(width => ({ w: width, levels: [20, 34, 48, 62, 76] })), prefix: "R", seed: 9 }));
+  const rw = parsePlan(p.rightPlan, RT), rRun = rw.reduce((a, b) => a + b, 0);
+  const ply = p.system === "ply";
+  // Plywood is made to fit, so the same proportions stretch to fill the wall and there is no filler.
+  const lFit = ply ? lw.map(x => x * Lh / lRun) : lw, rFit = ply ? rw.map(x => x * RT / rRun) : rw;
+  const lFill = ply ? 0 : Lh - lRun, rFill = ply ? 0 : RT - rRun;
+  let left, right;
+  if (ply) {
+    let u = 0;
+    add(fixedShelves(w.L, { u0: 0, u1: lFit[0], depth: d, levels: aLv, label: "Long-term" }));
+    u = lFit[0];
+    const secs = lFit.slice(1).map((width, i) => {
+      const r = add(dressSection(w.L, { u0: u, u1: u + width, depth: d, fronts: inside[i + 1].fronts,
+        rodZ: i === 0 ? p.rod2 : p.rod3, upper: [p.plyTop - 14, p.plyTop - 2].filter(z => z > (i === 0 ? p.rod2 : p.rod3) + 10),
+        top: p.plyTop, label: inside[i + 1].label, prefix: i === 0 ? "A" : "B", seed: 5 + i * 4 }));
+      u += width; return r;
+    });
+    left = { drawers: secs.flatMap(x => x.drawers) };
+    right = { drawers: [] };
+    add(cabinetRun(w.R, { u0: 0, u1: RT, depth: rd, units: rFit.length, top: p.plyTop, split: 48, levels: [20, 34, 48, 62, 76, 90] }));
+  } else {
+    left = add(esRun(w.L, { u0: 0, depth: d, top, doors: p.leftDoors, doorsOpen: p.doorsOpen, drawersOut: p.drawersOut,
+      bays: lFit.map((width, i) => ({ w: width, ...(inside[i] || { levels: aLv }) })), prefix: "L", seed: 5 }));
+    right = add(esRun(w.R, { u0: rFill, depth: rd, top, doors: p.rightDoors, doorsOpen: p.doorsOpen, drawersOut: p.drawersOut,
+      bays: rFit.map(width => ({ w: width, levels: [20, 34, 48, 62, 76] })), prefix: "R", seed: 9 }));
+  }
 
   const aisle = W - d - rd;
-  const swing = Math.max(0, ...[...(p.leftDoors ? lw : []), ...(p.rightDoors ? rw : [])].map(x => (x > 24 ? x / 2 : x)));
+  const swing = ply ? Math.max(0, ...rFit) : Math.max(0, ...[...(p.leftDoors ? lFit : []), ...(p.rightDoors ? rFit : [])].map(x => (x > 24 ? x / 2 : x)));
   if (swing > aisle - 3) warnings.push(`A ${frac(swing, 8)} door nearly fills the ${frac(aisle, 8)} aisle when open. Split the widest box into two doors.`);
   for (const [name, run, fill] of [["Left", Lh, lFill], ["Right", RT, rFill]])
     if (fill > 6) warnings.push(`${name} wall: ${frac(fill, 8)} of filler. East Star widths are ${ES_WIDTHS.join(", ")}" and only add up to multiples of 3.`);
@@ -115,7 +139,7 @@ export function build(p) {
   // ---- plywood over the cabinets: a deck on their tops, dividers at the seams screwed to the
   // top studs, and one shelf. Nothing hangs off the cabinets; the cleats carry the back edge.
   const deck = top + PLY;
-  if (p.aboveOn) {
+  if (p.aboveOn && !ply) {
     const over = (wall, u0, widths, depth) => {
       const u1 = u0 + widths.reduce((a, b) => a + b, 0);
       if (u1 - u0 < 12) return;
@@ -128,8 +152,8 @@ export function build(p) {
       parts.push(box(wall, "shelf", u0, u1, 0, depth, p.aboveZ, p.aboveZ + PLY, { mark: true, label: "Upper shelf" }));
       modules.push(box(wall, "band", u0, u1, 0, depth, { label: "Plywood above", sub: `deck at ${frac(deck, 8)}, shelf at ${frac(p.aboveZ, 8)}` }));
     };
-    over(w.L, 0, lw, d);
-    over(w.R, rFill, rw, rd);
+    over(w.L, 0, lFit, d);
+    over(w.R, rFill, rFit, rd);
     if (p.aboveZ < deck + 10) warnings.push(`Only ${frac(p.aboveZ - deck, 8)} between the deck and the upper shelf.`);
     if (p.aboveZ + PLY > p.ceiling - 8) warnings.push(`The upper shelf leaves ${frac(p.ceiling - p.aboveZ - PLY, 8)} to the ceiling.`);
   }
@@ -171,9 +195,10 @@ export function build(p) {
     ],
     drawerGroups: [{ name: "East Star drawers", drawers }],
     stats: [
-      { k: "Left wall", v: lw.join(" + ") + '"', s: `${frac(d, 8)} deep, ${frac(top, 8)} tall · ${frac(lFill, 8)} filler` },
-      { k: "Right wall", v: rw.join(" + ") + '"', s: `${frac(rd, 8)} deep, ${frac(top, 8)} tall · ${frac(rFill, 8)} filler` },
-      { k: "Above the cabinets", v: p.aboveOn ? `deck ${frac(deck, 8)} · shelf ${frac(p.aboveZ, 8)}` : "off", s: `3/4" plywood, ${frac(p.ceiling - p.aboveZ - PLY, 8)} left to the ceiling` },
+      { k: "System", v: ply ? "All plywood" : "East Star + plywood", s: ply ? "made to fit, no filler, runs to any height" : `stock widths, ${frac(lFill + rFill, 8)} of filler in total` },
+      { k: "Left wall", v: lFit.map(x => frac(x, 8)).join(" + "), s: `${frac(d, 8)} deep, ${frac(ply ? p.plyTop : top, 8)} tall${lFill ? ` · ${frac(lFill, 8)} filler` : ""}` },
+      { k: "Right wall", v: rFit.map(x => frac(x, 8)).join(" + "), s: `${frac(rd, 8)} deep, ${frac(ply ? p.plyTop : top, 8)} tall${rFill ? ` · ${frac(rFill, 8)} filler` : ""}` },
+      ...(ply ? [] : [{ k: "Above the cabinets", v: p.aboveOn ? `deck ${frac(deck, 8)} · shelf ${frac(p.aboveZ, 8)}` : "off", s: `3/4" plywood, ${frac(p.ceiling - p.aboveZ - PLY, 8)} left to the ceiling` }]),
       { k: "Nook", v: `${nLv.length} × ${frac(nd, 8)} deep`, s: nd > p.nookD + 0.05 ? `${frac(nd - p.nookD, 8)} proud of the recess, on a plywood gable` : "inside the recess" },
       { k: "Aisle", v: frac(aisle, 8), s: `widest door swings ${frac(swing, 8)}` },
     ],
