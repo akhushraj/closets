@@ -14,7 +14,7 @@ export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9
   outRightF: 11.3 };    // right wall, from the front (height not recorded)
 
 export const DEFAULTS = {
-  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 15, maxBay: 20, railH: 1.5, diagCorner: true,
+  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 15, maxBay: 20, sideUprights: false, railH: 3.5, diagCorner: true,
   ...shelfSlots("u", [54, 68, 82, 96, 110], [48]),
   finish: "white", lights: true,
 };
@@ -26,10 +26,11 @@ export const CONTROLS = [
     { key: "top", label: "Top", type: "select", options: [["quartz", "Quartz (3 cm)"], ["porcelain", "Porcelain slab (12 mm on plywood)"]] },
     { key: "underOn", label: "Shelf under the counter", type: "check" },
     { key: "underZ", label: "Its height (top)", min: 8, max: 24, step: 0.5 },
-    { key: "maxBay", label: "Widest bay between uprights", min: 14, max: 44, step: 1 },
+    { key: "diagCorner", label: "Diagonal divider at the corner", type: "check" },
+    { key: "sideUprights", label: "Extra uprights between it and the walls", type: "check" },
+    { key: "maxBay", label: "Widest bay, when those are on", min: 14, max: 44, step: 1 },
     { key: "railH", label: "Front cleat, on edge", type: "select",
       options: [["1.5", "1x2 · 1-1/2\""], ["2.5", "1x3 · 2-1/2\""], ["3.5", "1x4 · 3-1/2\""]] },
-    { key: "diagCorner", label: "Split the corner on the diagonal", type: "check" },
   ]],
   shelfControls("u", 6, "Open shelves above the counter", [
     { key: "upDepth", label: "Their depth", min: 10, max: 16, step: 0.5 },
@@ -67,7 +68,8 @@ export function build(p) {
     const n = Math.max(1, Math.ceil((b - a) / p.maxBay));
     return Array.from({ length: n - 1 }, (_, i) => a + (b - a) * (i + 1) / n);
   };
-  const backG = bays(0, corner), rightG = bays(cd, D);
+  // the diagonal carries the corner; these only break the runs between it and the walls
+  const backG = p.sideUprights ? bays(0, corner) : [], rightG = p.sideUprights ? bays(cd, D) : [];
 
   parts.push(box(w.T, "shelf", 0, W, 0, cd, tz, sub));
   parts.push(box(w.R, "shelf", cd, D, 0, cd, tz, sub));
@@ -151,9 +153,9 @@ export function build(p) {
     drawerGroups: [],
     stats: [
       { k: "Counter", v: `${frac(W, 8)} + ${frac(D - cd, 8)}`, s: `L-shaped, ${frac(cd, 8)} deep, top at ${frac(cz, 8)}` },
-      { k: "Uprights", v: `${backG.length + rightG.length + 1}`, s: p.diagCorner
-        ? `widest bay ${frac(widest, 8)}; the corner one runs on the diagonal`
-        : `3/4" plywood on the floor, widest bay ${frac(widest, 8)}` },
+      { k: "Uprights", v: `${backG.length + rightG.length + 1}`, s: p.diagCorner && !backG.length && !rightG.length
+        ? `just the diagonal; the 1x${rh + 0.5} carries ${frac(widest, 8)} to each wall`
+        : `widest bay ${frac(widest, 8)}${p.diagCorner ? "; the corner one runs on the diagonal" : ""}` },
       { k: "Under the counter", v: p.underOn ? `shelf at ${frac(p.underZ, 8)}` : "open", s: p.underOn ? `${frac(p.underZ - PLY - 1.5, 8)} clear below it` : "" },
       { k: "Open shelves", v: `${up.length} × ${frac(p.upDepth, 8)} deep`, s: up.length ? `tops at ${up.join(", ")}"` : "none on" },
       { k: "Door swing", v: "clear", s: `back leg stops ${frac(swingTop - cd, 8)} short of the swing` },
