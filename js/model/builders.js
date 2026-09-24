@@ -232,10 +232,10 @@ export const ES = 0.625;   // chipboard side, top and bottom
 
 export function esRun(w, o) {
   const { u0 = 0, depth = 24, top = 94, doors = true, bays = [], prefix = "E", seed = 4,
-          doorsOpen = false, drawersOut = false } = o;
+          doorsOpen = false, drawersOut = false, mat = "oak" } = o;
   const parts = [], modules = [], drawers = [], r = rng(seed), cD = depth - FRONT;
   const f = frame(w), P = (u, v) => [f.ax + f.dx * u + f.nx * v, f.ay + f.dy * u + f.ny * v];
-  const oak = x => ({ ...x, mat: "oak" });
+  const oak = x => ({ ...x, mat });
   const rodV = Math.min(12, cD / 2), slide = slideFor(cD - 1);
   let u = u0, n = 0;
   for (const bay of bays) {

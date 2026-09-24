@@ -85,6 +85,7 @@ export function createThreeView(host) {
     stone: new THREE.MeshStandardMaterial({ color: 0xdcd8d0, roughness: 0.25 }),
     panel: new THREE.MeshStandardMaterial({ color: 0x8c8f94, metalness: 0.6, roughness: 0.4 }),
     board: new THREE.MeshStandardMaterial({ color: 0xd9d5cc, roughness: 0.9 }),
+    melamine: new THREE.MeshStandardMaterial({ color: 0xe2ddd2, roughness: 0.78 }),
     outlet: new THREE.MeshStandardMaterial({ color: 0xc8821f, emissive: 0x3a2405, roughness: 0.5 }),
     garments: GARMENT.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 })),
   };

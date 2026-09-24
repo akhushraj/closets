@@ -14,7 +14,7 @@ export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9
   outRightF: 11.3 };    // right wall, from the front (height not recorded)
 
 export const DEFAULTS = {
-  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 15, maxBay: 20, diagCorner: true,
+  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 15, maxBay: 20, railH: 1.5, diagCorner: true,
   ...shelfSlots("u", [54, 68, 82, 96, 110], [48]),
   finish: "white", lights: true,
 };
@@ -26,7 +26,9 @@ export const CONTROLS = [
     { key: "top", label: "Top", type: "select", options: [["quartz", "Quartz (3 cm)"], ["porcelain", "Porcelain slab (12 mm on plywood)"]] },
     { key: "underOn", label: "Shelf under the counter", type: "check" },
     { key: "underZ", label: "Its height (top)", min: 8, max: 24, step: 0.5 },
-    { key: "maxBay", label: "Widest bay between uprights", min: 14, max: 30, step: 1 },
+    { key: "maxBay", label: "Widest bay between uprights", min: 14, max: 44, step: 1 },
+    { key: "railH", label: "Front cleat, on edge", type: "select",
+      options: [["1.5", "1x2 · 1-1/2\""], ["2.5", "1x3 · 2-1/2\""], ["3.5", "1x4 · 3-1/2\""]] },
     { key: "diagCorner", label: "Split the corner on the diagonal", type: "check" },
   ]],
   shelfControls("u", 6, "Open shelves above the counter", [
@@ -76,8 +78,9 @@ export function build(p) {
   else parts.push(box(w.T, "carcass", corner - PLY, corner, 0, uD, 0, tz, { mark: true, label: "Upright" }));
   for (const g of backG) parts.push(box(w.T, "carcass", g - PLY / 2, g + PLY / 2, 0, uD, 0, tz));
   for (const g of rightG) parts.push(box(w.R, "carcass", g - PLY / 2, g + PLY / 2, 0, uD, 0, tz));
-  parts.push(box(w.T, "cleat", 0, corner, uD, cd, tz - 1.5, tz, { mark: true, label: "1x2 on edge" }));
-  parts.push(box(w.R, "cleat", cd, D, uD, cd, tz - 1.5, tz));
+  const rh = +p.railH;
+  parts.push(box(w.T, "cleat", 0, corner, uD, cd, tz - rh, tz, { mark: true, label: `1x${rh + 0.5} on edge` }));
+  parts.push(box(w.R, "cleat", cd, D, uD, cd, tz - rh, tz));
   parts.push(box(w.T, "cleat", 0, W, 0, PLY, tz - 1.5, tz));      // back wall
   parts.push(box(w.R, "cleat", 0, D, 0, PLY, tz - 1.5, tz));      // right wall
   parts.push(box(w.L, "cleat", D - cd, D, 0, PLY, tz - 1.5, tz));  // left wall
@@ -122,7 +125,14 @@ export function build(p) {
   if (corner < p.doorAt + p.doorRO) warnings.push("The right leg of the counter reaches into the doorway.");
   if (up.length && up[0] < cz + 16) warnings.push(`Only ${frac(up[0] - cz - PLY, 8)} between the counter and the first shelf. Appliances want about 18".`);
   const widest = Math.max((corner) / (backG.length + 1), (D - cd) / (rightG.length + 1));
-  if (widest > 24) warnings.push(`The widest bay is ${frac(widest, 8)}. A 1x2 on edge sags past about 24"; add an upright.`);
+  // 3/4" x rh on edge, simply supported, carrying 12" of a 43 psf counter
+  const sag = L => 5 * (43 / 144 * 12) * L ** 4 / (384 * 1.3e6 * (0.75 * rh ** 3 / 12));
+  const need = [1.5, 2.5, 3.5].find(h => 5 * (43 / 144 * 12) * widest ** 4 / (384 * 1.3e6 * (0.75 * h ** 3 / 12)) < widest / 720);
+  if (sag(widest) > widest / 720)
+    warnings.push(`The widest bay is ${frac(widest, 8)} and a 1x${rh + 0.5} on edge sags ${frac(sag(widest), 16)} across it (${frac(widest / 720, 16)} is the limit for stone). ${need ? `Use a 1x${need + 0.5} on edge` : "Add an upright"}.`);
+  const shelfSag = 5 * (30 / 144 * 23) * widest ** 4 / (384 * 1.3e6 * (23 * 0.75 ** 3 / 12));
+  if (p.underOn && shelfSag > widest / 360)
+    warnings.push(`The under-counter shelf spans ${frac(widest, 8)} and will sag about ${frac(shelfSag, 16)} loaded. Not structural, but you will see it.`);
   warnings.push(...spacingWarnings(up, "Open shelves"));
 
   return {
