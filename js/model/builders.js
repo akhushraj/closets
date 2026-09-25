@@ -231,7 +231,7 @@ export function cabinetRun(w, o) {
 export const ES = 0.625;   // chipboard side, top and bottom
 
 export function esRun(w, o) {
-  const { u0 = 0, depth = 24, top = 94, doors = true, bays = [], prefix = "E", seed = 4,
+  const { u0 = 0, depth = 24, top = 94, z0 = 0, doors = true, bays = [], prefix = "E", seed = 4,
           doorsOpen = false, drawersOut = false, mat = "oak" } = o;
   const parts = [], modules = [], drawers = [], r = rng(seed), cD = depth - FRONT;
   const f = frame(w), P = (u, v) => [f.ax + f.dx * u + f.nx * v, f.ay + f.dy * u + f.ny * v];
@@ -240,13 +240,13 @@ export function esRun(w, o) {
   let u = u0, n = 0;
   for (const bay of bays) {
     const a = u, b = u + bay.w, ia = a + ES, ib = b - ES; u = b; n++;
-    parts.push(box(w, "carcass", a, a + ES, 0, cD, 0, top, oak({})));
-    parts.push(box(w, "carcass", b - ES, b, 0, cD, 0, top, oak({})));
-    parts.push(box(w, "carcass", ia, ib, 0, cD, 0, ES, oak({})));
+    parts.push(box(w, "carcass", a, a + ES, 0, cD, z0, top, oak({})));
+    parts.push(box(w, "carcass", b - ES, b, 0, cD, z0, top, oak({})));
+    parts.push(box(w, "carcass", ia, ib, 0, cD, z0, z0 + ES, oak({})));
     parts.push(box(w, "carcass", ia, ib, 0, cD, top - ES, top, oak({ mark: n === 1, label: `East Star ${frac(top, 8)} cabinet` })));
-    parts.push(box(w, "carcass", ia, ib, 0, 0.25, ES, top - ES, oak({})));   // 1/4" back
+    parts.push(box(w, "carcass", ia, ib, 0, 0.25, z0 + ES, top - ES, oak({})));   // 1/4" back
 
-    let z = 0;
+    let z = z0;
     for (const [i, h] of (bay.fronts || []).entries()) {
       const lab = `${prefix}${n}-${bay.fronts.length - i}`, um = (a + b) / 2, pw = Math.min(3, bay.w / 2 - 2);
       const boxH = Math.max(2.5, Math.floor((h - 1.25) * 2) / 2), boxW = bay.w - 2 * ES - 1;
@@ -264,7 +264,7 @@ export function esRun(w, o) {
         boxH, boxW, boxL: slide, inH: boxH - 0.5, inW: boxW - 1, inL: slide - 1, slide });
       z += h;
     }
-    const base = z;
+    const base = Math.max(z, z0);
 
     for (const zt of bay.levels || []) if (zt > base + 2 && zt < top - 2)
       parts.push(box(w, "shelf", ia, ib, 0, cD - 0.5, zt - ES, zt, oak({ mark: n === 1, label: "Shelf" })));
@@ -290,7 +290,7 @@ export function esRun(w, o) {
     }
 
     modules.push(module(w, "cabinets", a, b, 0, depth, { label: bay.label || `East Star ${frac(bay.w, 8)}`,
-      sub: `${frac(bay.w, 8)} × ${frac(top, 8)}${leaves ? `, ${leaves} door${leaves > 1 ? "s" : ""}` : ""}`,
+      sub: `${frac(bay.w, 8)} × ${frac(top - z0, 8)}${leaves ? `, ${leaves} door${leaves > 1 ? "s" : ""}` : ""}`,
       ...(leaves ? { ghost: { u0: a, u1: b, v0: depth, v1: depth + bay.w / leaves, label: "door swing" } } : {}) }));
   }
   return { parts, modules, drawers, end: u, slide };
