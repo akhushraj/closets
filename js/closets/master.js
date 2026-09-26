@@ -24,7 +24,7 @@ export const DEFAULTS = {
   leftDepth: 24, leftPlan: "30, 36, 36", leftDoors: true, rightDoors: true,
   doorsOpen: false, drawersOut: false,
   nookDepth: 26.5,
-  fronts2: "7, 8, 9, 10", fronts3: "7, 8, 9, 10", rod2: 84, rod3: 84,
+  fronts2: "9, 10, 11, 12", fronts3: "9, 10, 11, 12", rod2: 84, rod3: 84,
   ...shelfSlots("a", [14, 28, 42, 56, 70, 84], [98]),
   rightDepth: 15.5, rightPlan: "36, 24, 15",
   aboveOn: true, aboveZ: 107,

@@ -23,7 +23,7 @@ export const DEFAULTS = {
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   upperDepth: 15, upperBottom: 54, upperTop: 90,
   wdUpperBottom: 56, wdUpperTop: 92,
-  coatW: 48, coatRod: 66, coatFronts: "6, 7, 8", coatDoors: false,
+  coatW: 48, coatRod: 66, coatFronts: "10, 11, 12", coatDoors: false,
   facingDepth: 15,
   finish: "white", lights: false,
 };

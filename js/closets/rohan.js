@@ -14,9 +14,9 @@ export const FIELD = { closetW: 46.2, mainD: 52.1, alcoveW: 25.2, totalL: 78.7, 
 
 export const DEFAULTS = {
   cornerTo: "front",
-  esDepth: 24, esTop: 94, esFronts: "6, 7, 8, 8, 9",
+  esDepth: 24, esTop: 94, esFronts: "9, 10, 11, 12",
   aboveOn: true, aboveZ: 107,
-  frontDepth: 21, rodZ: 70, frontShelf1: 88, frontShelf2: 102,
+  frontDepth: 21, rodZ: 70, frontShelf1: 88, frontShelf2: 102, lowOn: true, lowZ: 22,
   // alcove shelves, lowest first: top-of-shelf height AFF and on/off
   s1: 16, s1on: false, s2: 28, s2on: true, s3: 40, s3on: true, s4: 52, s4on: true,
   s5: 64, s5on: true, s6: 76, s6on: true, s7: 88, s7on: true, s8: 104, s8on: true,
@@ -40,6 +40,8 @@ export const CONTROLS = [
   ["Wall B · plywood hanging + shelves", [
     { key: "frontDepth", label: "Depth (shelves are 1/4\" shy of this)", min: 14, max: 21, step: 0.25 },
     { key: "rodZ", label: "Rod height", min: 48, max: 84, step: 0.5 },
+    { key: "lowOn", label: "Shelf under the hanging clothes", type: "check" },
+    { key: "lowZ", label: "Its height (top)", min: 10, max: 34, step: 0.5 },
     { key: "frontShelf1", label: "Shelf above it", min: 80, max: 100, step: 1 },
     { key: "frontShelf2", label: "And another", min: 94, max: 116, step: 1 },
   ]],
@@ -102,6 +104,7 @@ export function build(p) {
   // ---- front wall (L): plywood rod with a hat shelf and LED over it, then open shelves
   const sd = fd - 0.25;   // every shelf on wall B is the same depth, a hair shy of the run
   const hang = add(hangRun(w.L, { u0: 0, u1: lU1, depth: fd, rodZ: p.rodZ, shelfDepth: sd, coatsTo: fd }));
+  if (p.lowOn) add(fixedShelves(w.L, { u0: 0, u1: lU1, depth: sd, levels: [p.lowZ], label: "Shelf under the clothes" }));
   const fLv = [p.frontShelf1, p.frontShelf2].filter(z => z > p.rodZ + 10 && z < p.ceiling - 6);
   if (fLv.length) add(fixedShelves(w.L, { u0: 0, u1: lU1, depth: sd, levels: fLv, label: "Wall B shelves" }));
 
@@ -127,6 +130,7 @@ export function build(p) {
   if (lU1 < 24) warnings.push(`Wall B is only ${frac(lU1, 8)} long. Give the corner to wall B instead.`);
   if (Math.abs(alcDepth - sd) > 0.5) warnings.push(`Wall A shelves are ${frac(alcDepth, 8)} deep against wall B's ${frac(sd, 8)} - the entry door casing caps wall A, so they can't match.`);
   if (p.rodZ - 42 < 4) warnings.push("Long coats will touch the floor at this rod height.");
+  if (p.lowOn && p.rodZ - 40 < p.lowZ + 2) warnings.push(`Shirts hang to about ${frac(p.rodZ - 40, 8)} and the shelf under them is at ${frac(p.lowZ, 8)}. Drop the shelf or raise the rod.`);
   if (p.rodZ < 46) warnings.push(`The rod at ${frac(p.rodZ, 8)} leaves ${frac(p.rodZ - 4, 8)} of hanging above the floor. A grown-up jacket wants about 40".`);
   for (let i = 1; i < alcLevels.length; i++)
     if (alcLevels[i] - alcLevels[i - 1] < 6)
@@ -178,7 +182,7 @@ export function build(p) {
       { k: "Drawers", v: `${n}`, s: `in the ${tw[0]}" box, fronts ${esFronts.slice().reverse().join(", ")}"` },
       { k: "Above them", v: p.aboveOn ? `deck ${frac(deck, 8)} · shelf ${frac(p.aboveZ, 8)}` : "off", s: `plywood, ${frac(p.ceiling - p.aboveZ - PLY, 8)} to the ceiling` },
       { k: "Wall B · rod", v: frac(rodLen, 8), s: `at ${frac(p.rodZ, 8)}, running the full ${frac(lU1, 8)} to wall C` },
-      { k: "Wall B · shelves", v: `${fLv.length + 1} × ${frac(sd, 8)} deep`, s: `hat shelf over the rod, then ${fLv.join('", ')}"` },
+      { k: "Wall B · shelves", v: `${fLv.length + 1 + (p.lowOn ? 1 : 0)} × ${frac(sd, 8)} deep`, s: `${p.lowOn ? `${frac(p.lowZ, 8)} under the clothes, ` : ""}hat shelf over the rod, then ${fLv.join('", ')}"` },
       { k: "Wall A · alcove", v: `${alcLevels.length} × ${frac(alcDepth, 8)} deep`, s: `capped by the wall D casing, not by choice` },
       { k: "Aisle", v: frac(aisle, 8), s: "between wall B and wall D" },
     ],
@@ -195,7 +199,7 @@ export function build(p) {
       ``,
       `AMIR - 3/4" birch plywood, painted, on 1x2 cleats screwed through the drywall into the studs:`,
       ...(p.aboveOn ? [`  Over the boxes: a deck at ${frac(deck, 8)} on the cabinet tops, planks on edge at each box seam, and a shelf at ${frac(p.aboveZ, 8)}.`] : []),
-      `  Wall B: rod at ${frac(p.rodZ, 8)} the full ${frac(lU1, 8)} to wall C. Every shelf on this wall ${frac(sd, 8)} deep - hat shelf over the rod, then ${fLv.join('" and ')}".`,
+      `  Wall B: rod at ${frac(p.rodZ, 8)} the full ${frac(lU1, 8)} to wall C. Every shelf on this wall ${frac(sd, 8)} deep${p.lowOn ? `: one at ${frac(p.lowZ, 8)} under the hanging clothes,` : ":"} the hat shelf over the rod, then ${fLv.join('" and ')}".`,
       `  Wall A alcove: ${alcLevels.length} shelves at ${alcLevels.join('", ')}", ${frac(alcDepth, 8)} deep (the door casing caps it), wall to wall at ${frac(A, 8)}.`,
       `  Front edge on every plywood shelf: 3/4" x 1-1/2" solid nosing - it hides the LED channel.`,
       ``,
