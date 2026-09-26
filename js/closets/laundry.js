@@ -127,11 +127,13 @@ export function build(p) {
   const sinkU = Yb - (p.leftUpper - p.sinkCenterFromJamb);        // where the plumbing is
   const sb0 = Math.max(aU0, sinkU - p.sinkBay / 2), sb1 = sb0 + p.sinkBay;
   run(w.L, sb1, Yb, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3 });
+  run(w.L, sb0, sb1, { depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5 });   // sink base: no shelf, the trap lives there
   run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7 });
   parts.push(box(w.L, "counter", aU0, Yb, 0, bd + 1, cz - 1.25, cz, { mark: true, label: "Counter" }));
   parts.push(box(w.SA, "counter", bd, X1, 0, bd + 1, cz - 1.25, cz));
   modules.push(box(w.L, "counter", aU0, Yb, 0, bd, 0, 0, { label: "Corner closet", sub: `counter at ${frac(cz, 8)}` }));
-  add(floorItem(w.L, "sink", { u0: sb0 + 3, u1: sb1 - 3, v0: 2, v1: bd - 2, h: cz, label: "Utility sink" }));
+  parts.push(box(w.L, "sink", sb0 + 3, sb1 - 3, 2.5, bd - 2.5, cz - 9, cz, { mark: true, label: "Sink, drops into the counter" }));
+  modules.push(box(w.L, "sink", sb0, sb1, 0, bd, 0, 0, { label: "Sink base", sub: `${frac(p.sinkBay, 8)}, detergent under` }));
 
   run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: [p.upperBottom + 13, p.upperBottom + 26], prefix: "AU", seed: 11 });
   run(w.SA, ud, X1, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: [p.upperBottom + 13, p.upperBottom + 26], prefix: "DU", seed: 13 });
@@ -217,7 +219,7 @@ export function build(p) {
     warnings,
     notes: [
       `Wall A right and wall D left are one L-shaped corner closet: ${frac(bd, 8)} base cabinets under a counter at ${frac(cz, 8)}, with ${frac(ud, 8)} uppers from ${frac(p.upperBottom, 8)} to ${frac(p.upperTop, 8)} over both. The A run owns the inside corner; the D run starts ${frac(bd, 8)} clear of it so the two don't collide.`,
-      `The sink keeps its ${frac(p.sinkBay, 8)} bay where the plumbing is, ${frac(p.sinkCenterFromJamb, 8)} off the foyer jamb. No cabinet under it.`,
+      `The sink drops into the counter over a ${frac(p.sinkBay, 8)} base cabinet, ${frac(p.sinkCenterFromJamb, 8)} off the foyer jamb. No shelf in that one - the trap needs the room - so it takes tall bottles standing up.`,
       `Wall B right is the coat closet - 24" deep, rod at ${frac(p.coatRod, 8)}, ${coatFronts.length} drawers under it, on your right as you come in from the foyer.`,
       `Wall B left can only be ${frac(coat0 - clearU, 8)} wide: the sub-panel's 30" x 36" code clear space takes the garage corner, and that is exactly the stretch facing the dryer. What is left faces the washer.`,
       `Depth there is set by the machine doors, not the aisle. An open door reaches ${frac(D1.open, 8)} off the machine wall; at ${frac(p.facingDepth, 8)} deep you keep ${frac(gap, 8)} in front of it. 24" would leave ${frac(Yb - 24 - dOpen, 8)}.`,

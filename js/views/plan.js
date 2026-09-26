@@ -1,6 +1,7 @@
 // A-1 Plan view, generic over any closet model: walls, doors (in or out swing), module
 // footprints with labels, open-drawer / fold-down ghosts, hatches, and the model's dimensions.
 import { el, clear, dim } from "../lib/svg.js";
+import { frac } from "../lib/units.js";
 import { frame } from "../model/builders.js";
 
 const S = 7;   // px per inch
@@ -142,6 +143,36 @@ export function renderPlan(svg, model) {
 
   // legend
   const kinds = new Set(model.modules.map(m => m.kind));
+  // ---- click two points to measure between them. Snaps to wall faces and cabinet edges,
+  // so "how wide is that aisle" lands on the real faces rather than wherever you clicked.
+  const snapX = new Set(), snapY = new Set();
+  for (const q of c.outline) { snapX.add(q[0]); snapY.add(q[1]); }
+  for (const q of [...model.modules, ...model.parts]) { snapX.add(q.x0); snapX.add(q.x1); snapY.add(q.y0); snapY.add(q.y1); }
+  const snap = (v, set) => { let best = v, d = 3; for (const s2 of set) if (Math.abs(s2 - v) < d) { d = Math.abs(s2 - v); best = s2; } return best; };
+  const mg = el("g", { class: "measure" }, svg);
+  el("rect", { x: 0, y: 0, width: Wpx, height: Hpx, fill: "transparent", style: "cursor:crosshair" }, mg);
+
+  svg._pts = svg._pts || [];
+  const drawPts = () => {
+    [...mg.querySelectorAll(".mk")].forEach(n => n.remove());
+    const [a, b] = svg._pts;
+    for (const q of svg._pts) el("circle", { cx: X(q[0]), cy: Y(q[1]), r: 3.2, class: "mk mdot" }, mg);
+    if (!a || !b) return;
+    el("line", { x1: X(a[0]), y1: Y(a[1]), x2: X(b[0]), y2: Y(b[1]), class: "mk mline" }, mg);
+    const d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const mx = (X(a[0]) + X(b[0])) / 2, my = (Y(a[1]) + Y(b[1])) / 2;
+    el("rect", { x: mx - 34, y: my - 19, width: 68, height: 15, rx: 3, class: "mk mbg" }, mg);
+    el("text", { x: mx, y: my - 8, class: "mk mlbl", "text-anchor": "middle" }, mg, frac(d, 8));
+  };
+  svg.onclick = e => {
+    const r = svg.getBoundingClientRect();
+    const px = (e.clientX - r.left) * (Wpx / r.width), py = (e.clientY - r.top) * (Hpx / r.height);
+    const q = [snap(minX + (px - 16) / S, snapX), snap(minY + (py - 16) / S, snapY)];
+    svg._pts = svg._pts.length >= 2 ? [q] : [...svg._pts, q];
+    drawPts();
+  };
+  drawPts();
+
   const items = Object.entries(LEGEND).filter(([k]) => kinds.has(k)).map(([k, l]) => ["m-" + k, l]);
   if (model.modules.some(m => m.ghost)) items.push(["ghost", "Pulled out / folded down"]);
   if ((model.hatches || []).length) items.push(["hatch", "Floor hatch, keep clear"]);
@@ -151,4 +182,6 @@ export function renderPlan(svg, model) {
     el("text", { x: lx + 21, y: ly, class: "lbs", "font-size": 10.5, "dominant-baseline": "middle" }, g, label);
     lx += 30 + label.length * 5.6;
   }
+  el("text", { x: Wpx - 16, y: ly, class: "lbs", "font-size": 10, "text-anchor": "end",
+    "dominant-baseline": "middle", opacity: .75 }, g, "Click two points to measure between them");
 }
