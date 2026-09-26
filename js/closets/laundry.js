@@ -8,7 +8,7 @@ import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
 import { LOOK } from "./common.js";
 
-export const INFO = { id: "laundry", name: "Laundry / Mudroom", room: "Laundry", concept: "Corner closet + coat run + machines", rev: "" };
+export const INFO = { id: "laundry", name: "Laundry / Mudroom", room: "Laundry", stuff: "laundry", concept: "Corner closet + coat run + machines", rev: "" };
 
 // Field measurements (2026-09-18), sketch orientation.
 export const FIELD = {

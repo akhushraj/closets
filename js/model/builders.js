@@ -288,7 +288,7 @@ export function esRun(w, o) {
     for (const zr of bay.rods || []) {
       parts.push(box(w, "rod", ia + 0.25, ib - 0.25, rodV - 0.625, rodV + 0.625, zr - 0.625, zr + 0.625,
         { axis: "u", mark: n === 1, label: "Rod" }));
-      garmentsOnRod(parts, w, r, ia, ib, rodV, zr, zr < 60 ? "pants" : "shirt", n * 3);
+      garmentsOnRod(parts, w, r, ia, ib, rodV, zr, bay.garment || (zr < 60 ? "pants" : "shirt"), n * 3);
     }
 
     const leaves = doors ? (bay.w > 24 ? 2 : 1) : 0, lw = leaves ? (bay.w - 1 / 8) / leaves : 0;

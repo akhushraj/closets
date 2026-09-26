@@ -5,7 +5,7 @@ import { hangRun, esRun, fixedShelves, floorItem, collector, box, packStock } fr
 import { PLY, frac, ftin } from "../lib/units.js";
 
 export const INFO = {
-  id: "rohan", name: "Rohan's Closet", room: "Bedroom 2", concept: "Wall C East Star · walls A and B plywood", rev: "",
+  id: "rohan", name: "Rohan's Closet", room: "Bedroom 2", stuff: "books", concept: "Wall C East Star · walls A and B plywood", rev: "",
 };
 
 // Measured in the field (2026-09-18). These always override stored or default values.

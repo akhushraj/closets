@@ -4,7 +4,7 @@ import { box, fixedShelves, floorItem, collector } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, PLYWOOD_NOTE } from "./common.js";
 
-export const INFO = { id: "guest", name: "Guest Closet", room: "Guest room", concept: "Rod + shelves, all plywood", rev: "" };
+export const INFO = { id: "guest", name: "Guest Closet", room: "Guest room", stuff: "folded", concept: "Rod + shelves, all plywood", rev: "" };
 
 export const FIELD = { W: 54.1, D: 22.3, ceiling: 120, stubL: 2.1, opening: 50.1, stubR: 1.8, doorH: 96 };
 

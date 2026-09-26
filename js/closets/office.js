@@ -5,7 +5,7 @@ import { box, fixedShelves, floorItem, collector, hatchClashes } from "../model/
 import { PLY, frac, ftin } from "../lib/units.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, PLYWOOD_NOTE } from "./common.js";
 
-export const INFO = { id: "office", name: "Office Closet", room: "Office", concept: "Network gear + plywood shelves", rev: "" };
+export const INFO = { id: "office", name: "Office Closet", room: "Office", stuff: "bins", concept: "Network gear + plywood shelves", rev: "" };
 
 // Measured in the field (2026-09-18). Always overrides stored values.
 export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9, doorH: 96, jambD: 4.9,   // wall thickness at the door, not a return into the closet

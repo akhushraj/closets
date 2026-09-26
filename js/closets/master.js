@@ -9,7 +9,7 @@ import { parseFronts } from "./rohan.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK } from "./common.js";
 
 export const INFO = { id: "master", name: "Master Closet", room: "Master bedroom",
-  concept: "East Star boxes · plywood planks by Amir", rev: "" };
+  stuff: "folded", concept: "East Star boxes · plywood planks by Amir", rev: "" };
 
 // Measured in the field (2026-09-18), sketch orientation. Always overrides stored values.
 export const FIELD = { W: 72.3, Lh: 104.5, rightTo: 76.8, nookD: 12.4, ceiling: 120,

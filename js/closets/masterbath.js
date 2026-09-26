@@ -4,7 +4,7 @@ import { fixedShelves, collector } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings } from "./common.js";
 
-export const INFO = { id: "masterbath", name: "Master Bath Closet", room: "Master bath", concept: "Birch plywood shelves", rev: "" };
+export const INFO = { id: "masterbath", name: "Master Bath Closet", room: "Master bath", stuff: "towels", concept: "Birch plywood shelves", rev: "" };
 
 export const FIELD = { W: 27.9, D: 23.7, ceiling: 120, opening: 24.3, doorSlab: 22, doorH: 96 };
 

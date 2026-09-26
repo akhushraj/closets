@@ -64,6 +64,15 @@ export function createThreeView(host) {
   key.shadow.bias = -0.0004;
   scene.add(hemi, key, key.target);
 
+  // What sits on the shelves, per closet. Each entry is [height, width, depth-fraction, colour].
+  const STUFF = {
+    folded: [[3.5, 11, .7, 0xe8e2d6], [4.5, 12, .7, 0xcfd6dc], [3, 10, .65, 0xd8cec4], [5, 11, .7, 0xe2e6e0]],
+    books:  [[9, 1.1, .45, 0x8c3a33], [10.5, 1.5, .5, 0x2f4858], [8, 1, .45, 0x4a6b4a], [9.5, 1.8, .5, 0xb5762d], [7.5, 1.2, .42, 0x6b4a6b]],
+    towels: [[4, 9, .6, 0xf0ece4], [3.5, 9, .6, 0xdce6ea], [4.5, 10, .62, 0xe8dfd2]],
+    pantry: [[7, 4, .35, 0xc9b892], [9, 3.2, .3, 0x8f9e7a], [5.5, 6, .5, 0xd9cdb8], [11, 3.6, .32, 0xa89070]],
+    bins:   [[10, 12, .75, 0xd3cec4], [10, 12, .75, 0xc4ccd3]],
+    laundry:[[9, 13, .8, 0xdcd6cc], [6, 10, .6, 0xe6e0d4], [8, 8, .5, 0xc8d2d8]],
+  };
   const oakTex = oakCanvas();
   const mats = {
     oak: new THREE.MeshStandardMaterial({ map: oakTex, roughness: 0.6 }),
@@ -92,6 +101,7 @@ export function createThreeView(host) {
 
   let root = null, framedFor = null, last = null, bounds = null, showWalls = true, real = false;
   const hiddenSides = new Set();   // wall ids whose contents are hidden, so you can look past them
+  let stuffOn = true, stuffGroup = null;
 
   function addBox(p, mat, wood = false) {
     if (p.poly) {   // a flat part cut to a plan polygon: extrude it and lay it down
@@ -180,7 +190,10 @@ export function createThreeView(host) {
         }
         default: addBox(part, wood, true);
       }
-      for (let i = before; i < root.children.length; i++) root.children[i].userData.side = part.wall;
+      for (let i = before; i < root.children.length; i++) {
+        root.children[i].userData.side = part.wall;
+        if (part.kind === "garment" || part.kind === "hamper") root.children[i].userData.stuff = true;
+      }
     }
 
     // LED strips light the space below them
@@ -213,13 +226,54 @@ export function createThreeView(host) {
     const xs = c.outline.map(q => q[0]), ys = c.outline.map(q => q[1]);
     bounds = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
     key.target.position.set((bounds.x0 + bounds.x1) / 2, 40, (bounds.y0 + bounds.y1) / 2);
+    buildStuff(model);
     if (framedFor !== model.info.id) { hiddenSides.clear(); view("overview"); framedFor = model.info.id; }
     applySides();
+    applyStuff();
   }
+
+  // Things people put in a closet, generated from the shelves so every closet gets its own.
+  function buildStuff(model) {
+    stuffGroup = new THREE.Group();
+    root.add(stuffGroup);
+    const kit = STUFF[model.info.stuff] || STUFF.folded;
+    let seed = 20261; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const cache = new Map();
+    const matFor = c => cache.get(c) || (cache.set(c, new THREE.MeshStandardMaterial({ color: c, roughness: .85 })), cache.get(c));
+    for (const sh of model.parts) {
+      if (sh.kind !== "shelf" || sh.z1 > 100) continue;                 // nothing up where you cannot reach
+      const along = sh.x1 - sh.x0 > sh.y1 - sh.y0;
+      const run = along ? sh.x1 - sh.x0 : sh.y1 - sh.y0;
+      const deep = along ? sh.y1 - sh.y0 : sh.x1 - sh.x0;
+      if (run < 8 || deep < 5) continue;
+      let at = 1.5 + rnd() * 3;
+      while (at < run - 5) {
+        if (rnd() < 0.25) { at += 3 + rnd() * 7; continue; }            // leave gaps
+        const [h, wd, df, col] = kit[Math.floor(rnd() * kit.length)];
+        const n = wd < 3 ? 4 + Math.floor(rnd() * 7) : 1;               // books come in runs
+        for (let k = 0; k < n && at < run - 2; k++) {
+          const ww = wd * (0.85 + rnd() * 0.3), hh = h * (0.85 + rnd() * 0.3), dd = deep * df;
+          const g = new THREE.BoxGeometry(along ? ww : dd, hh, along ? dd : ww);
+          const m = new THREE.Mesh(g, matFor(col));
+          const c0 = (along ? sh.x0 : sh.y0) + at + ww / 2;
+          const back = (along ? sh.y0 : sh.x0) + dd / 2 + 0.5;
+          m.position.set(along ? c0 : back, sh.z1 + hh / 2, along ? back : c0);
+          m.castShadow = m.receiveShadow = true;
+          m.userData.stuff = true; m.userData.side = sh.wall;
+          stuffGroup.add(m);
+          at += ww + 0.15;
+        }
+        at += 1 + rnd() * 4;
+      }
+    }
+  }
+  function applyStuff() { if (root) root.traverse(o => { if (o.userData.stuff) o.visible = stuffOn && !hiddenSides.has(o.userData.side); }); }
+  function setStuff(v) { stuffOn = !!v; applyStuff(); }
+  const stuffShown = () => stuffOn;
 
   // hide one wall's fittings so you can look straight at the one behind it
   function applySides() {
-    if (root) root.traverse(o => { if (o.userData.side) o.visible = !hiddenSides.has(o.userData.side); });
+    if (root) root.traverse(o => { if (o.userData.side) o.visible = !hiddenSides.has(o.userData.side) && (!o.userData.stuff || stuffOn); });
   }
   function setSide(id, on) {
     if (on) hiddenSides.delete(id); else hiddenSides.add(id);
@@ -277,5 +331,5 @@ export function createThreeView(host) {
   }
   const isReal = () => real;
 
-  return { update, resize, view, setWalls, setSide, sideShown, setReal, isReal };
+  return { update, resize, view, setWalls, setSide, sideShown, setReal, isReal, setStuff, stuffShown };
 }

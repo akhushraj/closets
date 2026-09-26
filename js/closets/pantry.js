@@ -5,7 +5,7 @@ import { box, diagPanel, polyPart, fixedShelves, collector } from "../model/buil
 import { PLY, frac, ftin } from "../lib/units.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, PLYWOOD_NOTE } from "./common.js";
 
-export const INFO = { id: "pantry", name: "Pantry", room: "Kitchen", concept: "L counter + open shelves", rev: "" };
+export const INFO = { id: "pantry", name: "Pantry", room: "Kitchen", stuff: "pantry", concept: "L counter + open shelves", rev: "" };
 
 export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9, doorSlab: 26, doorH: 96, outletZ: 42.4,
   outBack: 29.9,        // back wall, from the left
