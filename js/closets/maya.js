@@ -18,7 +18,7 @@ export const DEFAULTS = {
   ...shelfSlots("e", [40, 74], [54, 64, 84]),
   gableOn: false,
   ...shelfSlots("s", [30, 46, 62, 78], [16, 86]),
-  aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, topBay: 20, drawersOut: false,
+  aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, topBay: 40, drawersOut: false,
   finish: "white", lights: true,
 };
 
@@ -41,7 +41,7 @@ export const CONTROLS = [
     { key: "above2On", label: "A second one higher up", type: "check" },
     { key: "aboveZ2", label: "Its height", min: 94, max: 112, step: 1 },
     { key: "aboveDepth2", label: "Its depth (shallower, you reach it over the header)", min: 12, max: 24, step: 1.5 },
-    { key: "topBay", label: "Widest bay between its posts", min: 14, max: 36, step: 1 },
+    { key: "topBay", label: "Widest bay between its posts", min: 14, max: 60, step: 1 },
   ]],
   LOOK,
 ];
@@ -110,8 +110,13 @@ export function build(p) {
   if (eLv.length && eLv[0] < fronts.reduce((a, b) => a + b, 0) + 1) warnings.push(`The lowest shelf inside the boxes (${frac(eLv[0], 8)}) is below the top of the drawers (${frac(fronts.reduce((a, b) => a + b, 0), 8)}).`);
   if (eLv.some(z => Math.abs(z - p.rodZ) < 3)) warnings.push(`A shelf lands within 3" of the rod at ${frac(p.rodZ, 8)}. Hangers need about 2" of clear above the rod.`);
   if (p.aboveOn && p.above2On) {
-    const sag = 5 * (30 / 144 * p.aboveDepth2) * postSpan ** 4 / (384 * 1.3e6 * (p.aboveDepth2 * PLY ** 3 / 12));
-    if (sag > postSpan / 360) warnings.push(`The top shelf bows ${frac(sag, 16)} over a ${frac(postSpan, 8)} bay. Bring the posts closer.`);
+    // deep storage up there, so 20 psf rather than the 30 a reachable shelf gets
+    const sagAt = L => 5 * (20 / 144 * p.aboveDepth2) * L ** 4 / (384 * 1.3e6 * (p.aboveDepth2 * PLY ** 3 / 12));
+    const need = [0, 1, 2, 3, 4, 5].find(n => sagAt(W / (n + 1)) < W / (n + 1) / 360);
+    if (sagAt(postSpan) > postSpan / 360)
+      warnings.push(`The top shelf bows ${frac(sagAt(postSpan), 16)} over a ${frac(postSpan, 8)} bay. It needs ${need} post${need === 1 ? "" : "s"} - set the widest bay to about ${frac(W / (need + 1), 8)}.`);
+    else if (nPost > need)
+      warnings.push(`${nPost} posts up there is more than it needs. ${need} would do it - set the widest bay to ${frac(W / (need + 1), 8)}.`);
     if (p.aboveZ2 - aboveZ < 12) warnings.push(`Only ${frac(p.aboveZ2 - aboveZ - PLY, 8)} between the two shelves above the boxes.`);
   }
   if (top + PLY > p.doorH - 2) warnings.push(`The boxes top out at ${frac(top, 8)}, so the shelf on them lands at ${frac(top + PLY, 8)} against a ${frac(p.doorH, 8)} header - you will not be able to see onto it. 84" boxes leave room for a shelf you can look into.`);
