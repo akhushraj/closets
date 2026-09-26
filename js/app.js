@@ -156,6 +156,8 @@ import("./views/three-view.js").then(m => {
   three.update(model);
   buildSideBtns();
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => three.view(b.dataset.view));
+  const rb = document.querySelector("[data-toggle=real]");
+  rb.onclick = () => { three.setReal(!three.isReal()); rb.classList.toggle("on", three.isReal()); wb.hidden = three.isReal(); };
   const wb = document.querySelector("[data-toggle=walls]");
   let walls = lsGet("closets.walls") ?? true;
   const applyWalls = () => { three.setWalls(walls); wb.textContent = walls ? "Hide walls" : "Show walls"; };

@@ -90,7 +90,7 @@ export function createThreeView(host) {
     garments: GARMENT.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 })),
   };
 
-  let root = null, framedFor = null, last = null, bounds = null, showWalls = true;
+  let root = null, framedFor = null, last = null, bounds = null, showWalls = true, real = false;
   const hiddenSides = new Set();   // wall ids whose contents are hidden, so you can look past them
 
   function addBox(p, mat, wood = false) {
@@ -235,6 +235,13 @@ export function createThreeView(host) {
     const R = Math.max(bounds.x1 - bounds.x0, bounds.y1 - bounds.y0);
     const w = c.walls.find(x => x.id === d.wall), f = frame(w), um = (d.u0 + d.u1) / 2;
     const px = f.ax + f.dx * um, py = f.ay + f.dy * um;
+    if (name === "real") {
+      const back = Math.max(f.len, R) * 1.05 + 46;
+      camera.position.set(px - f.nx * back, 64, py - f.ny * back);
+      controls.target.set(px + f.nx * 8, 50, py + f.ny * 8);
+      controls.update();
+      return;
+    }
     if (name === "door") {
       camera.position.set(px - f.nx * (R * 0.9 + 20), 66, py - f.ny * (R * 0.9 + 20));
       controls.target.set(cx + f.nx * 6, 50, cy + f.ny * 6);
@@ -259,5 +266,16 @@ export function createThreeView(host) {
     if (root) root.traverse(o => { if (o.userData.wall) o.visible = showWalls; });
   }
 
-  return { update, resize, view, setWalls, setSide, sideShown };
+  // Real look: stop culling the near walls, so the opening is framed by the stubs and the
+  // header the way it will be in the room, and stand outside it at eye height.
+  function setReal(v) {
+    real = !!v;
+    mats.wall.side = real ? THREE.DoubleSide : THREE.FrontSide;
+    mats.wall.needsUpdate = true;
+    if (real) { setWalls(true); hiddenSides.clear(); applySides(); }
+    view(real ? "real" : "overview");
+  }
+  const isReal = () => real;
+
+  return { update, resize, view, setWalls, setSide, sideShown, setReal, isReal };
 }

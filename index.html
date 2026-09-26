@@ -58,6 +58,7 @@
   #three .hint{position:absolute;left:10px;bottom:8px;font-size:11px;color:#a9a59b;pointer-events:none}
   .viewbtns{position:absolute;right:10px;top:10px;display:flex;gap:6px}
   .viewbtns button{font:inherit;font-size:11px;border:1px solid #444;background:#26282c;color:#ddd;border-radius:4px;padding:4px 9px;cursor:pointer}
+  .viewbtns button.on{background:var(--blue);border-color:var(--blue);color:#fff}
   .sidebtns{position:absolute;right:10px;top:40px;display:flex;gap:6px;align-items:center}
   .sidebtns .lbl{font-size:10px;color:#888;letter-spacing:.06em;text-transform:uppercase}
   .sidebtns button{font:inherit;font-size:11px;border:1px solid #444;background:#26282c;color:#ddd;border-radius:4px;padding:3px 8px;cursor:pointer}
@@ -216,7 +217,7 @@
     <div>
       <section class="tabpanel on" id="p3d">
         <div class="draw" id="three">
-          <div class="viewbtns"><button data-view="overview">Overview</button><button data-view="door">From the door</button><button data-toggle="walls">Hide walls</button></div>
+          <div class="viewbtns"><button data-view="overview">Overview</button><button data-view="door">From the door</button><button data-toggle="real">Real look</button><button data-toggle="walls">Hide walls</button></div>
           <div class="sidebtns" id="sidebtns"></div>
           <span class="hint">Drag to orbit · scroll to zoom · right-drag to pan</span>
         </div>
