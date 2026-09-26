@@ -229,6 +229,23 @@ export function cabinetRun(w, o) {
    `bays` is a list of { w, rods, levels, fronts, label }; fronts run bottom -> top.
    Every part carries mat:"oak" so the 3D view tells the bought boxes from site-built plywood. ---------- */
 export const ES = 0.625;   // chipboard side, top and bottom
+export const ES_WIDTHS = [36, 30, 24, 21, 18, 15];
+
+// The widest set of stock widths that fits a run. Everything is a multiple of 3, so the
+// filler is whatever the run has left over above the nearest achievable multiple.
+const packMemo = new Map();
+function compose(t) {
+  if (t === 0) return [];
+  if (packMemo.has(t)) return packMemo.get(t);
+  let out = null;
+  for (const wd of ES_WIDTHS) { if (wd > t) continue; const rest = compose(t - wd); if (rest) { out = [wd, ...rest]; break; } }
+  packMemo.set(t, out);
+  return out;
+}
+export function packStock(run) {
+  for (let t = Math.floor(run / 3) * 3; t >= 15; t -= 3) { const r = compose(t); if (r) return r; }
+  return [];
+}
 
 export function esRun(w, o) {
   const { u0 = 0, depth = 24, top = 94, z0 = 0, doors = true, bays = [], prefix = "E", seed = 4,

@@ -3,7 +3,7 @@
 // electrical sub-panel near the right end of the long bottom wall.
 // v1: washer + dryer placed, basic plywood shelves, open coat section right of the foyer door,
 // shoe shelves, and the code clear space in front of the sub-panel.
-import { box, esRun, floorItem, collector } from "../model/builders.js";
+import { box, esRun, floorItem, collector, packStock as pack } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
 import { LOOK } from "./common.js";
@@ -27,29 +27,6 @@ export const DEFAULTS = {
   facingDepth: 15,
   finish: "white", lights: false,
 };
-
-// East Star only makes these, so every run is a sum of them plus a filler strip.
-const STOCK = [36, 30, 24, 21, 18, 15];
-const memo = new Map();
-function compose(t) {
-  if (t === 0) return [];
-  if (memo.has(t)) return memo.get(t);
-  let out = null;
-  for (const wd of STOCK) {
-    if (wd > t) continue;
-    const rest = compose(t - wd);
-    if (rest) { out = [wd, ...rest]; break; }
-  }
-  memo.set(t, out);
-  return out;
-}
-export function pack(run) {
-  for (let t = Math.floor(run / 3) * 3; t >= 15; t -= 3) {
-    const r = compose(t);
-    if (r) return r;
-  }
-  return [];
-}
 
 export const CONTROLS = [
   ["Washer / dryer · clearances", [
@@ -161,8 +138,8 @@ export function build(p) {
   const fu0 = Yb - (p.leftUpper + p.foyerRO), fu1 = Yb - p.leftUpper;
   const gu0 = p.rightUpper, gu1 = p.rightUpper + p.garageRO;
   const doors = [
-    { wall: "L", u0: fu0, u1: fu1, slab: p.foyerRO - 2.5, h: 80, roH: 82.5, swing: "in", hingeU: fu1 - 1, label: "foyer" },
-    { wall: "R", u0: gu0, u1: gu1, slab: p.garageRO - 2.5, h: 80, roH: 82.5, swing: "in", hingeU: gu0 + 1, label: "garage" },
+    { wall: "L", u0: fu0, u1: fu1, slab: p.foyerRO - 2.5, h: 96, roH: 98.5, swing: "in", hingeU: fu1 - 1, label: "foyer" },
+    { wall: "R", u0: gu0, u1: gu1, slab: p.garageRO - 2.5, h: 96, roH: 98.5, swing: "out", hingeU: gu0 + 1, label: "garage, out" },
   ];
 
   // anything standing in the panel's clear space?
@@ -226,7 +203,7 @@ export function build(p) {
       `Wall C has nothing on it - that is the garage door wall.`,
       `The machines sit ${frac(bc, 8)} off the wall for hoses and the vent.`,
       `Two 29" machines in a ${frac(p.wdW, 8)} alcove leave ${frac(spare, 8)} in total. Re-measure before ordering.`,
-      "Both doors are assumed to swing in, hinged on the jamb away from the long wall. Please confirm.",
+      "The garage door swings out into the garage, so it never takes room off the walkway on this side. The foyer door is assumed to swing in - please confirm.",
       `The long wall comes to ${frac(lw, 8)} from the alcove widths against ${frac(125.9, 8)} measured. Re-measure.`,
     ],
   };
