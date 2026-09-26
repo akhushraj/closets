@@ -9,7 +9,7 @@ export const INFO = { id: "guest", name: "Guest Closet", room: "Guest room", stu
 export const FIELD = { W: 54.1, D: 22.3, ceiling: 120, stubL: 2.1, opening: 50.1, stubR: 1.8, doorH: 96 };
 
 export const DEFAULTS = {
-  rodZ: 71, lowOn: true, lowZ: 35, lowDepth: 21, upDepth: 21, dresser: true, divider: true,
+  rodZ: 71, lowOn: false, lowZ: 35, lowDepth: 21, upDepth: 21, dresser: true, divider: true,
   topOn: true, topZ: 88, topDepth: 12,
   ...shelfSlots("u", [73], [60, 84, 94]),
   finish: "white",
@@ -18,7 +18,7 @@ export const DEFAULTS = {
 export const CONTROLS = [
   ["Hanging", [
     { key: "rodZ", label: "Rod height", min: 60, max: 80, step: 0.5 },
-    { key: "lowOn", label: "Shelf below the clothes", type: "check" },
+    { key: "lowOn", label: "Shelf below the clothes (you cannot reach past them)", type: "check" },
     { key: "lowZ", label: "Its height (top)", min: 24, max: 44, step: 0.5 },
     { key: "lowDepth", label: "Its depth", min: 10, max: 22, step: 0.5 },
     { key: "dresser", label: "Show an IKEA dresser (MALM 3-drawer)", type: "check" },
@@ -91,6 +91,7 @@ export function build(p) {
   const clothesBottom = p.rodZ - 1.2 - 34;
   if (p.lowOn && p.lowZ > clothesBottom) warnings.push(`Jackets hang down to about ${frac(clothesBottom, 8)}, so the low shelf at ${frac(p.lowZ, 8)} is in their way.`);
   if (p.lowOn && p.dresser && p.lowZ - PLY - 1.5 < MALM.h + 0.5) warnings.push(`The dresser (${MALM.h}") doesn't fit under the low shelf's cleats (${frac(p.lowZ - PLY - 1.5, 8)}).`);
+  if (!p.lowOn && p.dresser) warnings.push(`Nothing over the dresser now, so anything up to about ${frac(clothesBottom - 1, 8)} tall fits there - the clothes are the only limit.`);
   if (up.length && up[0] < p.rodZ + 2) warnings.push("The first shelf above the rod is below the rod.");
   const blocked = up.filter(z => z > p.doorH - 1.5);
   if (blocked.length) warnings.push(`Shelves at ${blocked.join(", ")}" sit above the door header (about ${p.doorH}"), so you can't reach them through the opening.`);
@@ -114,7 +115,7 @@ export function build(p) {
     drawerGroups: [],
     stats: [
       { k: "Rod", v: frac(W - 0.5, 8), s: `at ${frac(p.rodZ, 8)}, wall to wall` },
-      { k: "Low shelf", v: p.lowOn ? frac(p.lowZ, 8) : "off", s: p.lowOn ? `${frac(p.lowZ - PLY - 1.5, 8)} clear under its cleats` : "" },
+      { k: "Under the clothes", v: p.lowOn ? `shelf at ${frac(p.lowZ, 8)}` : "open", s: p.lowOn ? `${frac(p.lowZ - PLY - 1.5, 8)} clear under its cleats` : `clothes reach ${frac(clothesBottom, 8)}, so that is the headroom` },
       { k: "Upper shelves", v: `${up.length}`, s: up.length ? `tops at ${up.join(", ")}"` : "none on" },
       { k: "Beside the dresser", v: frac(W - 1 - MALM.w - 1, 8), s: "floor space for suitcases and bags" },
     ],
@@ -140,7 +141,7 @@ export function build(p) {
       `${up.length + (p.lowOn ? 1 : 0)} shelves, 3/4" birch veneer-core plywood (paint grade), resting loose on 1×2 cleats screwed into the studs on three walls.`,
       "Front edge: 1/4\" × 3/4\" poplar strip, glued and pinned flush.",
       "Paint: same as the room, primer + 2 coats, all sides. Paint the shelves flat, then set them in.",
-      `Floor: an IKEA MALM 3-drawer (${MALM.w}" × ${MALM.d}" × ${MALM.h}") fits under the low shelf, with ${frac(W - 2 - MALM.w, 8)} beside it for suitcases.`,
+      `Floor: an IKEA MALM 3-drawer (${MALM.w}" × ${MALM.d}" × ${MALM.h}") with ${frac(W - 2 - MALM.w, 8)} beside it for suitcases. ${p.lowOn ? "" : `With no shelf over it, anything up to about ${frac(clothesBottom - 1, 8)} tall fits - a taller chest, or stacked baskets.`}`,
       "No lights, no outlet.",
     ],
   };
