@@ -3,7 +3,7 @@
 // Left and right walls are East Star factory cabinets (94" boxes, floor-standing, doors).
 // Site-built plywood does the rest: a deck and an upper shelf over the cabinets, and the nook,
 // whose side gable extends past the alcove so its shelves can be deeper than the 12.4" recess.
-import { box, esRun, fixedShelves, collector, hatchClashes } from "../model/builders.js";
+import { box, esRun, fixedShelves, pressBoard, collector, hatchClashes } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK } from "./common.js";
@@ -28,6 +28,7 @@ export const DEFAULTS = {
   ...shelfSlots("a", [14, 28, 42, 56, 70, 84], [98]),
   rightDepth: 15.5, rightPlan: "36, 24, 15",
   aboveOn: true, aboveZ: 107,
+  pressOn: true, pressW: 15, pressZ: 18, pressDown: false,
   ...shelfSlots("n", [16, 30, 44, 58, 72, 86], [100]),
   finish: "white", lights: true,
 };
@@ -57,6 +58,12 @@ export const CONTROLS = [
   ["Above the cabinets · plywood planks", [
     { key: "aboveOn", label: "Deck and shelf over the cabinets", type: "check" },
     { key: "aboveZ", label: "Upper shelf height", min: 100, max: 116, step: 1 },
+  ]],
+  ["Back wall · fold-down press board", [
+    { key: "pressOn", label: "Press board on the back wall", type: "check" },
+    { key: "pressW", label: "Cabinet width", min: 12, max: 20, step: 0.5 },
+    { key: "pressZ", label: "Cabinet bottom", min: 12, max: 30, step: 1 },
+    { key: "pressDown", label: "Show it folded down", type: "check" },
   ]],
   ["Nook · plywood planks", [
     { key: "nookDepth", label: "Shelf depth (past 12-3/8\" it needs a gable)", min: 12, max: 28, step: 0.5 },
@@ -141,6 +148,14 @@ export function build(p) {
     if (p.aboveZ + PLY > p.ceiling - 8) warnings.push(`The upper shelf leaves ${frac(p.ceiling - p.aboveZ - PLY, 8)} to the ceiling.`);
   }
 
+  // ---- back wall stays clear so you can reach the back end of both runs; the only thing on it
+  // is a fold-down press board, 5" deep closed, centred in the gap between the two runs.
+  const bw0 = d, bw1 = W - rd, bwFree = bw1 - bw0;
+  if (p.pressOn && bwFree > p.pressW + 4)
+    add(pressBoard(w.T, { u0: bw0 + (bwFree - p.pressW) / 2, width: p.pressW, z0: p.pressZ, down: p.pressDown }));
+  if (p.pressOn && bwFree <= p.pressW + 4)
+    warnings.push(`Only ${frac(bwFree, 8)} of back wall between the two runs - not enough for a ${frac(p.pressW, 8)} press cabinet.`);
+
   // ---- nook. Its shelves can run deeper than the 12.4" recess if a plywood gable extends the
   // NT-side wall out into the closet; the door wall carries the other end.
   const nookRun = Lh - RT, nLv = readShelves(p, "n", 7);
@@ -191,6 +206,7 @@ export function build(p) {
       { k: "Above the cabinets", v: p.aboveOn ? `deck ${frac(deck, 8)} · shelf ${frac(p.aboveZ, 8)}` : "off", s: `plywood planks, ${frac(p.ceiling - p.aboveZ - PLY, 8)} left to the ceiling` },
       { k: "Drawers", v: `${left.drawers.length + right.drawers.length}`, s: `in the two ${lw[1] || 36}" boxes on the left wall` },
       { k: "Aisle", v: frac(aisle, 8), s: `widest door swings ${frac(swing, 8)}` },
+      { k: "Back wall", v: p.pressOn ? `press board, ${frac(p.pressW, 8)}` : "clear", s: `${frac(bwFree, 8)} between the runs, kept open for access` },
     ],
     titleMeta: [
       { k: "Closet", v: `${ftin(W)} × ${ftin(Lh)} + nook` },
@@ -220,6 +236,7 @@ export function build(p) {
       `The nook is planks rather than a box on purpose: the recess is only ${frac(p.nookD, 8)} and East Star's shallowest is 15-1/2", which would stand proud and lap the crawl hatch. Planks fit it exactly.`,
       `The ${lw[0]}" box by the door sits behind the entry door. Opened fully the door stands about ${frac(p.doorAt + 1 - 1.4 - d, 8)} in front of it, so shut the entry door before opening that one.`,
       `A ${frac(top, 8)} box under a ${ftin(p.ceiling)} ceiling leaves ${frac(p.ceiling - top, 8)} above it. This is a walk-in, so a step ladder reaches it. Planks on the cabinet tops turn it into two more shelves.`,
+      `The back wall stays clear on purpose. A cabinet there would sit right where you stand to open the doors on the back end of both runs. A 5"-deep press board takes almost nothing from the aisle closed, and folds down to a ${frac(42, 8)} board when you want it.`,
       `The crawl hatch runs ${frac(p.hatchX0, 8)}-${frac(p.hatchX1, 8)} from the left wall. Everything on the left and right walls clears it; only the nook box laps it.`,
     ],
   };
