@@ -3,7 +3,7 @@
 // electrical sub-panel near the right end of the long bottom wall.
 // v1: washer + dryer placed, basic plywood shelves, open coat section right of the foyer door,
 // shoe shelves, and the code clear space in front of the sub-panel.
-import { box, esRun, floorItem, collector, packStock as pack } from "../model/builders.js";
+import { box, esRun, floorItem, collector, packStock, packStock as pack } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
 import { LOOK } from "./common.js";
@@ -132,7 +132,10 @@ export function build(p) {
   if (p.coatRod < coatFronts.reduce((a, b) => a + b, 0) + 40)
     warnings.push(`The coat rod at ${frac(p.coatRod, 8)} leaves ${frac(p.coatRod - coatFronts.reduce((a, b) => a + b, 0), 8)} of hanging over the drawers. A jacket wants about 40".`);
 
-  if (p.facingDepth > 0) run(w.B, clearU, coat0, { depth: p.facingDepth, top: 96, levels: [20, 34, 48, 62, 76], prefix: "B", seed: 25 });
+  if (p.facingDepth > 0) {   // start it so the boxes butt the coat closet; the filler lands at the panel end
+    const bw = packStock(coat0 - clearU).reduce((a, b) => a + b, 0);
+    run(w.B, coat0 - bw, coat0, { depth: p.facingDepth, top: 96, levels: [20, 34, 48, 62, 76], prefix: "B", seed: 25 });
+  }
 
   // doors: foyer on the left wall, garage on the right; both assumed to swing in
   const fu0 = Yb - (p.leftUpper + p.foyerRO), fu1 = Yb - p.leftUpper;
@@ -148,8 +151,9 @@ export function build(p) {
     warnings.push("Something stands in the clear space in front of the electrical panel.");
 
   // the clearances worth dimensioning: machine depth, the run to the long wall, and the dryer door
-  const mFront = yWD + bc + Math.max(W1.d, D1.d), dOpen = yWD + bc + D1.open;
-  const xm = du0 + D1.w * 0.35 + X2, xd = du0 + D1.w * 0.75 + X2;
+  const mDepth = Math.max(W1.d, D1.d), mFront = yWD + bc + mDepth, dOpen = yWD + bc + D1.open;
+  const xw = X2 + wu0;                       // the washer: the only machine a cabinet faces
+  const x1 = xw + W1.w * 0.22, x2 = xw + W1.w * 0.52, x3 = xw + W1.w * 0.82;
   const gap = Yb - p.facingDepth - dOpen;
   if (p.facingDepth > 0 && gap < 12)
     warnings.push(`A ${frac(p.facingDepth, 8)} cabinet opposite the dryer leaves ${frac(gap, 8)} to its open door. Drop that run to about ${frac(Math.max(0, Yb - dOpen - 16), 8)} deep to keep 16".`);
@@ -170,11 +174,11 @@ export function build(p) {
       { a: [X3, yWD + p.rightUpper], b: [X3, yWD + p.rightUpper + p.garageRO], label: `${frac(p.garageRO, 8)} garage`, off: -(t + 2.3) },
       { a: [0, Yb], b: [X3, Yb], label: `${frac(lw, 8)} (measured 125.9)`, off: t + 2.3 },
       ...(p.showClear ? [
-        { a: [xm, yWD], b: [xm, mFront], label: `${frac(D1.d, 8)} machine + ${frac(bc, 8)} behind`, off: 0 },
-        { a: [xm, mFront], b: [xm, Yb], label: `${frac(Yb - mFront, 8)} to the long wall`, off: 0 },
-        { a: [xd, yWD], b: [xd, dOpen], label: `${frac(D1.open, 8)} dryer door open`, off: 0 },
-        ...(p.facingDepth > 0 ? [{ a: [xd, dOpen], b: [xd, Yb - p.facingDepth],
-          label: `${frac(Yb - p.facingDepth - dOpen, 8)} past the open door`, off: 0 }] : []),
+        { a: [x1, yWD], b: [x1, mFront], label: `${frac(mDepth, 8)} machine + ${frac(bc, 8)} behind`, off: 0 },
+        { a: [x2, mFront], b: [x2, Yb], label: `${frac(Yb - mFront, 8)} machine face to the long wall`, off: 0 },
+        { a: [x3, yWD], b: [x3, dOpen], label: `${frac(D1.open, 8)} machine door open`, off: 0 },
+        ...(p.facingDepth > 0 ? [{ a: [x3, dOpen], b: [x3, Yb - p.facingDepth],
+          label: `${frac(Yb - p.facingDepth - dOpen, 8)} open door to the cabinet`, off: 0 }] : []),
       ] : []),
     ],
     drawerGroups: [],
