@@ -26,7 +26,7 @@ export const DEFAULTS = {
   backClear: 5, showClear: true, pedestal: true,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   sinkW2: 25, sinkD2: 22, backWall: "counter", wdDoorsOpen: false,
-  upperDepth: 15, upperBottom: 54, upperTop: 90,
+  upperDepth: 15.5, upperBottom: 54, upperTop: 90,
   wdUpperBottom: 70, wdUpperTop: 120,
   coatW: 30, bPlan: "30, 30", grade: "shaker", coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 96,
   facingDepth: 24,
@@ -41,14 +41,16 @@ export const CONTROLS = [
     { key: "wdDoorsOpen", label: "Machine doors open", type: "check" },
   ]],
   ["Corner closet · wall A right + wall D left", [
-    { key: "baseDepth", label: "Base cabinets + counter, depth", min: 18, max: 24, step: 0.5 },
+    { key: "baseDepth", label: "Base cabinets + counter, depth", type: "select",
+      options: [["24", "24\" (stock)"], ["15.5", "15-1/2\" (stock)"]] },
     { key: "counterZ", label: "Counter height", min: 34, max: 38, step: 0.25 },
     { key: "sinkBay", label: "Open bay for the sink", min: 24, max: 36, step: 1 },
     { key: "sinkW2", label: "Sink, width", min: 21, max: 33, step: 1 },
     { key: "sinkD2", label: "Sink, front to back", min: 18, max: 25, step: 1 },
     { key: "backWall", label: "Wall D left (the back leg)", type: "select",
       options: [["counter", "Counter, same as the sink leg"], ["tall", "Floor-to-ceiling storage instead"], ["none", "Leave it empty"]] },
-    { key: "upperDepth", label: "Uppers, depth", min: 12, max: 18, step: 1.5 },
+    { key: "upperDepth", label: "Uppers, depth", type: "select",
+      options: [["15.5", "15-1/2\" (stock)"], ["24", "24\" (stock)"]] },
     { key: "upperBottom", label: "Uppers, bottom", min: 48, max: 60, step: 1 },
     { key: "upperTop", label: "Uppers, top", min: 80, max: 120, step: 1 },
   ]],
@@ -69,13 +71,15 @@ export const CONTROLS = [
   ]],
   ["Wall B left · facing the machines", [
     { key: "bPlan", label: "Box widths", type: "text" },
-    { key: "facingDepth", label: "Depth (0 = leave it open)", min: 0, max: 24, step: 1.5 },
+    { key: "facingDepth", label: "Depth", type: "select",
+      options: [["24", "24\" (stock)"], ["15.5", "15-1/2\" (stock) - 8-1/2\" more walkway"], ["0", "Leave the wall open"]] },
   ]],
   LOOK,
 ];
 
 export function build(p) {
   p = { ...p, ...FIELD };
+  for (const k of ["baseDepth", "upperDepth", "facingDepth"]) p[k] = Number(p[k]);
   const X1 = p.sinkW, X2 = X1 + p.pierT, X3 = X2 + p.wdW;
   const yWD = p.pierLen - p.pierBelow;
   const Yb = p.leftUpper + p.foyerRO + p.leftLower;
@@ -218,6 +222,8 @@ export function build(p) {
   const dOpen = yWD + bc + Math.max(W1.open, D1.open);
   const xw = X2 + wu0;                       // the washer: the only machine a cabinet faces
   const x1 = xw + W1.w * 0.22, x2 = xw + W1.w * 0.52, x3 = xw + W1.w * 0.82;
+  const aisle = Yb - mFront - p.facingDepth;
+  if (aisle < 36) warnings.push(`The walkway in front of the machines is ${frac(aisle, 8)}. 36" is the working minimum and 42" is what NKBA recommends for laundry. A ${frac(p.facingDepth, 8)} run costs ${frac(36 - aisle, 8)} of that; 15-1/2" boxes would give you ${frac(Yb - mFront - 15.5, 8)}.`);
   const gap = Yb - p.facingDepth - dOpen;
   if (p.facingDepth > 0 && gap < 1)
     warnings.push(`A ${frac(p.facingDepth, 8)} cabinet opposite the machines stops their doors opening - the doors reach ${frac(dOpen - yWD, 8)} off that wall and the cabinet face is ${frac(Yb - p.facingDepth - yWD, 8)}.`);
@@ -276,7 +282,7 @@ export function build(p) {
       { k: "Machine tops", v: frac(mTop, 8), s: pedH ? `on ${frac(pedH, 8)} pedestals` : "on the floor, no pedestals" },
       { k: "Over the machines", v: `${frac(p.wdUpperBottom, 8)} to ${frac(p.wdUpperTop, 8)}`, s: `${frac(p.wdUpperBottom - mTop, 8)} above the machines; ${frac(Math.max(0, 80 - p.wdUpperBottom), 8)} of it within easy reach` },
       { k: "Machine to long wall", v: frac(Yb - mFront, 8), s: `dryer door open reaches ${frac(dOpen - yWD, 8)} off that wall` },
-      { k: "Facing that run", v: p.facingDepth ? frac(p.facingDepth, 8) : "nothing yet", s: p.facingDepth ? `${frac(Yb - mFront - p.facingDepth, 8)} walkway; ${frac(gap, 8)} with a machine door open` : "" },
+      { k: "Facing that run", v: p.facingDepth ? frac(p.facingDepth, 8) : "nothing yet", s: p.facingDepth ? `${frac(aisle, 8)} walkway - ${aisle >= 42 ? "the recommended 42\"" : aisle >= 36 ? "over the 36\" minimum, under the 42\" recommendation" : "under the 36\" minimum"}; the open door clears it by ${frac(gap, 8)}` : "" },
       { k: "Corner closet", v: `${frac(p.leftUpper, 8)} + ${frac(X1 - bd, 8)}`, s: `${frac(bd, 8)} base + counter at ${frac(cz, 8)}, ${frac(ud, 8)} uppers` },
       { k: "Coat closet", v: `${frac(p.coatW, 8)} × 24" deep`, s: `rod at ${frac(p.coatRod, 8)}, ${coatFronts.length} drawers under it` },
       { k: "Wall B left", v: p.facingDepth ? `${frac(coat0 - clearU, 8)} × ${frac(p.facingDepth, 8)}` : "open", s: `${frac(gap, 8)} from an open machine door` },
