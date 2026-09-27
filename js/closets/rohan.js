@@ -119,6 +119,10 @@ export function build(p) {
 
   const rodName0 = onC ? "Wall C" : "Wall B";
   const underCleats = lowZ - PLY - 1.5;
+  // room in front of the dresser, measured off its own face, not the shelf's
+  const dFront = 0.5 + HEMNES.d;
+  const inFront = onC ? Math.min(M, L - alcDepth) - dFront : W - dFront;
+  const aisle = onC ? M - cd : W - bd;
   if (p.lowOn && p.dresser && underCleats < HEMNES.h)
     warnings.push(`The shelf lands at ${frac(lowZ, 8)}, leaving ${frac(underCleats, 8)} under its cleats, and the HEMNES is ${HEMNES.h}" tall. Raise the rod or shorten the hang so the shelf sits at ${frac(HEMNES.h + PLY + 1.5 + 1, 8)} or higher.`);
   if (p.hang < 34) warnings.push(`${frac(p.hang, 8)} of hanging is short - a jacket is about 34" on the hanger.`);
@@ -166,6 +170,7 @@ export function build(p) {
       { k: "The L, above the rod", v: lLv.map(z => frac(z, 8)).join(", "), s: `${rodName} full length, ${othName} ${frac(othRun, 8)} round the corner` },
       { k: "Hanging", v: frac(p.hang, 8), s: `rod ${frac(p.rodZ, 8)}, shelf under it ${frac(lowZ, 8)}` },
       { k: "Under that shelf", v: p.lowOn ? frac(underCleats, 8) : "open", s: p.lowOn && p.dresser ? `clear at the cleats; HEMNES is ${HEMNES.h}" tall` : "" },
+      { k: "In front of the dresser", v: frac(inFront, 8), s: `${frac(inFront - 18, 8)} left with a drawer out; aisle off the shelf face is ${frac(aisle, 8)}` },
       { k: "Wall A · alcove", v: `${alcLevels.length} × ${frac(alcDepth, 8)} deep`, s: "capped by the wall D casing" },
     ],
     titleMeta: [
@@ -192,7 +197,8 @@ export function build(p) {
       `The shelves above the rod are the same either way - they run round B and C as one L. What the layout changes is which wall gets the rod and the dresser shelf under it. ${rodName} gives ${frac(rodLen, 8)} of rod at ${frac(rodDepth, 8)} deep; the other would give ${frac(onC ? M : W, 8)} at ${frac(onC ? bd : cd, 8)}.`,
       `${othName} carries only the L shelves, and it starts ${frac(othU0, 8)} off the corner so it never runs into the hanging clothes.`,
       `The HEMNES is ${HEMNES.h}" tall, so the shelf over it cannot sit lower than ${frac(HEMNES.h + PLY + 1.5 + 1, 8)}. At ${frac(p.hang, 8)} of hanging the shelf lands at ${frac(lowZ, 8)} and clears it by ${frac(underCleats - HEMNES.h, 8)}.`,
-      `${frac(p.hang, 8)} of hanging takes a shirt or a jacket (about 34" on the hanger) but not a long coat. That is the trade for getting a ${HEMNES.h}" dresser underneath - a 42" coat would push the rod to ${frac(lowZ + 43, 8)}.`,
+      `${frac(p.hang, 8)} of hanging clears a jacket, which is about 34" on the hanger. Only a full-length coat would want more, and that would push the rod to ${frac(lowZ + 43, 8)}.`,
+      `Room to open a drawer is measured off the dresser's own face, ${frac(HEMNES.d, 8)} off the wall - not off the ${frac(rodDepth, 8)} shelf above it. That leaves ${frac(inFront, 8)} here, ${frac(inFront - 18, 8)} with a drawer pulled right out.`,
       `Wall A can't match the others for depth. The return beside the entry door is ${frac(belowDoor, 8)}; take off a ${frac(cw, 8)} casing and 1/4" and the alcove shelves cap out at ${frac(alcDepth, 8)}.`,
       "Mounting: the drywall is up, so shelves can't be nailed straight to studs. Under each, screw a 3/4\" x 1-1/2\" cleat through the drywall into the studs, then set the shelf on the cleats.",
     ],
