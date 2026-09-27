@@ -26,7 +26,7 @@ export const DEFAULTS = {
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   upperDepth: 15, upperBottom: 54, upperTop: 90,
   wdUpperBottom: 70, wdUpperTop: 120,
-  coatW: 48, coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 96,
+  coatW: 30, bPlan: "30, 30", grade: "shaker", coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 96,
   facingDepth: 24,
   finish: "white", lights: false,
 };
@@ -49,14 +49,19 @@ export const CONTROLS = [
     { key: "wdUpperBottom", label: "Bottom", min: 42, max: 84, step: 1 },
     { key: "wdUpperTop", label: "Top", min: 80, max: 120, step: 1 },
   ]],
+  ["Grade", [
+    { key: "grade", label: "Boxes", type: "select",
+      options: [["shaker", "Shaker, plywood box"], ["chip", "Chipboard, 1/4\" back"]] },
+  ]],
   ["Wall B right · coat closet", [
-    { key: "coatW", label: "Width", min: 30, max: 72, step: 1 },
+    { key: "coatW", label: "Width", min: 24, max: 72, step: 1 },
     { key: "coatRod", label: "Rod height", min: 54, max: 78, step: 1 },
     { key: "coatFronts", label: "Drawer fronts under it, top → bottom", type: "text" },
     { key: "coatDoors", label: "Doors on it", type: "check" },
     { key: "tallTop", label: "Top of the coat run and wall B left", min: 84, max: 120, step: 1 },
   ]],
   ["Wall B left · facing the machines", [
+    { key: "bPlan", label: "Box widths", type: "text" },
     { key: "facingDepth", label: "Depth (0 = leave it open)", min: 0, max: 24, step: 1.5 },
   ]],
   LOOK,
@@ -101,10 +106,11 @@ export function build(p) {
   const bd = p.baseDepth, cz = p.counterZ, ud = p.upperDepth;
   const runs = [];
   const run = (wall, u0, u1, o) => {
-    const wd = pack(u1 - u0);
+    const wd = o.widths || pack(u1 - u0);
     if (!wd.length) return { drawers: [] };
     runs.push({ wall: wall.id, u0, u1, wd, fill: (u1 - u0) - wd.reduce((a, b) => a + b, 0), ...o });
     return add(esRun(wall, { u0, depth: o.depth, z0: o.z0 || 0, top: o.top, doors: o.doors !== false,
+      ...(p.grade === "chip" ? { mat: "melamine" } : {}),
       bays: wd.map(x => ({ w: x, levels: o.levels, fronts: o.fronts, rods: o.rods })), prefix: o.prefix, seed: o.seed }));
   };
 
@@ -137,16 +143,19 @@ export function build(p) {
   parts.push(box(w.B, "elpanel", pr0, pr1, 0, 4, p.panelBottom, p.panelTop, { mark: true, label: "Sub-panel top" }));
   modules.push(box(w.B, "clear", 0, clearU, 0, 36, 0, 0, { label: "Keep clear", sub: "panel, 30 × 36" }));
 
-  const coat0 = Yb - p.coatW;                                     // wall B right: the coat closet
+  const coat0 = X3 - p.coatW;                                     // wall B right: the coat closet
   const coatFronts = [...parseFronts(p.coatFronts, [6, 7, 8])].reverse();
-  const coats = run(w.B, coat0, Yb, { depth: 24, top: p.tallTop, doors: p.coatDoors, fronts: coatFronts,
+  const coats = run(w.B, coat0, X3, { depth: 24, top: p.tallTop, doors: p.coatDoors, fronts: coatFronts,
     rods: [p.coatRod], levels: [p.coatRod + 14], prefix: "C", seed: 21 });
   if (p.coatRod < coatFronts.reduce((a, b) => a + b, 0) + 40)
     warnings.push(`The coat rod at ${frac(p.coatRod, 8)} leaves ${frac(p.coatRod - coatFronts.reduce((a, b) => a + b, 0), 8)} of hanging over the drawers. A jacket wants about 40".`);
 
   if (p.facingDepth > 0) {   // start it so the boxes butt the coat closet; the filler lands at the panel end
-    const bw = packStock(coat0 - clearU).reduce((a, b) => a + b, 0);
-    run(w.B, coat0 - bw, coat0, { depth: p.facingDepth, top: p.tallTop, levels: [20, 34, 48, 62, 76], prefix: "B", seed: 25 });
+    const bw = String(p.bPlan).split(/[,\s]+/).map(Number).filter(x => [15, 18, 21, 24, 30, 36].includes(x));
+    const run0 = bw.reduce((a, b) => a + b, 0);
+    if (run0 > 0 && coat0 - run0 >= clearU)
+      run(w.B, coat0 - run0, coat0, { widths: bw, depth: p.facingDepth, top: p.tallTop, levels: [20, 34, 48, 62, 76], prefix: "B", seed: 25 });
+    else warnings.push(`Wall B: ${bw.join(" + ")}" needs ${frac(run0, 8)} but only ${frac(coat0 - clearU, 8)} is free between the panel clear space and the coat closet.`);
   }
 
   // doors: foyer on the left wall, garage on the right; both assumed to swing in
@@ -216,7 +225,8 @@ export function build(p) {
     notes: [
       `Wall A right and wall D left are one L-shaped corner closet: ${frac(bd, 8)} base cabinets under a counter at ${frac(cz, 8)}, with ${frac(ud, 8)} uppers from ${frac(p.upperBottom, 8)} to ${frac(p.upperTop, 8)} over both. The A run owns the inside corner; the D run starts ${frac(bd, 8)} clear of it so the two don't collide.`,
       `The sink drops into the counter over a ${frac(p.sinkBay, 8)} base cabinet, ${frac(p.sinkCenterFromJamb, 8)} off the foyer jamb. No shelf in that one - the trap needs the room - so it takes tall bottles standing up.`,
-      `Wall B right is the coat closet - 24" deep, rod at ${frac(p.coatRod, 8)}, ${coatFronts.length} drawers under it, on your right as you come in from the foyer.`,
+      `Wall B is three ${p.coatW}" boxes: the coat closet at the foyer end, rod at ${frac(p.coatRod, 8)} with ${coatFronts.length} drawers under it, then two more beside it.`,
+      `Grade: ${p.grade === "chip" ? "chipboard" : "shaker, plywood box"}. This is the wall that gets opened every day coming in and out, and it is the room most likely to see water - a washer hose, the sink, plain humidity. Chipboard swells when it gets wet and never comes back. Worth the plywood here even if the uppers elsewhere are not.`,
       `Wall B left can only be ${frac(coat0 - clearU, 8)} wide: the sub-panel's 30" x 36" code clear space takes the garage corner, and that is exactly the stretch facing the dryer. What is left faces the washer.`,
       `At ${frac(p.facingDepth, 8)} deep the walkway is ${frac(Yb - mFront - p.facingDepth, 8)} with everything shut, which is comfortable. Open a machine door and it reaches ${frac(D1.open, 8)} off that wall, leaving ${frac(gap, 8)} to stand in - enough to load from the side, not to stand square in front of it.`,
       `Wall C has nothing on it - that is the garage door wall.`,
