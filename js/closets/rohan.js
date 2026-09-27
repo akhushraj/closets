@@ -17,13 +17,13 @@ export const FIELD = { closetW: 46.2, mainD: 52.1, alcoveW: 25.2, totalL: 78.7, 
 const HEMNES = { w: 42.5, d: 19.625, h: 37.75 };
 
 export const DEFAULTS = {
-  layout: "rodC", rodZ: 77, hang: 36, bDepth: 21, cDepth: 24,
-  ...slots("l", [81, 93, 105], [69, 113]),   // above the rod, these run the full L
-  lowOn: true, dresser: true,
-  chestOn: false, chestW: 12, chestD: 18, chestH: 50,
-  s1: 16, s1on: false, s2: 28, s2on: true, s3: 40, s3on: true, s4: 52, s4on: true,
-  s5: 64, s5on: true, s6: 76, s6on: true, s7: 88, s7on: true, s8: 104, s8on: true,
-  casingW: 3.5, hamperW: 16, hamperD: 16, hamperH: 25,
+  layout: "rodC", rodZ: 72, hang: 36, bDepth: 21, cDepth: 24,
+  ...slots("l", [74, 96], [108, 111, 114]),   // above the rod, these run the full L
+  lowOn: false, dresser: true,
+  chestOn: true, chestW: 14, chestD: 18, chestH: 50,
+  s1: 16, s1on: false, s2: 24, s2on: true, s3: 36, s3on: true, s4: 48, s4on: true,
+  s5: 60, s5on: true, s6: 72, s6on: true, s7: 84, s7on: true, s8: 96, s8on: true,
+  casingW: 2.25, hamperW: 16, hamperD: 16, hamperH: 25,
   finish: "oak", lights: true,
 };
 
@@ -145,6 +145,8 @@ export function build(p) {
   const aisle = onC ? M - cd : W - bd;
   if (p.lowOn && p.dresser && underCleats < HEMNES.h)
     warnings.push(`The shelf lands at ${frac(lowZ, 8)}, leaving ${frac(underCleats, 8)} under its cleats, and the HEMNES is ${HEMNES.h}" tall. Raise the rod or shorten the hang so the shelf sits at ${frac(HEMNES.h + PLY + 1.5 + 1, 8)} or higher.`);
+  if (!p.lowOn && p.dresser && clothesTo < HEMNES.h + 1)
+    warnings.push(`No shelf over the dresser, so the clothes have to clear it themselves. At ${frac(p.hang, 8)} of hang they reach ${frac(clothesTo, 8)} and the HEMNES top is ${HEMNES.h}".`);
   if (p.chestOn && p.chestH > overRod - 2)
     warnings.push(`The chest is ${frac(p.chestH, 8)} tall and the first L shelf is at ${frac(overRod, 8)}. It won't go under.`);
   if (p.chestOn && othRun <= p.chestW + 2)
