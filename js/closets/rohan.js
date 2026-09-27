@@ -109,9 +109,10 @@ export function build(p) {
   add(fixedShelves(rodW, { u0: 0, u1: rodLen, depth: rodDepth, levels: lLv, label: "The L" }));
   if (othRun > 8) add(fixedShelves(othW, { u0: othU0, u1: othU1, depth: othDepth, levels: lLv, label: "The L, round the corner" }));
 
-  // a narrow tall chest in the far corner, under the L, on the wall without the rod
+  // a narrow tall chest in the corner of the wall without the rod, at the end AWAY from the rod
+  // wall, so it is not up against the dresser or the shelves on that side
   if (p.chestOn && othRun > p.chestW + 2) {
-    const c0 = othU1 - p.chestW - 1, c1 = c0 + p.chestW, fh = (p.chestH - 3) / 4;
+    const c0 = onC ? othU0 + 1 : othU1 - p.chestW - 1, c1 = c0 + p.chestW, fh = (p.chestH - 3) / 4;
     parts.push(box(othW, "dresser", c0, c1, 0.5, 0.5 + p.chestD - 0.6, 0, p.chestH - 0.75, { label: "Narrow chest" }));
     parts.push(box(othW, "dresser", c0, c1, 0.5, 0.5 + p.chestD, p.chestH - 0.75, p.chestH, { mark: true, label: "Chest top" }));
     for (let i = 0; i < 4; i++) {
@@ -195,7 +196,7 @@ export function build(p) {
       { k: "Under that shelf", v: p.lowOn ? frac(underCleats, 8) : "open", s: p.lowOn && p.dresser ? `clear at the cleats; HEMNES is ${HEMNES.h}" tall` : "" },
       { k: "In front of the dresser", v: frac(inFront, 8), s: `${frac(inFront - 18, 8)} left with a drawer out; aisle off the shelf face is ${frac(aisle, 8)}` },
       { k: "Open as you walk in", v: frac(onC ? W : W - bd, 8), s: onC ? `wall B carries nothing below the L, so the floor runs clear to it` : `wall B's run stops you ${frac(W - bd, 8)} in` },
-      ...(p.chestOn ? [{ k: "Corner chest", v: `${p.chestW} × ${p.chestD} × ${p.chestH}"`, s: `far end of ${othName}, under the ${frac(overRod, 8)} shelf` }] : []),
+      ...(p.chestOn ? [{ k: "Corner chest", v: `${p.chestW} × ${p.chestD} × ${p.chestH}"`, s: `${onC ? "notch corner" : "wall D corner"} of ${othName}, clear of ${rodName}` }] : []),
       { k: "Wall A · alcove", v: `${alcLevels.length} × ${frac(alcDepth, 8)} deep`, s: "capped by the wall D casing" },
     ],
     titleMeta: [
@@ -213,7 +214,7 @@ export function build(p) {
       ``,
       `${othName.toUpperCase()} (${frac(othDepth, 8)} deep, starting ${frac(othU0, 8)} off the corner, ${frac(othRun, 8)} long): only the ${lLv.length} shelves above the rod, at the same heights, so they carry round as one L. Nothing below them.`,
       ``,
-      ...(p.chestOn ? [`  A narrow chest ${p.chestW} x ${p.chestD} x ${p.chestH}" stands in the far corner of ${othName}, under the ${frac(overRod, 8)} shelf.`] : []),
+      ...(p.chestOn ? [`  A narrow chest ${p.chestW} x ${p.chestD} x ${p.chestH}" stands in the ${onC ? "notch" : "wall D"} corner of ${othName}, under the ${frac(overRod, 8)} shelf, clear of ${rodName}.`] : []),
       ``,
       `WALL A alcove: ${alcLevels.length} shelves at ${alcLevels.join('", ')}", ${frac(alcDepth, 8)} deep (the entry door casing caps it), wall to wall at ${frac(A, 8)}.`,
       `Front edge on every shelf: 3/4" x 1-1/2" solid nosing - it hides the LED channel.`,

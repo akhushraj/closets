@@ -14,17 +14,19 @@ export const INFO = { id: "maya", name: "Maya's Closet", room: "Maya's room",
 export const FIELD = { W: 112.4, D: 29.8, ceiling: 120, stubL: 8.6, opening: 95.8, stubR: 8.1, wallAtOpening: 6.3, doorH: 96 };
 
 export const DEFAULTS = {
-  esPlan: "36, 36", esTop: 84, depth: 24, fronts: "10, 11, 12", rodZ: 68,
+  esPlan: "36, 36", esAlign: "centre", esTop: 84, depth: 24, fronts: "10, 11, 12", rodZ: 68,
   ...shelfSlots("e", [40, 74], [54, 64, 84]),
   gableOn: false,
   ...shelfSlots("s", [30, 46, 62, 78], [16, 86]),
-  aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, topBay: 40, drawersOut: false,
+  aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, drawersOut: false,
   finish: "white", lights: true,
 };
 
 export const CONTROLS = [
   ["East Star · in the middle, clear of the door frames", [
     { key: "esPlan", label: "Box widths", type: "text" },
+    { key: "esAlign", label: "Where they sit", type: "select",
+      options: [["centre", "Centred"], ["thirds", "On the outer door panels (one slide per drawer)"]] },
     { key: "esTop", label: "Height", type: "select", options: [["84", "84\""], ["90", "90\""], ["94", "94\""]] },
     { key: "depth", label: "Depth (whole closet)", min: 15.5, max: 24, step: 0.5 },
     { key: "rodZ", label: "Rod height (moves up as she grows)", min: 40, max: 80, step: 0.5 },
@@ -41,7 +43,6 @@ export const CONTROLS = [
     { key: "above2On", label: "A second one higher up", type: "check" },
     { key: "aboveZ2", label: "Its height", min: 94, max: 112, step: 1 },
     { key: "aboveDepth2", label: "Its depth (shallower, you reach it over the header)", min: 12, max: 24, step: 1.5 },
-    { key: "topBay", label: "Widest bay between its posts", min: 14, max: 60, step: 1 },
   ]],
   LOOK,
 ];
@@ -64,16 +65,35 @@ export function build(p) {
   const STOCK = [15, 18, 21, 24, 30, 36];
   const esW = String(p.esPlan).split(/[,\s]+/).map(Number).filter(x => STOCK.includes(x));
   const esRun0 = esW.reduce((a, b) => a + b, 0);
-  const m0 = (W - esRun0) / 2, m1 = m0 + esRun0;
+  // the slider: three panels, so one slide exposes a third and two slides expose two thirds
+  const op0 = p.stubL, pw = p.opening / 3;
+  const thirds = [0, 1, 2].map(i => [op0 + i * pw, op0 + (i + 1) * pw]);
+  const slides = (a, b) => thirds.some(([s0, e0]) => a >= s0 - 0.1 && b <= e0 + 0.1) ? 1
+    : [0, 1].some(i => a >= thirds[i][0] - 0.1 && b <= thirds[i + 1][1] + 0.1) ? 2 : 0;
+  // boxes either centred, or sat on the outer panels so each drawer needs a single slide
+  const onThirds = p.esAlign === "thirds" && esW.length === 2;
+  const boxAt = onThirds
+    ? [thirds[0][0] + (pw - esW[0]) / 2, thirds[2][0] + (pw - esW[1]) / 2]
+    : (() => { let u = (W - esRun0) / 2; return esW.map(x => { const a = u; u += x; return a; }); })();
+  const m0 = Math.min(...boxAt), m1 = Math.max(...boxAt.map((a, i) => a + esW[i]));
   const fronts = [...parseFronts(p.fronts, [7, 8, 9])].reverse();
   const eLv = readShelves(p, "e", 5);
-  const es = add(esRun(w.T, { u0: m0, depth: d, top, doors: false, drawersOut: p.drawersOut, prefix: "M", seed: 5,
-    bays: esW.map(width => ({ w: width, fronts, rods: [p.rodZ], levels: eLv, garment: "pants" })) }));
+  const es = { drawers: [], parts: [], modules: [] };
+  esW.forEach((width, i) => {
+    const r = add(esRun(w.T, { u0: boxAt[i], depth: d, top, doors: false, drawersOut: p.drawersOut,
+      prefix: `M${i + 1}`, seed: 5 + i * 4,
+      bays: [{ w: width, fronts, rods: [p.rodZ], levels: eLv, garment: "pants" }] }));
+    es.drawers.push(...r.drawers);
+  });
+  const worstSlide = Math.max(...esW.map((width, i) => slides(boxAt[i], boxAt[i] + width)));
 
-  // plywood shelves at each end. A gable at each join gives them a third edge to sit on, so
-  // nothing has to be screwed into the side of a bought box.
+  // plywood shelves either side of the boxes and, when they sit on the outer panels, between them
   const lv = readShelves(p, "s", 6);
   const g = p.gableOn ? PLY : 0;
+  if (onThirds) {
+    const gap0 = boxAt[0] + esW[0], gap1 = boxAt[1];
+    if (gap1 - gap0 > 10) add(fixedShelves(w.T, { u0: gap0 + g, u1: gap1 - g, depth: d, levels: lv, label: "Shelves · middle" }));
+  }
   const gTop = p.aboveOn ? p.aboveZ - PLY : (lv[lv.length - 1] || top);
   if (p.gableOn) for (const u of [m0, m1 + PLY])
     parts.push(box(w.T, "carcass", u - PLY, u, 0, d, 0, gTop, { mark: u === m0, label: "Gable, plywood meets East Star" }));
@@ -84,19 +104,12 @@ export function build(p) {
   // One plywood shelf right across, sitting straight on the box tops. The boxes carry the
   // middle 6 ft of it and the end walls carry the rest, so it needs nothing hanging from above.
   const aboveZ = top + PLY;
-  let nPost = 0, postSpan = 0;
   if (p.aboveOn) {
     add(fixedShelves(w.T, { u0: 0, u1: W, depth: d, levels: [aboveZ], label: "Shelf on the box tops" }));
-    if (p.above2On) {   // this one has nothing under it, so short posts stand on the shelf below
-      nPost = Math.max(1, Math.ceil(W / p.topBay)) - 1;
-      postSpan = W / (nPost + 1);
-      for (let i = 1; i <= nPost; i++) {
-        const u = W * i / (nPost + 1);
-        parts.push(box(w.T, "carcass", u - PLY / 2, u + PLY / 2, 0, p.aboveDepth2, aboveZ, p.aboveZ2 - PLY,
-          { mark: i === 1, label: "Post, stands on the shelf below" }));
-      }
-      add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.aboveDepth2, levels: [p.aboveZ2], label: "Top shelf" }));
-    }
+    // No posts under the top shelf. It is cleated along its whole back edge into the studs,
+    // so every slice of it cantilevers over its 18" depth rather than spanning the room: about
+    // 1/25" of droop at the front. Posts would only be needed if it rested on its two ends.
+    if (p.above2On) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.aboveDepth2, levels: [p.aboveZ2], label: "Top shelf" }));
   }
 
   const u0 = W - (p.stubL + p.opening), u1 = W - p.stubL;
@@ -104,19 +117,17 @@ export function build(p) {
 
   const endW = m0;   // each plywood end run
   if (!esW.length) warnings.push(`No usable box widths in "${p.esPlan}". East Star makes ${ES_WIDTHS.join(", ")}".`);
-  if (m0 < p.stubL + 2) warnings.push(`The boxes start ${frac(m0, 8)} from the left wall but the door frame comes in ${frac(p.stubL, 8)}. A drawer front would hit it - use narrower boxes.`);
-  if (W - m1 < p.stubR + 2) warnings.push(`Same at the right end: ${frac(W - m1, 8)} against a ${frac(p.stubR, 8)} door frame.`);
+  // what matters is whether a drawer front overlaps a door-frame stub, not how wide the end run is
+  if (m0 < p.stubL) warnings.push(`A drawer front reaches to ${frac(m0, 8)} and the left door frame comes in ${frac(p.stubL, 8)}. It would hit it on the way out.`);
+  if (m1 > W - p.stubR) warnings.push(`A drawer front reaches to ${frac(m1, 8)} and the right door frame starts at ${frac(W - p.stubR, 8)}. It would hit it on the way out.`);
+  if (worstSlide === 0) warnings.push(`A drawer front is wider than two door panels - it can never be fully opened.`);
+  else if (worstSlide > 1) warnings.push(`Each drawer needs ${worstSlide} panel slides before it will open, because a ${esW[0]}" box straddles two of the three door panels. Narrower boxes sat on the outer panels would take one slide.`);
   if (basket < 24) warnings.push(`Only ${frac(basket, 8)} under the lowest end shelf. A tall hamper wants about 28".`);
   if (eLv.length && eLv[0] < fronts.reduce((a, b) => a + b, 0) + 1) warnings.push(`The lowest shelf inside the boxes (${frac(eLv[0], 8)}) is below the top of the drawers (${frac(fronts.reduce((a, b) => a + b, 0), 8)}).`);
   if (eLv.some(z => Math.abs(z - p.rodZ) < 3)) warnings.push(`A shelf lands within 3" of the rod at ${frac(p.rodZ, 8)}. Hangers need about 2" of clear above the rod.`);
   if (p.aboveOn && p.above2On) {
-    // deep storage up there, so 20 psf rather than the 30 a reachable shelf gets
-    const sagAt = L => 5 * (20 / 144 * p.aboveDepth2) * L ** 4 / (384 * 1.3e6 * (p.aboveDepth2 * PLY ** 3 / 12));
-    const need = [0, 1, 2, 3, 4, 5].find(n => sagAt(W / (n + 1)) < W / (n + 1) / 360);
-    if (sagAt(postSpan) > postSpan / 360)
-      warnings.push(`The top shelf bows ${frac(sagAt(postSpan), 16)} over a ${frac(postSpan, 8)} bay. It needs ${need} post${need === 1 ? "" : "s"} - set the widest bay to about ${frac(W / (need + 1), 8)}.`);
-    else if (nPost > need)
-      warnings.push(`${nPost} posts up there is more than it needs. ${need} would do it - set the widest bay to ${frac(W / (need + 1), 8)}.`);
+    const droop = (20 / 144) * p.aboveDepth2 ** 4 / (8 * 1.3e6 * (PLY ** 3 / 12));
+    if (droop > 0.12) warnings.push(`At ${frac(p.aboveDepth2, 8)} deep the top shelf's front edge droops ${frac(droop, 16)} off its back cleat. Make it shallower or put a post under it.`);
     if (p.aboveZ2 - aboveZ < 12) warnings.push(`Only ${frac(p.aboveZ2 - aboveZ - PLY, 8)} between the two shelves above the boxes.`);
   }
   if (top + PLY > p.doorH - 2) warnings.push(`The boxes top out at ${frac(top, 8)}, so the shelf on them lands at ${frac(top + PLY, 8)} against a ${frac(p.doorH, 8)} header - you will not be able to see onto it. 84" boxes leave room for a shelf you can look into.`);
@@ -144,14 +155,16 @@ export function build(p) {
     ],
     drawerGroups: [{ name: "East Star drawers", drawers }],
     stats: [
-      { k: "Layout", v: `${frac(endW, 8)} + ${esW.join(" + ")}" + ${frac(endW, 8)}`, s: `plywood ends, East Star middle, all ${frac(d, 8)} deep` },
+      { k: "Layout", v: onThirds ? `${frac(m0, 8)} + ${esW[0]}" + ${frac(boxAt[1] - boxAt[0] - esW[0], 8)} + ${esW[1]}" + ${frac(W - m1, 8)}` : `${frac(endW, 8)} + ${esW.join(" + ")}" + ${frac(endW, 8)}`,
+        s: onThirds ? `boxes on the outer door panels, plywood between and beside them` : `plywood ends, East Star middle, all ${frac(d, 8)} deep` },
       { k: "Rods", v: `${esW.length} × ${frac(esW[0] - 1.5, 8)}`, s: `at ${frac(p.rodZ, 8)}, ${fronts.length} drawers under each` },
       { k: "End shelves", v: `${lv.length} × ${frac(endW - g, 8)} wide`, s: p.gableOn ? "back wall, side wall, plywood gable" : "back wall, side wall, cleat into the box side" },
       { k: "Inside the boxes", v: `${eLv.length} shelves`, s: `at ${eLv.join('", ')}", rod at ${frac(p.rodZ, 8)}` },
       { k: "Under the lowest shelf", v: frac(basket, 8), s: "clear at the cleats, for a laundry basket" },
       { k: "Clear of the door frames", v: `${frac(m0 - p.stubL, 8)} / ${frac((W - m1) - p.stubR, 8)}`, s: "left / right, box face to frame" },
+      { k: "To open a drawer", v: worstSlide === 1 ? "one panel slide" : worstSlide ? `${worstSlide} panel slides` : "cannot", s: `panels are ${frac(pw, 8)}; a box is ${esW.join("/")}"` },
       { k: "Shelf on the box tops", v: p.aboveOn ? frac(aboveZ, 8) : "off", s: p.aboveOn ? `${frac((p.above2On ? p.aboveZ2 : p.ceiling) - aboveZ - PLY, 8)} clear above it, under the ${frac(p.doorH, 8)} header` : "" },
-      { k: "Top shelf", v: p.above2On ? `${frac(p.aboveZ2, 8)} × ${frac(p.aboveDepth2, 8)} deep` : "off", s: p.above2On ? `${frac(p.aboveZ2 - p.doorH, 8)} above the header, ${nPost} posts under it` : "" },
+      { k: "Top shelf", v: p.above2On ? `${frac(p.aboveZ2, 8)} × ${frac(p.aboveDepth2, 8)} deep` : "off", s: p.above2On ? `${frac(p.aboveZ2 - p.doorH, 8)} above the header, no posts - cleated along the back` : "" },
     ],
     titleMeta: [
       { k: "Closet", v: `${ftin(W)} × ${ftin(D)}` },
@@ -164,7 +177,7 @@ export function build(p) {
       `EAST STAR, centred: ${esW.join('" + ')}" boxes, ${frac(top, 8)} tall, NO doors. Each: ${fronts.length} drawers at the bottom (${fronts.slice().reverse().join('", ')}" fronts, top down), rod at ${frac(p.rodZ, 8)}, shelves at ${eLv.join('", ')}". Floor-standing, screwed through the back into studs.`,
       `They start ${frac(m0, 8)} in from each end, so the drawers pull straight out through the opening and clear the door frames.`,
       ...(p.gableOn ? [`AMIR: one 3/4" plywood gable at each join, floor to ${frac(gTop, 8)}, standing against the side of the box. The end shelves land on it.`] : []),
-      `AMIR: 3/4" birch plywood shelves on 1x2 cleats into the studs, ${frac(endW - g, 8)} wide at each end, ${frac(d, 8)} deep, at ${lv.map(z => frac(z, 8)).join(", ")}.${p.aboveOn ? ` Plus one shelf right across the full ${frac(W, 8)}, sitting on the box tops at ${frac(aboveZ, 8)}.` : ""}${p.above2On ? ` And a top shelf at ${frac(p.aboveZ2, 8)}, only ${frac(p.aboveDepth2, 8)} deep, on ${nPost} plywood posts standing on the shelf below.` : ""}`,
+      `AMIR: 3/4" birch plywood shelves on 1x2 cleats into the studs, ${frac(endW - g, 8)} wide at each end, ${frac(d, 8)} deep, at ${lv.map(z => frac(z, 8)).join(", ")}.${p.aboveOn ? ` Plus one shelf right across the full ${frac(W, 8)}, sitting on the box tops at ${frac(aboveZ, 8)}.` : ""}${p.above2On ? ` And a top shelf at ${frac(p.aboveZ2, 8)}, only ${frac(p.aboveDepth2, 8)} deep, on 1x2 cleats into the studs - no posts under it.` : ""}`,
       `Nothing below ${frac(lv[0] || 0, 8)} at the ends - ${frac(basket, 8)} clear for laundry baskets.`,
       `Paint room colour, all sides.`,
     ].join("\n"),
