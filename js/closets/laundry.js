@@ -25,7 +25,7 @@ export const FIELD = {
 export const DEFAULTS = {
   backClear: 5, showClear: true, pedestal: true,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
-  sinkW2: 25, sinkD2: 22, backWall: "counter",
+  sinkW2: 25, sinkD2: 22, backWall: "counter", wdDoorsOpen: false,
   upperDepth: 15, upperBottom: 54, upperTop: 90,
   wdUpperBottom: 70, wdUpperTop: 120,
   coatW: 30, bPlan: "30, 30", grade: "shaker", coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 96,
@@ -38,6 +38,7 @@ export const CONTROLS = [
     { key: "backClear", label: "Space behind the machines", min: 2, max: 8, step: 0.5 },
     { key: "showClear", label: "Dimension the critical clearances in plan", type: "check" },
     { key: "pedestal", label: "On LG pedestals (13-5/8\" tall)", type: "check" },
+    { key: "wdDoorsOpen", label: "Machine doors open", type: "check" },
   ]],
   ["Corner closet · wall A right + wall D left", [
     { key: "baseDepth", label: "Base cabinets + counter, depth", min: 18, max: 24, step: 0.5 },
@@ -102,6 +103,11 @@ export function build(p) {
   for (const [u0, M1, name] of [[wu0, W1, "Washer"], [du0, D1, "Dryer"]]) {
     if (pedH) parts.push(box(w.WD, "appliance", u0, u0 + M1.w, bc, bc + p.pedD, 0, pedH, { label: `${name} pedestal` }));
     parts.push(box(w.WD, "appliance", u0, u0 + M1.w, bc, bc + M1.d, pedH, pedH + M1.h, { mark: true, label: `${name} · ${M1.model}` }));
+    if (p.wdDoorsOpen) {
+      const face = bc + M1.d, reach = M1.open - M1.d, hu = name === "Washer" ? u0 : u0 + M1.w;
+      parts.push(box(w.WD, "appliance", hu - 0.5, hu + 0.5, face, face + reach, pedH + 8, pedH + 34,
+        { mark: true, label: `${name} door open, ${frac(reach, 8)} off the face` }));
+    }
     modules.push(box(w.WD, "appliance", u0, u0 + M1.w, bc, bc + M1.d, 0, 0, { label: name, sub: M1.model,
       ghost: { u0, u1: u0 + M1.w, v0: bc + M1.d, v1: bc + M1.open, label: `${name.toLowerCase()} door open` } }));
   }
@@ -125,15 +131,25 @@ export function build(p) {
   const sb0 = Math.max(aU0, sinkU - p.sinkBay / 2), sb1 = sb0 + p.sinkBay;
   run(w.L, sb1, Yb, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3 });
   run(w.L, sb0, sb1, { depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5 });   // sink base: no shelf, the trap lives there
-  parts.push(box(w.L, "counter", aU0, Yb, 0, bd + 1, cz - 1.25, cz, { mark: true, label: "Counter" }));
   modules.push(box(w.L, "counter", aU0, Yb, 0, bd, 0, 0, { label: "Corner closet", sub: `counter at ${frac(cz, 8)}` }));
   run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: [p.upperBottom + 13, p.upperBottom + 26], prefix: "AU", seed: 11 });
 
-  // the sink itself: a standard drop-in, centred on the measured drain, not on the cabinet
+  // the sink: a standard drop-in, centred on the measured drain, not on the cabinet
   const skW = p.sinkW2, skD = Math.min(p.sinkD2, bd - 1);
   const sk0 = sinkU - skW / 2, sk1 = sinkU + skW / 2, skV = Math.max(0.75, (bd + 1 - skD) / 2);
-  parts.push(box(w.L, "sink", sk0, sk1, skV, skV + skD, cz - 12, cz,
+  const lap = 0.75, cV = bd + 1;                        // the deck laps this far onto the stone
+  const ct0 = sk0 + lap, ct1 = sk1 - lap, ctV0 = skV + lap, ctV1 = skV + skD - lap;
+  const ctr = (u0, u1, v0, v1, o = {}) => { if (u1 - u0 > 0.05 && v1 - v0 > 0.05) parts.push(box(w.L, "counter", u0, u1, v0, v1, cz - 1.25, cz, o)); };
+  ctr(aU0, ct0, 0, cV, { mark: true, label: "Counter, cut out for the sink" });   // counter, cut around the sink
+  ctr(ct1, Yb, 0, cV);
+  ctr(ct0, ct1, 0, ctV0);
+  ctr(ct0, ct1, ctV1, cV);
+  parts.push(box(w.L, "sink", sk0, sk1, skV, skV + skD, cz, cz + 0.375,
     { mark: true, label: `Sink, ${frac(skW, 8)} x ${frac(skD, 8)} drop-in, centred ${frac(p.sinkCenterFromJamb, 8)} off the foyer jamb` }));
+  parts.push(box(w.L, "sinkbowl", sk0 + 2, sk1 - 2, skV + 2.5, skV + skD - 2.5, cz - 12, cz + 0.3, { label: "Bowl, 12\" deep" }));
+  const fu = sinkU, fv = skV + 1.5;                     // faucet on the sink's own back deck
+  parts.push(box(w.L, "rack", fu - 0.9, fu + 0.9, fv - 0.9, fv + 0.9, cz + 0.375, cz + 11, { label: "Faucet" }));
+  parts.push(box(w.L, "rack", fu - 0.6, fu + 0.6, fv, fv + 7.5, cz + 9.5, cz + 11, {}));
   modules.push(box(w.L, "sink", sb0, sb1, 0, bd, 0, 0, { label: "Sink base", sub: `${frac(p.sinkBay, 8)}, detergent under` }));
   // the plumbing, from E1
   parts.push(box(w.L, "outlet", sinkU - 1.5, sinkU + 1.5, 0, 1, p.drainZ - 1.5, p.drainZ + 1.5, { mark: true, label: `Drain, ${frac(p.drainZ, 8)} AFF` }));

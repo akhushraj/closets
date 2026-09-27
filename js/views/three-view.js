@@ -176,6 +176,7 @@ export function createThreeView(host) {
         case "casing": addBox(part, mats.white); break;
         case "board": addBox(part, mats.board); break;
         case "appliance": case "sink": case "dresser": addBox(part, mats.appliance); break;
+        case "sinkbowl": addBox(part, mats.metal); break;
         case "dresserfront": addBox(part, mats.white); break;
         case "counter": addBox(part, mats.stone); break;
         case "elpanel": addBox(part, mats.panel); break;
