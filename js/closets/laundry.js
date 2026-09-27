@@ -3,7 +3,7 @@
 // electrical sub-panel near the right end of the long bottom wall.
 // v1: washer + dryer placed, basic plywood shelves, open coat section right of the foyer door,
 // shoe shelves, and the code clear space in front of the sub-panel.
-import { box, esRun, floorItem, collector, packStock, packStock as pack, ES } from "../model/builders.js";
+import { box, esRun, floorItem, collector, packStock, packStock as pack, ES, ES_WIDTHS } from "../model/builders.js";
 import { PLY, FRONT, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
 import { LOOK } from "./common.js";
@@ -23,12 +23,12 @@ export const FIELD = {
 };
 
 export const DEFAULTS = {
-  backClear: 5, showClear: true, pedestal: true,
+  backClear: 5, showClear: true, pedestal: false,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   sinkW2: 25, sinkD2: 22, backWall: "counter", wdDoorsOpen: false,
-  upperDepth: 15.5, upperBottom: 54, upperTop: 90,
-  wdUpperBottom: 70, wdUpperTop: 120,
-  coatW: 30, bPlan: "30, 30", grade: "shaker", coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 96,
+  upperDepth: 15.5, upperBottom: 54, upperTop: 108,
+  wdUpperBottom: 54, wdUpperTop: 108,
+  coatW: 36, bPlan: "36, 18/15.5", grade: "shaker", coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 108,
   facingDepth: 24,
   finish: "white", lights: false,
 };
@@ -70,8 +70,8 @@ export const CONTROLS = [
     { key: "tallTop", label: "Top of the coat run and wall B left", min: 84, max: 120, step: 1 },
   ]],
   ["Wall B left · facing the machines", [
-    { key: "bPlan", label: "Box widths", type: "text" },
-    { key: "facingDepth", label: "Depth", type: "select",
+    { key: "bPlan", label: "Boxes, right to left (width or width/depth)", type: "text" },
+    { key: "facingDepth", label: "Depth, where bPlan doesn't say", type: "select",
       options: [["24", "24\" (stock)"], ["15.5", "15-1/2\" (stock) - 8-1/2\" more walkway"], ["0", "Leave the wall open"]] },
   ]],
   LOOK,
@@ -178,7 +178,7 @@ export function build(p) {
   run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: p.wdUpperTop, levels: lvls(p.wdUpperBottom, p.wdUpperTop), prefix: "W", seed: 17 });
   if (p.wdUpperTop > 80) {
     const easy = Math.max(0, 80 - p.wdUpperBottom), high = p.wdUpperTop - Math.max(80, p.wdUpperBottom);
-    if (high > 6) warnings.push(`Over the machines, ${frac(high, 8)} of the cabinet sits above 80" - reachable with a stool, not day to day. ${easy > 6 ? `Only ${frac(easy, 8)} is at easy height.` : "None of it is at easy height."}`);
+    if (high > 6 && easy < 12) warnings.push(`Over the machines, ${frac(high, 8)} of the cabinet sits above 80" - reachable with a stool, not day to day. ${easy > 6 ? `Only ${frac(easy, 8)} is at easy height.` : "None of it is at easy height."}`);
   }
   if (p.wdUpperBottom < mTop + 12) warnings.push(`The uppers over the machines start at ${frac(p.wdUpperBottom, 8)}, only ${frac(p.wdUpperBottom - mTop, 8)} above the machine tops${pedH ? ` (${frac(pedH, 8)} pedestals raise them)` : ""}. Leave about 12" to load them.`);
 
@@ -190,21 +190,31 @@ export function build(p) {
 
   const coat0 = X3 - p.coatW;                                     // wall B right: the coat closet
   const coatFronts = [...parseFronts(p.coatFronts, [6, 7, 8])].reverse();
+  const rodLvls = [p.coatRod + 14, p.coatRod + 28].filter(z => z < p.tallTop - 4);
   const coats = run(w.B, coat0, X3, { depth: 24, top: p.tallTop, doors: p.coatDoors, fronts: coatFronts,
-    rods: [p.coatRod], levels: [p.coatRod + 14], prefix: "C", seed: 21 });
+    rods: [p.coatRod], levels: rodLvls, prefix: "C", seed: 21 });
   if (p.coatRod < coatFronts.reduce((a, b) => a + b, 0) + 40)
     warnings.push(`The coat rod at ${frac(p.coatRod, 8)} leaves ${frac(p.coatRod - coatFronts.reduce((a, b) => a + b, 0), 8)} of hanging over the drawers. A jacket wants about 40".`);
 
-  if (p.facingDepth > 0) {   // start it so the boxes butt the coat closet; the filler lands at the panel end
-    const bw = String(p.bPlan).split(/[,\s]+/).map(Number).filter(x => [15, 18, 21, 24, 30, 36].includes(x));
-    const run0 = bw.reduce((a, b) => a + b, 0);
-    const free = coat0 - clearU;
-    const fits = run0 > 0 && run0 <= free;
-    const use = fits ? bw : pack(free);
-    const used = use.reduce((a, b) => a + b, 0);
-    if (used > 0) run(w.B, coat0 - used, coat0, { widths: use, depth: p.facingDepth, top: p.tallTop, levels: [20, 34, 48, 62, 76], prefix: "B", seed: 25 });
-    if (!fits && run0 > 0)
-      warnings.push(`Wall B: ${bw.join(" + ")}" needs ${frac(run0, 8)} but only ${frac(free, 8)} is free between the panel clear space and the ${frac(p.coatW, 8)} coat closet. Using ${use.join(" + ")}" instead - narrow the coat closet if you want the full set.`);
+  // Wall B left, written right to left the way you read the wall: "36, 18/15.5" is a 36" box
+  // against the coat closet and an 18" box only 15-1/2" deep at the machine end. A box that is
+  // both wide and deep enough to hang in gets a rod and no doors; the rest get shelves and a door.
+  const ents = String(p.bPlan).split(",").map(x => x.trim()).filter(Boolean).map(x => {
+    const [wv, dv] = x.split("/");
+    return { w: Number(wv), d: dv ? Number(dv) : p.facingDepth };
+  }).filter(e => ES_WIDTHS.includes(e.w) && e.d > 0);
+  const bTotal = ents.reduce((a, e) => a + e.w, 0), bFree = coat0 - clearU;
+  if (bTotal > bFree)
+    warnings.push(`Wall B: ${ents.map(e => e.w).join(" + ")}" needs ${frac(bTotal, 8)} but only ${frac(bFree, 8)} is free between the panel clear space and the ${frac(p.coatW, 8)} coat closet.`);
+  else {
+    let u = coat0 - bTotal;                                       // u grows toward the foyer, so lay it out backwards
+    for (const e of [...ents].reverse()) {
+      const rod = e.w >= 30 && e.d >= 20;
+      run(w.B, u, u + e.w, { widths: [e.w], depth: e.d, top: p.tallTop, doors: !rod,
+        rods: rod ? [p.coatRod] : [], levels: rod ? [36, ...rodLvls] : lvls(0, p.tallTop, 16),
+        prefix: "B", seed: 25 });
+      u += e.w;
+    }
   }
 
   // doors: foyer on the left wall, garage on the right; both assumed to swing in
@@ -225,11 +235,21 @@ export function build(p) {
   const dOpen = yWD + bc + Math.max(W1.open, D1.open);
   const xw = X2 + wu0;                       // the washer: the only machine a cabinet faces
   const x1 = xw + W1.w * 0.22, x2 = xw + W1.w * 0.52, x3 = xw + W1.w * 0.82;
-  const aisle = Yb - mFront - p.facingDepth;
-  if (aisle < 36) warnings.push(`The walkway in front of the machines is ${frac(aisle, 8)}. 36" is the working minimum and 42" is what NKBA recommends for laundry. A ${frac(p.facingDepth, 8)} run costs ${frac(36 - aisle, 8)} of that; 15-1/2" boxes would give you ${frac(Yb - mFront - 15.5, 8)}.`);
-  const gap = Yb - p.facingDepth - dOpen;
-  if (p.facingDepth > 0 && gap < 1)
-    warnings.push(`A ${frac(p.facingDepth, 8)} cabinet opposite the machines stops their doors opening - the doors reach ${frac(dOpen - yWD, 8)} off that wall and the cabinet face is ${frac(Yb - p.facingDepth - yWD, 8)}.`);
+  let faceD = 0, standD = 0;            // deepest box opposite any part of a machine, and opposite where you stand
+  const mids = [X2 + wu0 + W1.w / 2, X2 + du0 + D1.w / 2];
+  for (const r of runs) if (r.wall === "B") {
+    const xa = X3 - r.u1, xb = X3 - r.u0;
+    if (xa < X2 + du0 + D1.w && xb > X2 + wu0) faceD = Math.max(faceD, r.depth);
+    if (mids.some(m => xa < m + 6 && xb > m - 6)) standD = Math.max(standD, r.depth);
+  }
+  const aisle = Yb - mFront - standD;
+  if (aisle < 36) warnings.push(`The walkway in front of the machines is ${frac(aisle, 8)}. 36" is the working minimum and 42" is what NKBA recommends for laundry. The ${frac(standD, 8)} box opposite them costs ${frac(36 - aisle, 8)} of that; at 15-1/2" you would have ${frac(Yb - mFront - 15.5, 8)}.`);
+  const gap = Yb - faceD - dOpen;
+  if (faceD > 0 && gap < 1)
+    warnings.push(`A ${frac(faceD, 8)} cabinet opposite the machines stops their doors opening - the doors reach ${frac(dOpen - yWD, 8)} off that wall and the cabinet face is ${frac(Yb - faceD - yWD, 8)}.`);
+
+  // East Star's floor-standing boxes are 84" or 94". Anything taller is two boxes stacked.
+  if (p.tallTop > 94) warnings.push(`Wall B at ${frac(p.tallTop, 8)} is taller than East Star's tallest box (94"). Price it as a 94" box with a ${frac(p.tallTop - 94, 8)} box stacked on top, or 84" + ${frac(p.tallTop - 84, 8)}.`);
 
   // ---------- how much storage this actually is. Reach cut-off: 75" is the top shelf you can
   // use without a stool. Anything above is real storage, just not daily.
@@ -275,8 +295,8 @@ export function build(p) {
         { a: [x1, yWD], b: [x1, mFront], label: `${frac(mDepth, 8)} machine + ${frac(bc, 8)} behind`, off: 0 },
         { a: [x2, mFront], b: [x2, Yb], label: `${frac(Yb - mFront, 8)} machine face to the long wall`, off: 0 },
         { a: [x3, yWD], b: [x3, dOpen], label: `${frac(D1.open, 8)} machine door open`, off: 0 },
-        ...(p.facingDepth > 0 ? [{ a: [x3, dOpen], b: [x3, Yb - p.facingDepth],
-          label: `${frac(Yb - p.facingDepth - dOpen, 8)} open door to the cabinet`, off: 0 }] : []),
+        ...(faceD > 0 ? [{ a: [x3, dOpen], b: [x3, Yb - faceD],
+          label: `${frac(Yb - faceD - dOpen, 8)} open door to the cabinet`, off: 0 }] : []),
       ] : []),
     ],
     drawerGroups: [],
@@ -285,11 +305,14 @@ export function build(p) {
       { k: "Machine tops", v: frac(mTop, 8), s: pedH ? `on ${frac(pedH, 8)} pedestals` : "on the floor, no pedestals" },
       { k: "Over the machines", v: `${frac(p.wdUpperBottom, 8)} to ${frac(p.wdUpperTop, 8)}`, s: `${frac(p.wdUpperBottom - mTop, 8)} above the machines; ${frac(Math.max(0, 80 - p.wdUpperBottom), 8)} of it within easy reach` },
       { k: "Machine to long wall", v: frac(Yb - mFront, 8), s: `dryer door open reaches ${frac(dOpen - yWD, 8)} off that wall` },
-      { k: "Facing that run", v: p.facingDepth ? frac(p.facingDepth, 8) : "nothing yet", s: p.facingDepth ? `${frac(aisle, 8)} walkway - ${aisle >= 42 ? "the recommended 42\"" : aisle >= 36 ? "over the 36\" minimum, under the 42\" recommendation" : "under the 36\" minimum"}; the open door clears it by ${frac(gap, 8)}` : "" },
+      { k: "Facing the machines", v: standD ? frac(standD, 8) : "nothing yet", s: standD ? `${frac(aisle, 8)} walkway where you stand - ${aisle >= 42 ? "the recommended 42\"" : aisle >= 36 ? "over the 36\" minimum, under the 42\" recommendation" : "under the 36\" minimum"}; the open door clears the deepest box by ${frac(gap, 8)}` : "" },
       { k: "Corner closet", v: `${frac(p.leftUpper, 8)} + ${frac(X1 - bd, 8)}`, s: `${frac(bd, 8)} base + counter at ${frac(cz, 8)}, ${frac(ud, 8)} uppers` },
-      { k: "Coat closet", v: `${frac(p.coatW, 8)} × 24" deep`, s: `rod at ${frac(p.coatRod, 8)}, ${coatFronts.length} drawers under it` },
-      { k: "Wall B left", v: p.facingDepth ? `${frac(coat0 - clearU, 8)} × ${frac(p.facingDepth, 8)}` : "open", s: `${frac(gap, 8)} from an open machine door` },
+      { k: "Coat closet", v: `${frac(p.coatW, 8)} × 24" deep`, s: `rod at ${frac(p.coatRod, 8)}, ${coatFronts.length} drawers under it, open` },
+      { k: "Everything to", v: `${frac(p.tallTop, 8)} / ${frac(p.upperTop, 8)}`, s: `wall B and the uppers, ${p.tallTop > 94 ? "so the tall runs are two boxes stacked" : "all within a single stock box"}` },
+      { k: "Wall B left", v: ents.length ? ents.map(e => `${frac(e.w, 8)}`).join(" + ") : "open",
+        s: ents.map(e => `${frac(e.w, 8)} at ${frac(e.d, 8)} deep${e.w >= 30 && e.d >= 20 ? ", rod, open" : ", shelves + door"}`).join(" · ") },
       { k: "Counter", v: `${frac(p.leftUpper, 8)}${ctrSA ? ` + ${frac(ctrSA, 8)}` : ""}`, s: `${sqft(ctrA)} sq ft clear of the sink; biggest single stretch ${frac(bestStretch, 8)}` },
+      { k: "Hanging", v: `${(parts.filter(q => q.kind === "rod").reduce((a, q) => a + Math.max(q.x1 - q.x0, q.y1 - q.y0), 0) / 12).toFixed(1)} ft`, s: "of rod, across the coat closet and wall B" },
       { k: "Shelf space", v: `${sqft(shelfA)} sq ft`, s: `${sqft(reachA)} sq ft of it at or below ${REACH}" - no stool` },
       { k: "Storage volume", v: `${cuft(vol)} cu ft`, s: `inside the boxes${pedH ? `, plus ${cuft(pedVol)} cu ft in the two pedestal drawers` : ""}` },
       { k: "Pedestal trade", v: pedH ? `${frac(reachIn(mTop), 8)} reachable` : `${frac(reachIn(W1.h), 8)} reachable`,
@@ -310,10 +333,10 @@ export function build(p) {
         ? `Counter on both legs: ${frac(p.leftUpper, 8)} on the sink leg and ${frac(ctrSA, 8)} on the back wall, ${sqft(ctrA)} sq ft once the sink is out of it. The biggest clear stretch is ${frac(bestStretch, 8)} - enough to fold on.`
         : `Counter on the sink leg only: ${frac(p.leftUpper, 8)} long, ${sqft(ctrA)} sq ft once the sink is out of it, and the biggest clear stretch is ${frac(legL, 8)} - one landing area beside the sink, not a folding table. ${p.backWall === "tall" ? `The back wall is floor-to-ceiling storage instead, ${frac(bd, 8)} deep to ${frac(p.upperTop, 8)}.` : "The back wall is empty."}`,
       `Pedestals ${pedH ? "on" : "off"}. The cabinet over the machines has to clear the tops by about 12", so with pedestals it cannot start below ${frac(minBottom(W1.h + p.pedH), 8)} and only ${frac(reachIn(W1.h + p.pedH), 8)} of it lands under ${REACH}" - one high shelf, the rest is stool storage. Without pedestals it can start at ${frac(minBottom(W1.h), 8)} and ${frac(reachIn(W1.h), 8)} is under ${REACH}" - two shelves you would actually use daily. The pedestals pay you back with two drawers, ${p.washer.w} x ${frac(p.pedD, 8)} x ${frac(p.pedH, 8)} each, ${cuft(pedVol)} cu ft together, at floor level - and they lift the machine doors to a kinder height.`,
-      `Wall B is three ${p.coatW}" boxes: the coat closet at the foyer end, rod at ${frac(p.coatRod, 8)} with ${coatFronts.length} drawers under it, then two more beside it.`,
+      `Wall B, read right to left from the foyer end: a ${frac(p.coatW, 8)} coat closet, open, rod at ${frac(p.coatRod, 8)} with ${coatFronts.length} drawers under it; then ${ents.map(e => `${frac(e.w, 8)} at ${frac(e.d, 8)} deep`).join(", then ")}. The wide deep boxes hang open with a rod at ${frac(p.coatRod, 8)}, a shelf at 36" under the clothes and a shelf above. The shallow one at the machine end has a door and shelves - it is held back to ${frac(ents.length ? ents[ents.length - 1].d : 0, 8)} to keep the walkway in front of the machines.`,
       `Grade: ${p.grade === "chip" ? "chipboard" : "shaker, plywood box"}. This is the wall that gets opened every day coming in and out, and it is the room most likely to see water - a washer hose, the sink, plain humidity. Chipboard swells when it gets wet and never comes back. Worth the plywood here even if the uppers elsewhere are not.`,
       `Wall B left can only be ${frac(coat0 - clearU, 8)} wide: the sub-panel's 30" x 36" code clear space takes the garage corner, and that is exactly the stretch facing the dryer. What is left faces the washer.`,
-      `At ${frac(p.facingDepth, 8)} deep the walkway is ${frac(Yb - mFront - p.facingDepth, 8)} with everything shut, which is comfortable. Open a machine door and it reaches ${frac(D1.open, 8)} off that wall, leaving ${frac(gap, 8)} to stand in - enough to load from the side, not to stand square in front of it.`,
+      `The deepest box opposite a machine is ${frac(faceD, 8)}, so the walkway there is ${frac(aisle, 8)} with everything shut. Open a machine door and it reaches ${frac(D1.open, 8)} off that wall, leaving ${frac(gap, 8)} clear of the cabinet face.`,
       `Wall C has nothing on it - that is the garage door wall.`,
       `${W1.model} washer, ${W1.w} x ${W1.h} x ${frac(W1.d, 8)}, door opens to ${frac(W1.open, 8)} off the wall. ${D1.model} dryer, ${D1.w} x ${D1.h} x ${frac(D1.d, 8)}, door opens to ${frac(D1.open, 8)}. Both sit ${frac(bc, 8)} off the wall for hoses and the vent.`,
       ...(pedH ? [`On ${frac(pedH, 8)} pedestals the tops come to ${frac(mTop, 8)}, which is what the uppers have to clear.`] : [`No pedestals. If they get added the tops go from ${frac(W1.h, 8)} to ${frac(W1.h + p.pedH, 8)} and the uppers have to move up with them.`]),
