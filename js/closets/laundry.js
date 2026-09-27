@@ -3,8 +3,8 @@
 // electrical sub-panel near the right end of the long bottom wall.
 // v1: washer + dryer placed, basic plywood shelves, open coat section right of the foyer door,
 // shoe shelves, and the code clear space in front of the sub-panel.
-import { box, esRun, floorItem, collector, packStock, packStock as pack } from "../model/builders.js";
-import { PLY, frac, ftin } from "../lib/units.js";
+import { box, esRun, floorItem, collector, packStock, packStock as pack, ES } from "../model/builders.js";
+import { PLY, FRONT, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
 import { LOOK } from "./common.js";
 
@@ -15,6 +15,7 @@ export const FIELD = {
   sinkW: 62.1, pierT: 5.3, pierLen: 43.8, pierBelow: 13.4, wdW: 59.6,
   leftUpper: 64.2, foyerRO: 32.5, leftLower: 28.9, rightUpper: 47.2, garageRO: 34.3,
   ceiling: 120, sinkCenterFromJamb: 19.9, panelFromCorner: 17.3, panelTop: 85.1, panelBottom: 47,
+  drainZ: 16.3, supplyZ: 18.6, supplyApart: 10.8,   // E1, off the foyer jamb
   // LG, from the spec sheets. WxHxD product dimensions and depth with the door open.
   washer: { w: 29, d: 32.875, h: 40.75, open: 58.625, model: "LG WM8980HVA" },
   dryer:  { w: 29, d: 32.125, h: 40.75, open: 59,     model: "LG DLEX8980V" },
@@ -24,6 +25,7 @@ export const FIELD = {
 export const DEFAULTS = {
   backClear: 5, showClear: true, pedestal: true,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
+  sinkW2: 25, sinkD2: 22, backWall: "counter",
   upperDepth: 15, upperBottom: 54, upperTop: 90,
   wdUpperBottom: 70, wdUpperTop: 120,
   coatW: 30, bPlan: "30, 30", grade: "shaker", coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 96,
@@ -41,6 +43,10 @@ export const CONTROLS = [
     { key: "baseDepth", label: "Base cabinets + counter, depth", min: 18, max: 24, step: 0.5 },
     { key: "counterZ", label: "Counter height", min: 34, max: 38, step: 0.25 },
     { key: "sinkBay", label: "Open bay for the sink", min: 24, max: 36, step: 1 },
+    { key: "sinkW2", label: "Sink, width", min: 21, max: 33, step: 1 },
+    { key: "sinkD2", label: "Sink, front to back", min: 18, max: 25, step: 1 },
+    { key: "backWall", label: "Wall D left (the back leg)", type: "select",
+      options: [["counter", "Counter, same as the sink leg"], ["tall", "Floor-to-ceiling storage instead"], ["none", "Leave it empty"]] },
     { key: "upperDepth", label: "Uppers, depth", min: 12, max: 18, step: 1.5 },
     { key: "upperBottom", label: "Uppers, bottom", min: 48, max: 60, step: 1 },
     { key: "upperTop", label: "Uppers, top", min: 80, max: 120, step: 1 },
@@ -119,15 +125,31 @@ export function build(p) {
   const sb0 = Math.max(aU0, sinkU - p.sinkBay / 2), sb1 = sb0 + p.sinkBay;
   run(w.L, sb1, Yb, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3 });
   run(w.L, sb0, sb1, { depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5 });   // sink base: no shelf, the trap lives there
-  run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7 });
   parts.push(box(w.L, "counter", aU0, Yb, 0, bd + 1, cz - 1.25, cz, { mark: true, label: "Counter" }));
-  parts.push(box(w.SA, "counter", bd, X1, 0, bd + 1, cz - 1.25, cz));
   modules.push(box(w.L, "counter", aU0, Yb, 0, bd, 0, 0, { label: "Corner closet", sub: `counter at ${frac(cz, 8)}` }));
-  parts.push(box(w.L, "sink", sb0 + 3, sb1 - 3, 2.5, bd - 2.5, cz - 9, cz, { mark: true, label: "Sink, drops into the counter" }));
-  modules.push(box(w.L, "sink", sb0, sb1, 0, bd, 0, 0, { label: "Sink base", sub: `${frac(p.sinkBay, 8)}, detergent under` }));
-
   run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: [p.upperBottom + 13, p.upperBottom + 26], prefix: "AU", seed: 11 });
-  run(w.SA, ud, X1, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: [p.upperBottom + 13, p.upperBottom + 26], prefix: "DU", seed: 13 });
+
+  // the sink itself: a standard drop-in, centred on the measured drain, not on the cabinet
+  const skW = p.sinkW2, skD = Math.min(p.sinkD2, bd - 1);
+  const sk0 = sinkU - skW / 2, sk1 = sinkU + skW / 2, skV = Math.max(0.75, (bd + 1 - skD) / 2);
+  parts.push(box(w.L, "sink", sk0, sk1, skV, skV + skD, cz - 12, cz,
+    { mark: true, label: `Sink, ${frac(skW, 8)} x ${frac(skD, 8)} drop-in, centred ${frac(p.sinkCenterFromJamb, 8)} off the foyer jamb` }));
+  modules.push(box(w.L, "sink", sb0, sb1, 0, bd, 0, 0, { label: "Sink base", sub: `${frac(p.sinkBay, 8)}, detergent under` }));
+  // the plumbing, from E1
+  parts.push(box(w.L, "outlet", sinkU - 1.5, sinkU + 1.5, 0, 1, p.drainZ - 1.5, p.drainZ + 1.5, { mark: true, label: `Drain, ${frac(p.drainZ, 8)} AFF` }));
+  for (const sx of [-p.supplyApart / 2, p.supplyApart / 2])
+    parts.push(box(w.L, "outlet", sinkU + sx - 0.75, sinkU + sx + 0.75, 0, 1, p.supplyZ - 0.75, p.supplyZ + 0.75, { label: `Supply, ${frac(p.supplyZ, 8)} AFF` }));
+  if (skW > p.sinkBay - 3) warnings.push(`A ${frac(skW, 8)} sink needs about ${frac(skW + 3, 8)} of cabinet. The bay is ${frac(p.sinkBay, 8)}.`);
+  if (sk0 < aU0 || sk1 > Yb) warnings.push("The sink runs past the end of the counter.");
+
+  // ---------- wall D left: the back leg. Counter to match, tall storage instead, or nothing.
+  if (p.backWall === "counter") {
+    run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7 });
+    parts.push(box(w.SA, "counter", bd, X1, 0, bd + 1, cz - 1.25, cz));
+    run(w.SA, ud, X1, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: [p.upperBottom + 13, p.upperBottom + 26], prefix: "DU", seed: 13 });
+  } else if (p.backWall === "tall") {
+    run(w.SA, bd, X1, { depth: bd, top: p.upperTop, levels: [16, 30, 44, 58, 72, 86].filter(z => z < p.upperTop - 2), prefix: "D", seed: 7 });
+  }
 
   // ---------- wall D right: uppers only, over the machines
   run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: p.wdUpperTop, levels: [p.wdUpperBottom + 13], prefix: "W", seed: 17 });
@@ -184,6 +206,29 @@ export function build(p) {
   if (p.facingDepth > 0 && gap < 1)
     warnings.push(`A ${frac(p.facingDepth, 8)} cabinet opposite the machines stops their doors opening - the doors reach ${frac(dOpen - yWD, 8)} off that wall and the cabinet face is ${frac(Yb - p.facingDepth - yWD, 8)}.`);
 
+  // ---------- how much storage this actually is. Reach cut-off: 75" is the top shelf you can
+  // use without a stool. Anything above is real storage, just not daily.
+  const REACH = 75, sqft = x => Math.round(x / 144 * 10) / 10, cuft = x => Math.round(x / 1728 * 10) / 10;
+  let shelfA = 0, reachA = 0, vol = 0;
+  for (const r of runs) {
+    const cd = r.depth - FRONT - 0.5, base = (r.z0 || 0) + (r.fronts || []).reduce((a, b) => a + b, 0);
+    const zs = [base + ES, ...(r.levels || []).filter(z => z > base + 2 && z < r.top - 2)];
+    for (const bw of r.wd) {
+      const cw = bw - 2 * ES;
+      vol += cw * cd * (r.top - base);
+      for (const z of zs) { shelfA += cw * cd; if (z <= REACH) reachA += cw * cd; }
+    }
+  }
+  const ctrSA = p.backWall === "counter" ? X1 - bd : 0;
+  const ctrA = (p.leftUpper + ctrSA) * (bd + 1) - skW * skD;
+  const legL = Math.max(sk0 - aU0, Yb - sk1);                       // biggest clear stretch on the sink leg
+  const bestStretch = ctrSA ? Math.max(legL, ctrSA) : legL;
+
+  // pedestal: what it costs you overhead and what it gives back down low
+  const minBottom = z => z + 12;                                    // the cabinet has to clear the tops
+  const reachIn = z => Math.max(0, Math.min(p.wdUpperTop, REACH) - minBottom(z));
+  const pedVol = 2 * p.washer.w * p.pedH * p.pedD;
+
   const lw = X3;
   return {
     info: INFO, params: p,
@@ -196,6 +241,8 @@ export function build(p) {
       { a: [0, 0], b: [0, p.leftUpper], label: frac(p.leftUpper, 8), off: t + 2.6 },
       { a: [0, p.leftUpper], b: [0, p.leftUpper + p.foyerRO], label: `${frac(p.foyerRO, 8)} foyer`, off: t + 2.6 },
       { a: [0, p.leftUpper + p.foyerRO], b: [0, Yb], label: frac(p.leftLower, 8), off: t + 2.6 },
+      { a: [0, p.leftUpper], b: [0, Yb - sinkU], label: `${frac(p.sinkCenterFromJamb, 8)} jamb to drain`, off: t + 13 },
+      { a: [0, Yb - sk1], b: [0, Yb - sk0], label: `${frac(skW, 8)} sink`, off: t + 13 },
       { a: [X3, yWD], b: [X3, yWD + p.rightUpper], label: frac(p.rightUpper, 8), off: -(t + 2.3) },
       { a: [X3, yWD + p.rightUpper], b: [X3, yWD + p.rightUpper + p.garageRO], label: `${frac(p.garageRO, 8)} garage`, off: -(t + 2.3) },
       { a: [0, Yb], b: [X3, Yb], label: `${frac(lw, 8)} (measured 125.9)`, off: t + 2.3 },
@@ -217,6 +264,11 @@ export function build(p) {
       { k: "Corner closet", v: `${frac(p.leftUpper, 8)} + ${frac(X1 - bd, 8)}`, s: `${frac(bd, 8)} base + counter at ${frac(cz, 8)}, ${frac(ud, 8)} uppers` },
       { k: "Coat closet", v: `${frac(p.coatW, 8)} × 24" deep`, s: `rod at ${frac(p.coatRod, 8)}, ${coatFronts.length} drawers under it` },
       { k: "Wall B left", v: p.facingDepth ? `${frac(coat0 - clearU, 8)} × ${frac(p.facingDepth, 8)}` : "open", s: `${frac(gap, 8)} from an open machine door` },
+      { k: "Counter", v: `${frac(p.leftUpper, 8)}${ctrSA ? ` + ${frac(ctrSA, 8)}` : ""}`, s: `${sqft(ctrA)} sq ft clear of the sink; biggest single stretch ${frac(bestStretch, 8)}` },
+      { k: "Shelf space", v: `${sqft(shelfA)} sq ft`, s: `${sqft(reachA)} sq ft of it at or below ${REACH}" - no stool` },
+      { k: "Storage volume", v: `${cuft(vol)} cu ft`, s: `inside the boxes${pedH ? `, plus ${cuft(pedVol)} cu ft in the two pedestal drawers` : ""}` },
+      { k: "Pedestal trade", v: pedH ? `${frac(reachIn(mTop), 8)} reachable` : `${frac(reachIn(W1.h), 8)} reachable`,
+        s: `over the machines, under ${REACH}". Without pedestals it would be ${frac(reachIn(W1.h), 8)}, with them ${frac(reachIn(W1.h + p.pedH), 8)}` },
       { k: "Filler in total", v: frac(runs.reduce((a, r) => a + r.fill, 0), 8), s: `${runs.length} runs of stock-width boxes` },
     ],
     titleMeta: [
@@ -228,7 +280,11 @@ export function build(p) {
     warnings,
     notes: [
       `Wall A right and wall D left are one L-shaped corner closet: ${frac(bd, 8)} base cabinets under a counter at ${frac(cz, 8)}, with ${frac(ud, 8)} uppers from ${frac(p.upperBottom, 8)} to ${frac(p.upperTop, 8)} over both. The A run owns the inside corner; the D run starts ${frac(bd, 8)} clear of it so the two don't collide.`,
-      `The sink drops into the counter over a ${frac(p.sinkBay, 8)} base cabinet, ${frac(p.sinkCenterFromJamb, 8)} off the foyer jamb. No shelf in that one - the trap needs the room - so it takes tall bottles standing up.`,
+      `The sink is a standard ${frac(skW, 8)} x ${frac(skD, 8)} drop-in, centred on the measured drain: ${frac(p.sinkCenterFromJamb, 8)} off the foyer jamb, drain at ${frac(p.drainZ, 8)} AFF, supplies at ${frac(p.supplyZ, 8)} AFF and ${frac(p.supplyApart, 8)} apart. It sits over a ${frac(p.sinkBay, 8)} base cabinet with no shelf - the trap needs the room - so that one takes tall bottles standing up.`,
+      p.backWall === "counter"
+        ? `Counter on both legs: ${frac(p.leftUpper, 8)} on the sink leg and ${frac(ctrSA, 8)} on the back wall, ${sqft(ctrA)} sq ft once the sink is out of it. The biggest clear stretch is ${frac(bestStretch, 8)} - enough to fold on.`
+        : `Counter on the sink leg only: ${frac(p.leftUpper, 8)} long, ${sqft(ctrA)} sq ft once the sink is out of it, and the biggest clear stretch is ${frac(legL, 8)} - one landing area beside the sink, not a folding table. ${p.backWall === "tall" ? `The back wall is floor-to-ceiling storage instead, ${frac(bd, 8)} deep to ${frac(p.upperTop, 8)}.` : "The back wall is empty."}`,
+      `Pedestals ${pedH ? "on" : "off"}. The cabinet over the machines has to clear the tops by about 12", so with pedestals it cannot start below ${frac(minBottom(W1.h + p.pedH), 8)} and only ${frac(reachIn(W1.h + p.pedH), 8)} of it lands under ${REACH}" - one high shelf, the rest is stool storage. Without pedestals it can start at ${frac(minBottom(W1.h), 8)} and ${frac(reachIn(W1.h), 8)} is under ${REACH}" - two shelves you would actually use daily. The pedestals pay you back with two drawers, ${p.washer.w} x ${frac(p.pedD, 8)} x ${frac(p.pedH, 8)} each, ${cuft(pedVol)} cu ft together, at floor level - and they lift the machine doors to a kinder height.`,
       `Wall B is three ${p.coatW}" boxes: the coat closet at the foyer end, rod at ${frac(p.coatRod, 8)} with ${coatFronts.length} drawers under it, then two more beside it.`,
       `Grade: ${p.grade === "chip" ? "chipboard" : "shaker, plywood box"}. This is the wall that gets opened every day coming in and out, and it is the room most likely to see water - a washer hose, the sink, plain humidity. Chipboard swells when it gets wet and never comes back. Worth the plywood here even if the uppers elsewhere are not.`,
       `Wall B left can only be ${frac(coat0 - clearU, 8)} wide: the sub-panel's 30" x 36" code clear space takes the garage corner, and that is exactly the stretch facing the dryer. What is left faces the washer.`,
