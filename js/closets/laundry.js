@@ -22,12 +22,12 @@ export const FIELD = {
 };
 
 export const DEFAULTS = {
-  backClear: 5, showClear: true, pedestal: false,
+  backClear: 5, showClear: true, pedestal: true,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   upperDepth: 15, upperBottom: 54, upperTop: 90,
-  wdUpperBottom: 56, wdUpperTop: 92,
-  coatW: 48, coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false,
-  facingDepth: 15,
+  wdUpperBottom: 70, wdUpperTop: 120,
+  coatW: 48, coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 96,
+  facingDepth: 24,
   finish: "white", lights: false,
 };
 
@@ -43,17 +43,18 @@ export const CONTROLS = [
     { key: "sinkBay", label: "Open bay for the sink", min: 24, max: 36, step: 1 },
     { key: "upperDepth", label: "Uppers, depth", min: 12, max: 18, step: 1.5 },
     { key: "upperBottom", label: "Uppers, bottom", min: 48, max: 60, step: 1 },
-    { key: "upperTop", label: "Uppers, top", min: 80, max: 96, step: 1 },
+    { key: "upperTop", label: "Uppers, top", min: 80, max: 120, step: 1 },
   ]],
   ["Wall D right · over the machines", [
-    { key: "wdUpperBottom", label: "Bottom", min: 46, max: 64, step: 1 },
-    { key: "wdUpperTop", label: "Top", min: 80, max: 96, step: 1 },
+    { key: "wdUpperBottom", label: "Bottom", min: 42, max: 84, step: 1 },
+    { key: "wdUpperTop", label: "Top", min: 80, max: 120, step: 1 },
   ]],
   ["Wall B right · coat closet", [
     { key: "coatW", label: "Width", min: 30, max: 72, step: 1 },
     { key: "coatRod", label: "Rod height", min: 54, max: 78, step: 1 },
     { key: "coatFronts", label: "Drawer fronts under it, top → bottom", type: "text" },
     { key: "coatDoors", label: "Doors on it", type: "check" },
+    { key: "tallTop", label: "Top of the coat run and wall B left", min: 84, max: 120, step: 1 },
   ]],
   ["Wall B left · facing the machines", [
     { key: "facingDepth", label: "Depth (0 = leave it open)", min: 0, max: 24, step: 1.5 },
@@ -124,6 +125,10 @@ export function build(p) {
 
   // ---------- wall D right: uppers only, over the machines
   run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: p.wdUpperTop, levels: [p.wdUpperBottom + 13], prefix: "W", seed: 17 });
+  if (p.wdUpperTop > 80) {
+    const easy = Math.max(0, 80 - p.wdUpperBottom), high = p.wdUpperTop - Math.max(80, p.wdUpperBottom);
+    if (high > 6) warnings.push(`Over the machines, ${frac(high, 8)} of the cabinet sits above 80" - reachable with a stool, not day to day. ${easy > 6 ? `Only ${frac(easy, 8)} is at easy height.` : "None of it is at easy height."}`);
+  }
   if (p.wdUpperBottom < mTop + 12) warnings.push(`The uppers over the machines start at ${frac(p.wdUpperBottom, 8)}, only ${frac(p.wdUpperBottom - mTop, 8)} above the machine tops${pedH ? ` (${frac(pedH, 8)} pedestals raise them)` : ""}. Leave about 12" to load them.`);
 
   // ---------- long wall. u runs from the garage corner, so the coat run is at the foyer end.
@@ -134,14 +139,14 @@ export function build(p) {
 
   const coat0 = Yb - p.coatW;                                     // wall B right: the coat closet
   const coatFronts = [...parseFronts(p.coatFronts, [6, 7, 8])].reverse();
-  const coats = run(w.B, coat0, Yb, { depth: 24, top: 96, doors: p.coatDoors, fronts: coatFronts,
+  const coats = run(w.B, coat0, Yb, { depth: 24, top: p.tallTop, doors: p.coatDoors, fronts: coatFronts,
     rods: [p.coatRod], levels: [p.coatRod + 14], prefix: "C", seed: 21 });
   if (p.coatRod < coatFronts.reduce((a, b) => a + b, 0) + 40)
     warnings.push(`The coat rod at ${frac(p.coatRod, 8)} leaves ${frac(p.coatRod - coatFronts.reduce((a, b) => a + b, 0), 8)} of hanging over the drawers. A jacket wants about 40".`);
 
   if (p.facingDepth > 0) {   // start it so the boxes butt the coat closet; the filler lands at the panel end
     const bw = packStock(coat0 - clearU).reduce((a, b) => a + b, 0);
-    run(w.B, coat0 - bw, coat0, { depth: p.facingDepth, top: 96, levels: [20, 34, 48, 62, 76], prefix: "B", seed: 25 });
+    run(w.B, coat0 - bw, coat0, { depth: p.facingDepth, top: p.tallTop, levels: [20, 34, 48, 62, 76], prefix: "B", seed: 25 });
   }
 
   // doors: foyer on the left wall, garage on the right; both assumed to swing in
@@ -163,8 +168,8 @@ export function build(p) {
   const xw = X2 + wu0;                       // the washer: the only machine a cabinet faces
   const x1 = xw + W1.w * 0.22, x2 = xw + W1.w * 0.52, x3 = xw + W1.w * 0.82;
   const gap = Yb - p.facingDepth - dOpen;
-  if (p.facingDepth > 0 && gap < 12)
-    warnings.push(`A ${frac(p.facingDepth, 8)} cabinet opposite the dryer leaves ${frac(gap, 8)} to its open door. Drop that run to about ${frac(Math.max(0, Yb - dOpen - 16), 8)} deep to keep 16".`);
+  if (p.facingDepth > 0 && gap < 1)
+    warnings.push(`A ${frac(p.facingDepth, 8)} cabinet opposite the machines stops their doors opening - the doors reach ${frac(dOpen - yWD, 8)} off that wall and the cabinet face is ${frac(Yb - p.facingDepth - yWD, 8)}.`);
 
   const lw = X3;
   return {
@@ -193,8 +198,9 @@ export function build(p) {
     stats: [
       { k: "Washer + dryer", v: `${W1.w + D1.w}" in ${frac(p.wdW, 8)}`, s: `${W1.model} + ${D1.model} · ${frac(spare, 8)} to spare` },
       { k: "Machine tops", v: frac(mTop, 8), s: pedH ? `on ${frac(pedH, 8)} pedestals` : "on the floor, no pedestals" },
+      { k: "Over the machines", v: `${frac(p.wdUpperBottom, 8)} to ${frac(p.wdUpperTop, 8)}`, s: `${frac(p.wdUpperBottom - mTop, 8)} above the machines; ${frac(Math.max(0, 80 - p.wdUpperBottom), 8)} of it within easy reach` },
       { k: "Machine to long wall", v: frac(Yb - mFront, 8), s: `dryer door open reaches ${frac(dOpen - yWD, 8)} off that wall` },
-      { k: "Facing that run", v: p.facingDepth ? frac(p.facingDepth, 8) : "nothing yet", s: p.facingDepth ? `${frac(gap, 8)} between it and the open dryer door` : "" },
+      { k: "Facing that run", v: p.facingDepth ? frac(p.facingDepth, 8) : "nothing yet", s: p.facingDepth ? `${frac(Yb - mFront - p.facingDepth, 8)} walkway; ${frac(gap, 8)} with a machine door open` : "" },
       { k: "Corner closet", v: `${frac(p.leftUpper, 8)} + ${frac(X1 - bd, 8)}`, s: `${frac(bd, 8)} base + counter at ${frac(cz, 8)}, ${frac(ud, 8)} uppers` },
       { k: "Coat closet", v: `${frac(p.coatW, 8)} × 24" deep`, s: `rod at ${frac(p.coatRod, 8)}, ${coatFronts.length} drawers under it` },
       { k: "Wall B left", v: p.facingDepth ? `${frac(coat0 - clearU, 8)} × ${frac(p.facingDepth, 8)}` : "open", s: `${frac(gap, 8)} from an open machine door` },
@@ -212,7 +218,7 @@ export function build(p) {
       `The sink drops into the counter over a ${frac(p.sinkBay, 8)} base cabinet, ${frac(p.sinkCenterFromJamb, 8)} off the foyer jamb. No shelf in that one - the trap needs the room - so it takes tall bottles standing up.`,
       `Wall B right is the coat closet - 24" deep, rod at ${frac(p.coatRod, 8)}, ${coatFronts.length} drawers under it, on your right as you come in from the foyer.`,
       `Wall B left can only be ${frac(coat0 - clearU, 8)} wide: the sub-panel's 30" x 36" code clear space takes the garage corner, and that is exactly the stretch facing the dryer. What is left faces the washer.`,
-      `Depth there is set by the machine doors, not the aisle. An open door reaches ${frac(D1.open, 8)} off the machine wall; at ${frac(p.facingDepth, 8)} deep you keep ${frac(gap, 8)} in front of it. 24" would leave ${frac(Yb - 24 - dOpen, 8)}.`,
+      `At ${frac(p.facingDepth, 8)} deep the walkway is ${frac(Yb - mFront - p.facingDepth, 8)} with everything shut, which is comfortable. Open a machine door and it reaches ${frac(D1.open, 8)} off that wall, leaving ${frac(gap, 8)} to stand in - enough to load from the side, not to stand square in front of it.`,
       `Wall C has nothing on it - that is the garage door wall.`,
       `${W1.model} washer, ${W1.w} x ${W1.h} x ${frac(W1.d, 8)}, door opens to ${frac(W1.open, 8)} off the wall. ${D1.model} dryer, ${D1.w} x ${D1.h} x ${frac(D1.d, 8)}, door opens to ${frac(D1.open, 8)}. Both sit ${frac(bc, 8)} off the wall for hoses and the vent.`,
       ...(pedH ? [`On ${frac(pedH, 8)} pedestals the tops come to ${frac(mTop, 8)}, which is what the uppers have to clear.`] : [`No pedestals. If they get added the tops go from ${frac(W1.h, 8)} to ${frac(W1.h + p.pedH, 8)} and the uppers have to move up with them.`]),
