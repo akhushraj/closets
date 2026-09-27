@@ -15,10 +15,9 @@ export const FIELD = { closetW: 46.2, mainD: 52.1, alcoveW: 25.2, totalL: 78.7, 
 
 export const DEFAULTS = {
   wallC: "ply", cornerTo: "front",
-  ...slots("l", [88, 104], [96, 112]),          // shared: these run the full L
-  ...slots("c", [45, 60], [68]),                 // wall C only, from where wall B stops to wall D
-  cDepth: 24, cFullOn: true, cFullZ: 30, sideOn: true,
-  dresser: false, midOn: false, midZ: 35, divU: 34,
+  ...slots("l", [30, 80, 92, 104], [66, 112]),   // every one of these runs the full L on B and C
+  ...slots("c", [45, 60], [38, 68]),              // wall C only, from where wall B stops to wall D
+  cDepth: 24, sideOn: true,
   esDepth: 24, esTop: 94, esFronts: "9, 10, 11, 12",
   aboveOn: true, aboveZ: 107,
   frontDepth: 21, rodZ: 74, lowOn: false, lowZ: 22,
@@ -40,17 +39,18 @@ export const CONTROLS = [
     { key: "cornerTo", label: "The corner belongs to", type: "select",
       options: [["front", "Wall B - its shelves run through to wall C"], ["right", "Wall C - wider boxes, shorter wall B"]] },
   ]],
-  ["Above it · plywood planks", [
+  shelfControls("l", 6, "Full L · every one touches wall B and wall C"),
+  shelfControls("c", 4, "Wall C only · from wall B's face to wall D", [
+    { key: "cDepth", label: "Wall C depth", min: 15, max: 24, step: 0.5 },
+    { key: "sideOn", label: "Plywood side up their open edge", type: "check" },
+  ]),
+  ["Above it · plywood planks (East Star only)", [
     { key: "aboveOn", label: "Deck and shelf over the boxes", type: "check" },
     { key: "aboveZ", label: "Upper shelf height", min: 100, max: 116, step: 1 },
   ]],
   ["Wall B · plywood hanging + shelves", [
     { key: "frontDepth", label: "Wall B depth", min: 14, max: 24, step: 0.5 },
     { key: "rodZ", label: "Rod height", min: 48, max: 84, step: 0.5 },
-    { key: "dresser", label: "Dresser under the rod (IKEA MALM 3-drawer)", type: "check" },
-    { key: "midOn", label: "Shelf wall to wall under the clothes, on a vertical", type: "check" },
-    { key: "midZ", label: "Its height (top)", min: 31, max: 42, step: 0.5 },
-    { key: "divU", label: "Where the vertical stands, from the notch", min: 20, max: 40, step: 0.5 },
 
   ]],
   ["Wall A · alcove shelves", [
@@ -68,8 +68,6 @@ export function parseFronts(s, fallback = [6, 7, 8, 8, 9]) {
   const v = String(s).split(/[\s,]+/).map(Number).filter(n => n >= 3 && n <= 16);
   return v.length ? v : fallback;
 }
-
-const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
 
 export function build(p) {
   p = { ...p, ...FIELD };
@@ -95,15 +93,13 @@ export function build(p) {
   const tw = ply ? [] : packStock(tRun), tFill = ply ? 0 : tRun - tw.reduce((a, b) => a + b, 0);
   const esFronts = [...parseFronts(p.esFronts)].reverse();
   const drawerTop = esFronts.reduce((a, b) => a + b, 0);
-  const hatZ = p.rodZ + 2;
-  const lLv = [hatZ, ...readShelves(p, "l", 4)].sort((a, b) => a - b);   // the full-L levels
-  const cLv = readShelves(p, "c", 4);                                    // wall C only
+  const lLv = readShelves(p, "l", 6);            // every one of these is a full L
+  const cLv = readShelves(p, "c", 4);            // wall C only
+  const overRod = lLv.find(z => z > p.rodZ) ?? p.ceiling;   // the L above the rod
 
-  // wall B: rod end to end with its hat shelf, then the shared levels above
-  const bays = p.midOn ? [[0, p.divU - PLY / 2], [p.divU + PLY / 2, lU1]] : [[0, lU1]];
-  const hangs = bays.map(([a, b]) => add(hangRun(w.L, { u0: a, u1: b, depth: fd, rodZ: p.rodZ, shelfDepth: sd, coatsTo: a + 0.1 })));
-  const hang = hangs[0];
-  add(fixedShelves(w.L, { u0: 0, u1: lU1, depth: sd, levels: lLv.filter(z => z > hatZ + 0.5), label: "Wall B shelves" }));
+  // wall B: rod end to end, no hat shelf, and the L levels above and below it
+  const hang = add(hangRun(w.L, { u0: 0, u1: lU1, depth: fd, rodZ: p.rodZ, coatsTo: 0.1, hat: false }));
+  add(fixedShelves(w.L, { u0: 0, u1: lU1, depth: sd, levels: lLv, label: "Wall B · the L" }));
 
   // wall C
   const es = ply ? { drawers: [] }
@@ -113,10 +109,9 @@ export function build(p) {
   if (ply) {
     add(fixedShelves(w.T, { u0: fd, u1: W, depth: cd, levels: lLv, label: "Wall C · the L" }));
     if (cLv.length) add(fixedShelves(w.T, { u0: fd, u1: W, depth: cd, levels: cLv, label: "Wall C shelves" }));
-    if (p.cFullOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: cd, levels: [p.cFullZ], label: "Wall C · right across" }));
     // a plywood side up the open edge of the wall C shelves, so nothing slides off toward wall B
     if (p.sideOn && cLv.length)
-      parts.push(box(w.T, "carcass", fd, fd + PLY, 0, cd, cLv[0], hatZ,
+      parts.push(box(w.T, "carcass", fd, fd + PLY, 0, cd, cLv[0], overRod,
         { mark: true, label: "Side, stops things falling off" }));
   }
 
@@ -131,17 +126,6 @@ export function build(p) {
     parts.push(box(w.T, "cleat", tU0, tU1, 0, PLY, p.aboveZ - 1.5, p.aboveZ));
     parts.push(box(w.T, "shelf", tU0, tU1, 0, ed, p.aboveZ, p.aboveZ + PLY, { mark: true, label: "Upper shelf" }));
   }
-  if (p.dresser) {   // IKEA MALM 3-drawer, standing under the clothes
-    const a = 1.5, b = a + MALM.w, v1 = 0.5 + MALM.d, fh = (MALM.h - 2.5) / 3;
-    parts.push(box(w.L, "dresser", a, b, 0.5, v1 - 0.6, 0, MALM.h - 0.75, { label: "Dresser" }));
-    parts.push(box(w.L, "dresser", a, b, 0.5, v1, MALM.h - 0.75, MALM.h, { mark: true, label: "Dresser top" }));
-    for (let i = 0; i < 3; i++) {
-      const z0 = 1 + i * (fh + 0.4);
-      parts.push(box(w.L, "dresserfront", a + 0.4, b - 0.4, v1 - 0.6, v1, z0, z0 + fh));
-    }
-    modules.push(box(w.L, "dresser", a, b, 0.5, v1, 0, 0, { label: "Dresser", sub: `MALM 3-drawer · ${MALM.w} × ${MALM.d}` }));
-  }
-
   // ---- left alcove: fixed plywood shelves wall to wall on cleats, LED under each
   const belowDoor = L - (p.doorAt + p.doorRO);
   const alcDepth = Math.floor((belowDoor - p.casingW - 0.25) * 8) / 8;
@@ -162,12 +146,13 @@ export function build(p) {
   const clothesTo = p.rodZ - 42;   // an adult shirt on a hanger
   if (p.aboveOn && !ply && p.aboveZ < deck + 10) warnings.push(`Only ${frac(p.aboveZ - deck, 8)} between the deck and the shelf above it.`);
   if (!ply && tFill > 6) warnings.push(`${frac(tFill, 8)} of filler on wall C. East Star widths only add up to multiples of 3, so ${frac(tRun, 8)} lands on ${tw.reduce((a, b) => a + b, 0)}".`);
-  if (p.cFullOn && p.dresser && p.cFullZ - PLY - 1.5 < MALM.h)
-    warnings.push(`The shelf right across at ${frac(p.cFullZ, 8)} passes over the dresser, which is ${MALM.h}" tall. One of them has to move.`);
-  if (p.cFullOn && p.cFullZ > clothesTo - 1)
-    warnings.push(`The shelf right across at ${frac(p.cFullZ, 8)} runs into the hanging clothes, which reach ${frac(clothesTo, 8)}.`);
-  if (ply && cLv.length && cLv[cLv.length - 1] > hatZ - 8)
-    warnings.push(`A wall C shelf at ${frac(cLv[cLv.length - 1], 8)} is close under the ${frac(hatZ, 8)} hat shelf.`);
+  const underRod = [...lLv].reverse().find(z => z < p.rodZ);
+  if (underRod !== undefined && underRod > clothesTo - 1)
+    warnings.push(`The L at ${frac(underRod, 8)} runs into the hanging clothes, which reach ${frac(clothesTo, 8)}. Drop it or raise the rod.`);
+  if (overRod > p.ceiling - 1) warnings.push(`Nothing above the rod at ${frac(p.rodZ, 8)} - add an L level above it.`);
+  else if (overRod - p.rodZ < 4) warnings.push(`The L at ${frac(overRod, 8)} is only ${frac(overRod - p.rodZ, 8)} over the rod. Hangers need about 2" plus room to lift them off.`);
+  if (ply && cLv.some(z => z > overRod - 6))
+    warnings.push(`A wall C shelf sits within 6" of the ${frac(overRod, 8)} L above the rod.`);
   if (p.rodZ < 46) warnings.push(`The rod at ${frac(p.rodZ, 8)} leaves ${frac(p.rodZ - 4, 8)} of hanging above the floor. A jacket wants about 40".`);
   for (let i = 1; i < alcLevels.length; i++)
     if (alcLevels[i] - alcLevels[i - 1] < 6)
@@ -175,12 +160,12 @@ export function build(p) {
   if (alcLevels.length && alcLevels[0] - 1.5 - 0.5 < p.hamperH)
     warnings.push(`The lowest alcove shelf (${alcLevels[0]}") is too low for a ${p.hamperH}" hamper under its front edge.`);
   if (Math.abs(alcDepth - sd) > 0.5) warnings.push(`Wall A shelves are ${frac(alcDepth, 8)} deep against wall B's ${frac(sd, 8)} - the entry door casing caps wall A, so they can't match.`);
-  if (ply) warnings.push(...spacingWarnings([...cLv, ...lLv], "Wall C"));
+  if (ply) warnings.push(...spacingWarnings([...cLv, ...lLv].sort((a, b) => a - b), "Wall C"));
   const notes = [
     `Three different things, on purpose. The right wall is East Star boxes - that is where the drawers are. The front wall and the left alcove are plywood planks on 1x2 cleats, cut and painted on site.`,
     `Right wall: ${tw.join('" + ')}" of ${frac(ed, 8)}-deep boxes at ${frac(top, 8)} tall, no doors, ${esFronts.length} drawers in the first one. ${frac(tFill, 8)} of filler.`,
     `Above them, plywood: a deck on the box tops at ${frac(deck, 8)} and a shelf at ${frac(p.aboveZ, 8)}, leaving ${frac(p.ceiling - p.aboveZ - PLY, 8)} to the ceiling. Planks on edge at each box seam carry it, with 1x2 cleats into the studs behind.`,
-    `Wall B: rod at ${frac(p.rodZ, 8)} end to end, ${frac(lU1, 8)}, ${frac(fd, 8)} deep - the notch there is ${frac(nx, 8)} wide, so that fits exactly. Nothing below the rod. Above it: ${lLv.map(z => frac(z, 8)).join(", ")}, all ${frac(sd, 8)} deep.`,
+    `Wall B: rod at ${frac(p.rodZ, 8)} end to end, ${frac(lU1, 8)}, ${frac(fd, 8)} deep - the notch there is ${frac(nx, 8)} wide, so that fits exactly. No hat shelf; the first shelf over the rod is the L at ${frac(overRod, 8)}.`,
     `Those ${lLv.length} levels carry straight round onto wall C, so they read as one L. Wall C is ${frac(cd, 8)} deep and picks up where wall B stops, ${frac(fd, 8)} off the corner.`,
     `Wall A can't match that depth. The return beside the entry door is only ${frac(belowDoor, 8)}; take off a ${frac(cw, 8)} casing and 1/4" and the alcove shelves cap out at ${frac(alcDepth, 8)} deep, wall to wall at ${frac(A, 8)}. Any deeper and they foul the door casing.`,
     "LEDs: single-colour 24V strip in an aluminium channel under the front edge of every plywood shelf and under the hat shelf, hidden behind the 3/4\" x 1-1/2\" nosing. One driver, one trunk down the back corner, a WAGO pair at each shelf.",
@@ -218,15 +203,14 @@ export function build(p) {
     ],
     drawerGroups: [{ name: "East Star drawers", drawers: es.drawers }],
     stats: [
-      ply ? { k: "Wall C · plywood", v: `${(cLv.length + lLv.length + (p.cFullOn ? 1 : 0))} shelves`, s: `${frac(cd, 8)} deep` }
+      ply ? { k: "Wall C · plywood", v: `${cLv.length + lLv.length} shelves`, s: `${frac(cd, 8)} deep` }
           : { k: "Wall C · East Star", v: tw.join(" + ") + '"', s: `${frac(ed, 8)} deep, ${frac(top, 8)} tall, no doors · ${frac(tFill, 8)} filler` },
-      { k: "Drawers", v: p.dresser ? "3, in a dresser" : (ply ? "none" : `${n}`), s: p.dresser ? `MALM 3-drawer under the rod` : (ply ? "nothing on wall B below the rod" : `in the ${tw[0]}" box`) },
+      ...(ply ? [] : [{ k: "Drawers", v: `${n}`, s: `in the ${tw[0]}" box` }]),
       ...(ply ? [] : [{ k: "Above them", v: p.aboveOn ? `deck ${frac(deck, 8)} · shelf ${frac(p.aboveZ, 8)}` : "off", s: `plywood, ${frac(p.ceiling - p.aboveZ - PLY, 8)} to the ceiling` }]),
       { k: "Wall B · rod", v: frac(rodLen, 8), s: `at ${frac(p.rodZ, 8)}, running the full ${frac(lU1, 8)} to wall C` },
       { k: "The full L", v: lLv.map(z => frac(z, 8)).join(", "), s: `wall B ${frac(sd, 8)} deep, wall C ${frac(cd, 8)} deep` },
-      { k: "Wall C only", v: cLv.length ? cLv.map(z => frac(z, 8)).join(", ") : "none", s: `${frac(W - fd, 8)} wide, wall B's face to wall D${p.sideOn && cLv.length ? `, with a side up to ${frac(hatZ, 8)}` : ""}` },
-      { k: "Right across", v: p.cFullOn ? frac(p.cFullZ, 8) : "off", s: p.cFullOn ? `full ${frac(W, 8)}, wall B to wall D, under the clothes` : "" },
-      { k: "Under the rod", v: "open", s: `clothes reach ${frac(clothesTo, 8)}` },
+      { k: "Wall C only", v: cLv.length ? cLv.map(z => frac(z, 8)).join(", ") : "none", s: `${frac(W - fd, 8)} wide, wall B's face to wall D${p.sideOn && cLv.length ? `, side up to ${frac(overRod, 8)}` : ""}` },
+      { k: "Around the rod", v: `${frac(underRod ?? 0, 8)} → ${frac(p.rodZ, 8)} → ${frac(overRod, 8)}`, s: `clothes reach ${frac(clothesTo, 8)}, ${frac(clothesTo - (underRod ?? 0), 8)} over the L below` },
       { k: "Wall A · alcove", v: `${alcLevels.length} × ${frac(alcDepth, 8)} deep`, s: `capped by the wall D casing, not by choice` },
       { k: "Aisle", v: frac(aisle, 8), s: "between wall B and wall D" },
     ],
@@ -237,7 +221,7 @@ export function build(p) {
       { k: "Drawers", v: `${n}` },
     ],
     gcText: [
-      ply ? `ROHAN'S CLOSET - all plywood${p.dresser ? ", with a bought dresser under the clothes" : ", nothing bought"}.`
+      ply ? `ROHAN'S CLOSET - all plywood, nothing bought.`
           : `ROHAN'S CLOSET - East Star on wall C, Amir's plywood on walls A and B.`,
       ``,
       ...(ply ? [] : [`EAST STAR, wall C: ${tw.join('" + ')}" box, ${frac(ed, 8)} deep, ${frac(top, 8)} tall, NO doors, ${frac(tFill, 8)} filler. ${esFronts.length} drawers at the bottom of the ${tw[0]}" box (${esFronts.slice().reverse().join('", ')}" fronts, top down); shelves in the rest. Floor-standing, screwed through the back into studs.`]),
@@ -245,12 +229,12 @@ export function build(p) {
       ``,
       `AMIR - 3/4" birch plywood, painted, on 1x2 cleats screwed through the drywall into the studs:`,
       ...(p.aboveOn && !ply ? [`  Over the boxes: a deck at ${frac(deck, 8)} on the cabinet tops, planks on edge at each box seam, and a shelf at ${frac(p.aboveZ, 8)}.`] : []),
-      `  Wall B (${frac(lU1, 8)} long, ${frac(sd, 8)} deep): rod at ${frac(p.rodZ, 8)} end to end, nothing below it. Shelves at ${lLv.map(z => frac(z, 8)).join(", ")}.`,
-      `  Wall C (${frac(cd, 8)} deep): the same ${lLv.length} levels carry round from wall B as one L. Below them, ${cLv.map(z => frac(z, 8)).join(" and ")} run only from wall B's face (${frac(fd, 8)} off the corner) to wall D.${p.sideOn && cLv.length ? ` A 3/4" plywood side closes their open edge from ${frac(cLv[0], 8)} up to ${frac(hatZ, 8)} so nothing slides off.` : ""}${p.cFullOn ? ` One more at ${frac(p.cFullZ, 8)} runs right across, wall B to wall D.` : ""}`,
+      `  Wall B (${frac(lU1, 8)} long, ${frac(sd, 8)} deep): rod at ${frac(p.rodZ, 8)} end to end. No hat shelf. Shelves at ${lLv.map(z => frac(z, 8)).join(", ")} - ${frac(underRod ?? 0, 8)} under the clothes, ${frac(overRod, 8)} over the rod.`,
+      `  Wall C (${frac(cd, 8)} deep): the same ${lLv.length} levels carry round from wall B as one L. Between them, ${cLv.map(z => frac(z, 8)).join(" and ")} run only from wall B's face (${frac(fd, 8)} off the corner) to wall D.${p.sideOn && cLv.length ? ` A 3/4" plywood side closes their open edge from ${frac(cLv[0], 8)} up to ${frac(overRod, 8)} so nothing slides off.` : ""}`,
       `  Wall A alcove: ${alcLevels.length} shelves at ${alcLevels.join('", ')}", ${frac(alcDepth, 8)} deep (the door casing caps it), wall to wall at ${frac(A, 8)}.`,
       `  Front edge on every plywood shelf: 3/4" x 1-1/2" solid nosing - it hides the LED channel.`,
       ``,
-      `LED: single-colour 24V strip in an aluminium channel under every plywood shelf and under the hat shelf, behind the nosing. One driver, one trunk down the back corner, a WAGO pair per shelf. See the A-4 tab.`,
+      `LED: single-colour 24V strip in an aluminium channel under every plywood shelf, behind the nosing. One driver, one trunk down the back corner, a WAGO pair per shelf. See the A-4 tab.`,
     ].join("\n"),
     warnings, notes, wiring,
   };

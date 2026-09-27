@@ -75,13 +75,15 @@ function garmentsOnRod(parts, w, r, ia, ib, rodV, z, kind, toneBase) {
 
 /* ---------- single-level hanging run with a hat shelf above the rod ---------- */
 export function hangRun(w, o) {
-  const { u0, u1, depth = 24, rodZ = 70, shelfDepth = 14, coatsTo = u0, garments = true } = o;
+  const { u0, u1, depth = 24, rodZ = 70, shelfDepth = 14, coatsTo = u0, garments = true, hat = true } = o;
   const parts = [], r = rng(7);
   const rodV = Math.min(12, depth / 2), shelfZ = rodZ + 2;
   parts.push(box(w, "rod", u0 + 0.25, u1 - 0.25, rodV - 0.625, rodV + 0.625, rodZ - 0.625, rodZ + 0.625,
     { axis: "u", mark: true, label: "Rod" }));
-  parts.push(box(w, "shelf", u0, u1, 0, shelfDepth, shelfZ, shelfZ + PLY, { mark: true, label: "Hat shelf" }));
-  parts.push(box(w, "led", u0 + 1, u1 - 1, shelfDepth - 1.4, shelfDepth - 0.6, shelfZ - 0.35, shelfZ));
+  if (hat) {
+    parts.push(box(w, "shelf", u0, u1, 0, shelfDepth, shelfZ, shelfZ + PLY, { mark: true, label: "Hat shelf" }));
+    parts.push(box(w, "led", u0 + 1, u1 - 1, shelfDepth - 1.4, shelfDepth - 0.6, shelfZ - 0.35, shelfZ));
+  }
   if (garments) {
     if (coatsTo > u0 + 3) garmentsOnRod(parts, w, r, u0, coatsTo, rodV, rodZ, "coat", 0);
     garmentsOnRod(parts, w, r, Math.max(u0, coatsTo - 1.2), u1, rodV, rodZ, "mixed", 2);
