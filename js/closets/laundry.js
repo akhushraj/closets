@@ -15,15 +15,18 @@ export const FIELD = {
   sinkW: 62.1, pierT: 5.3, pierLen: 43.8, pierBelow: 13.4, wdW: 59.6,
   leftUpper: 64.2, foyerRO: 32.5, leftLower: 28.9, rightUpper: 47.2, garageRO: 34.3,
   ceiling: 120, sinkCenterFromJamb: 19.9, panelFromCorner: 17.3, panelTop: 85.1, panelBottom: 47,
-  washer: { w: 29, d: 32.88, h: 40.75 }, dryer: { w: 29, d: 32.125, h: 40.75, open: 59 },
+  // LG, from the spec sheets. WxHxD product dimensions and depth with the door open.
+  washer: { w: 29, d: 32.875, h: 40.75, open: 58.625, model: "LG WM8980HVA" },
+  dryer:  { w: 29, d: 32.125, h: 40.75, open: 59,     model: "LG DLEX8980V" },
+  pedH: 13.625, pedD: 29.5,   // LG pedestal, 29 x 13-5/8 x 29-1/2
 };
 
 export const DEFAULTS = {
-  backClear: 5, showClear: true,
+  backClear: 5, showClear: true, pedestal: false,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   upperDepth: 15, upperBottom: 54, upperTop: 90,
   wdUpperBottom: 56, wdUpperTop: 92,
-  coatW: 48, coatRod: 66, coatFronts: "10, 11, 12", coatDoors: false,
+  coatW: 48, coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false,
   facingDepth: 15,
   finish: "white", lights: false,
 };
@@ -32,6 +35,7 @@ export const CONTROLS = [
   ["Washer / dryer · clearances", [
     { key: "backClear", label: "Space behind the machines", min: 2, max: 8, step: 0.5 },
     { key: "showClear", label: "Dimension the critical clearances in plan", type: "check" },
+    { key: "pedestal", label: "On LG pedestals (13-5/8\" tall)", type: "check" },
   ]],
   ["Corner closet · wall A right + wall D left", [
     { key: "baseDepth", label: "Base cabinets + counter, depth", min: 18, max: 24, step: 0.5 },
@@ -82,10 +86,13 @@ export function build(p) {
   const bc = p.backClear, W1 = p.washer, D1 = p.dryer;
   const spare = p.wdW - W1.w - D1.w, side = Math.max(0, spare / 3);
   const wu0 = side, du0 = side * 2 + W1.w;
-  add(floorItem(w.WD, "appliance", { u0: wu0, u1: wu0 + W1.w, v0: bc, v1: bc + W1.d, h: W1.h, label: "Washer" }));
-  const dr = floorItem(w.WD, "appliance", { u0: du0, u1: du0 + D1.w, v0: bc, v1: bc + D1.d, h: D1.h, label: "Dryer" });
-  dr.module.ghost = { u0: du0, u1: du0 + D1.w, v0: bc + D1.d, v1: bc + D1.open, label: "dryer door open" };
-  add(dr);
+  const pedH = p.pedestal ? p.pedH : 0, mTop = pedH + W1.h;
+  for (const [u0, M1, name] of [[wu0, W1, "Washer"], [du0, D1, "Dryer"]]) {
+    if (pedH) parts.push(box(w.WD, "appliance", u0, u0 + M1.w, bc, bc + p.pedD, 0, pedH, { label: `${name} pedestal` }));
+    parts.push(box(w.WD, "appliance", u0, u0 + M1.w, bc, bc + M1.d, pedH, pedH + M1.h, { mark: true, label: `${name} · ${M1.model}` }));
+    modules.push(box(w.WD, "appliance", u0, u0 + M1.w, bc, bc + M1.d, 0, 0, { label: name, sub: M1.model,
+      ghost: { u0, u1: u0 + M1.w, v0: bc + M1.d, v1: bc + M1.open, label: `${name.toLowerCase()} door open` } }));
+  }
   if (spare < 2) warnings.push(`The two machines take ${W1.w + D1.w}" of the ${frac(p.wdW, 8)} alcove, leaving ${frac(spare, 8)} in total. Re-measure; most installs want about 1" on each side.`);
 
   // ---------- corner closet: an L of base cabinets under a counter on wall A right and
@@ -117,7 +124,7 @@ export function build(p) {
 
   // ---------- wall D right: uppers only, over the machines
   run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: p.wdUpperTop, levels: [p.wdUpperBottom + 13], prefix: "W", seed: 17 });
-  if (p.wdUpperBottom < W1.h + 12) warnings.push(`The uppers over the machines start at ${frac(p.wdUpperBottom, 8)}, only ${frac(p.wdUpperBottom - W1.h, 8)} above them. Leave about 12" to load them.`);
+  if (p.wdUpperBottom < mTop + 12) warnings.push(`The uppers over the machines start at ${frac(p.wdUpperBottom, 8)}, only ${frac(p.wdUpperBottom - mTop, 8)} above the machine tops${pedH ? ` (${frac(pedH, 8)} pedestals raise them)` : ""}. Leave about 12" to load them.`);
 
   // ---------- long wall. u runs from the garage corner, so the coat run is at the foyer end.
   const clearU = 30;                                              // code clear space at the panel
@@ -151,7 +158,8 @@ export function build(p) {
     warnings.push("Something stands in the clear space in front of the electrical panel.");
 
   // the clearances worth dimensioning: machine depth, the run to the long wall, and the dryer door
-  const mDepth = Math.max(W1.d, D1.d), mFront = yWD + bc + mDepth, dOpen = yWD + bc + D1.open;
+  const mDepth = Math.max(W1.d, D1.d), mFront = yWD + bc + mDepth;
+  const dOpen = yWD + bc + Math.max(W1.open, D1.open);
   const xw = X2 + wu0;                       // the washer: the only machine a cabinet faces
   const x1 = xw + W1.w * 0.22, x2 = xw + W1.w * 0.52, x3 = xw + W1.w * 0.82;
   const gap = Yb - p.facingDepth - dOpen;
@@ -183,7 +191,8 @@ export function build(p) {
     ],
     drawerGroups: [],
     stats: [
-      { k: "Washer + dryer", v: `${W1.w + D1.w}" in ${frac(p.wdW, 8)}`, s: `${frac(spare, 8)} to spare · ${frac(bc, 8)} behind` },
+      { k: "Washer + dryer", v: `${W1.w + D1.w}" in ${frac(p.wdW, 8)}`, s: `${W1.model} + ${D1.model} · ${frac(spare, 8)} to spare` },
+      { k: "Machine tops", v: frac(mTop, 8), s: pedH ? `on ${frac(pedH, 8)} pedestals` : "on the floor, no pedestals" },
       { k: "Machine to long wall", v: frac(Yb - mFront, 8), s: `dryer door open reaches ${frac(dOpen - yWD, 8)} off that wall` },
       { k: "Facing that run", v: p.facingDepth ? frac(p.facingDepth, 8) : "nothing yet", s: p.facingDepth ? `${frac(gap, 8)} between it and the open dryer door` : "" },
       { k: "Corner closet", v: `${frac(p.leftUpper, 8)} + ${frac(X1 - bd, 8)}`, s: `${frac(bd, 8)} base + counter at ${frac(cz, 8)}, ${frac(ud, 8)} uppers` },
@@ -205,7 +214,8 @@ export function build(p) {
       `Wall B left can only be ${frac(coat0 - clearU, 8)} wide: the sub-panel's 30" x 36" code clear space takes the garage corner, and that is exactly the stretch facing the dryer. What is left faces the washer.`,
       `Depth there is set by the machine doors, not the aisle. An open door reaches ${frac(D1.open, 8)} off the machine wall; at ${frac(p.facingDepth, 8)} deep you keep ${frac(gap, 8)} in front of it. 24" would leave ${frac(Yb - 24 - dOpen, 8)}.`,
       `Wall C has nothing on it - that is the garage door wall.`,
-      `The machines sit ${frac(bc, 8)} off the wall for hoses and the vent.`,
+      `${W1.model} washer, ${W1.w} x ${W1.h} x ${frac(W1.d, 8)}, door opens to ${frac(W1.open, 8)} off the wall. ${D1.model} dryer, ${D1.w} x ${D1.h} x ${frac(D1.d, 8)}, door opens to ${frac(D1.open, 8)}. Both sit ${frac(bc, 8)} off the wall for hoses and the vent.`,
+      ...(pedH ? [`On ${frac(pedH, 8)} pedestals the tops come to ${frac(mTop, 8)}, which is what the uppers have to clear.`] : [`No pedestals. If they get added the tops go from ${frac(W1.h, 8)} to ${frac(W1.h + p.pedH, 8)} and the uppers have to move up with them.`]),
       `Two 29" machines in a ${frac(p.wdW, 8)} alcove leave ${frac(spare, 8)} in total. Re-measure before ordering.`,
       "The garage door swings out into the garage, so it never takes room off the walkway on this side. The foyer door is assumed to swing in - please confirm.",
       `The long wall comes to ${frac(lw, 8)} from the alcove widths against ${frac(125.9, 8)} measured. Re-measure.`,
