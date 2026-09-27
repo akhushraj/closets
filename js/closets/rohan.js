@@ -18,12 +18,12 @@ const HEMNES = { w: 42.5, d: 19.625, h: 37.75 };
 
 export const DEFAULTS = {
   layout: "rodC", rodZ: 72, hang: 36, bDepth: 21, cDepth: 24,
-  ...slots("l", [74, 96], [108, 111, 114]),   // above the rod, these run the full L
+  ...slots("l", [76, 96], [108, 111, 114]),   // above the rod, these run the full L
   lowOn: false, dresser: true,
   chestOn: true, chestW: 14, chestD: 18, chestH: 50,
   s1: 16, s1on: false, s2: 24, s2on: true, s3: 36, s3on: true, s4: 48, s4on: true,
   s5: 60, s5on: true, s6: 72, s6on: true, s7: 84, s7on: true, s8: 96, s8on: true,
-  casingW: 2.25, hamperW: 16, hamperD: 16, hamperH: 25,
+  casingW: 2.25, hamperW: 16, hamperD: 16, hamperH: 20,
   finish: "oak", lights: true,
 };
 
@@ -145,8 +145,6 @@ export function build(p) {
   const aisle = onC ? M - cd : W - bd;
   if (p.lowOn && p.dresser && underCleats < HEMNES.h)
     warnings.push(`The shelf lands at ${frac(lowZ, 8)}, leaving ${frac(underCleats, 8)} under its cleats, and the HEMNES is ${HEMNES.h}" tall. Raise the rod or shorten the hang so the shelf sits at ${frac(HEMNES.h + PLY + 1.5 + 1, 8)} or higher.`);
-  if (!p.lowOn && p.dresser && clothesTo < HEMNES.h + 1)
-    warnings.push(`No shelf over the dresser, so the clothes have to clear it themselves. At ${frac(p.hang, 8)} of hang they reach ${frac(clothesTo, 8)} and the HEMNES top is ${HEMNES.h}".`);
   if (p.chestOn && p.chestH > overRod - 2)
     warnings.push(`The chest is ${frac(p.chestH, 8)} tall and the first L shelf is at ${frac(overRod, 8)}. It won't go under.`);
   if (p.chestOn && othRun <= p.chestW + 2)
@@ -228,6 +226,7 @@ export function build(p) {
       `${othName} carries only the L shelves, and it starts ${frac(othU0, 8)} off the corner so it never runs into the hanging clothes.`,
       `That matters for how the room feels. ${onC ? `With the rod on wall C, wall B has nothing below ${frac(overRod, 8)}, so you walk in to ${frac(W, 8)} of clear floor and can turn to wall C on your right or wall A on your left from where you stand.` : `With the rod on wall B, its run stops you ${frac(W - bd, 8)} in, and you work in the strip between it and the door wall.`}`,
       `The HEMNES is ${HEMNES.h}" tall, so the shelf over it cannot sit lower than ${frac(HEMNES.h + PLY + 1.5 + 1, 8)}. At ${frac(p.hang, 8)} of hanging the shelf lands at ${frac(lowZ, 8)} and clears it by ${frac(underCleats - HEMNES.h, 8)}.`,
+      ...(!p.lowOn && p.dresser ? [`Nothing over the dresser, so the clothes hang past it. At ${frac(p.hang, 8)} they reach ${frac(clothesTo, 8)} against a ${HEMNES.h}" dresser top - fine at his size now, and the rod moves up when it stops being.`] : []),
       `${frac(p.hang, 8)} of hanging clears a jacket, which is about 34" on the hanger. Only a full-length coat would want more, and that would push the rod to ${frac(lowZ + 43, 8)}.`,
       `Room to open a drawer is measured off the dresser's own face, ${frac(HEMNES.d, 8)} off the wall - not off the ${frac(rodDepth, 8)} shelf above it. That leaves ${frac(inFront, 8)} here, ${frac(inFront - 18, 8)} with a drawer pulled right out.`,
       `Wall A can't match the others for depth. The return beside the entry door is ${frac(belowDoor, 8)}; take off a ${frac(cw, 8)} casing and 1/4" and the alcove shelves cap out at ${frac(alcDepth, 8)}.`,
