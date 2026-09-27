@@ -153,9 +153,13 @@ export function build(p) {
   if (p.facingDepth > 0) {   // start it so the boxes butt the coat closet; the filler lands at the panel end
     const bw = String(p.bPlan).split(/[,\s]+/).map(Number).filter(x => [15, 18, 21, 24, 30, 36].includes(x));
     const run0 = bw.reduce((a, b) => a + b, 0);
-    if (run0 > 0 && coat0 - run0 >= clearU)
-      run(w.B, coat0 - run0, coat0, { widths: bw, depth: p.facingDepth, top: p.tallTop, levels: [20, 34, 48, 62, 76], prefix: "B", seed: 25 });
-    else warnings.push(`Wall B: ${bw.join(" + ")}" needs ${frac(run0, 8)} but only ${frac(coat0 - clearU, 8)} is free between the panel clear space and the coat closet.`);
+    const free = coat0 - clearU;
+    const fits = run0 > 0 && run0 <= free;
+    const use = fits ? bw : pack(free);
+    const used = use.reduce((a, b) => a + b, 0);
+    if (used > 0) run(w.B, coat0 - used, coat0, { widths: use, depth: p.facingDepth, top: p.tallTop, levels: [20, 34, 48, 62, 76], prefix: "B", seed: 25 });
+    if (!fits && run0 > 0)
+      warnings.push(`Wall B: ${bw.join(" + ")}" needs ${frac(run0, 8)} but only ${frac(free, 8)} is free between the panel clear space and the ${frac(p.coatW, 8)} coat closet. Using ${use.join(" + ")}" instead - narrow the coat closet if you want the full set.`);
   }
 
   // doors: foyer on the left wall, garage on the right; both assumed to swing in
