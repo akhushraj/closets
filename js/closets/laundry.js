@@ -130,13 +130,16 @@ export function build(p) {
       bays: wd.map(x => ({ w: x, levels: o.levels, fronts: o.fronts, rods: o.rods })), prefix: o.prefix, seed: o.seed }));
   };
 
+  // shelves every ~13" through whatever height the box ends up, rather than a fixed two
+  const lvls = (z0, top, sp = 13) => { const out = []; for (let z = z0 + sp; z < top - 6; z += sp) out.push(z); return out; };
+
   const aU0 = Yb - p.leftUpper;                                   // the foyer jamb, start of wall A right
   const sinkU = Yb - (p.leftUpper - p.sinkCenterFromJamb);        // where the plumbing is
   const sb0 = Math.max(aU0, sinkU - p.sinkBay / 2), sb1 = sb0 + p.sinkBay;
   run(w.L, sb1, Yb, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3 });
   run(w.L, sb0, sb1, { depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5 });   // sink base: no shelf, the trap lives there
   modules.push(box(w.L, "counter", aU0, Yb, 0, bd, 0, 0, { label: "Corner closet", sub: `counter at ${frac(cz, 8)}` }));
-  run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: [p.upperBottom + 13, p.upperBottom + 26], prefix: "AU", seed: 11 });
+  run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11 });
 
   // the sink: a standard drop-in, centred on the measured drain, not on the cabinet
   const skW = p.sinkW2, skD = Math.min(p.sinkD2, bd - 1);
@@ -166,13 +169,13 @@ export function build(p) {
   if (p.backWall === "counter") {
     run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7 });
     parts.push(box(w.SA, "counter", bd, X1, 0, bd + 1, cz - 1.25, cz));
-    run(w.SA, ud, X1, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: [p.upperBottom + 13, p.upperBottom + 26], prefix: "DU", seed: 13 });
+    run(w.SA, ud, X1, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "DU", seed: 13 });
   } else if (p.backWall === "tall") {
-    run(w.SA, bd, X1, { depth: bd, top: p.upperTop, levels: [16, 30, 44, 58, 72, 86].filter(z => z < p.upperTop - 2), prefix: "D", seed: 7 });
+    run(w.SA, bd, X1, { depth: bd, top: p.upperTop, levels: lvls(0, p.upperTop, 14), prefix: "D", seed: 7 });
   }
 
   // ---------- wall D right: uppers only, over the machines
-  run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: p.wdUpperTop, levels: [p.wdUpperBottom + 13], prefix: "W", seed: 17 });
+  run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: p.wdUpperTop, levels: lvls(p.wdUpperBottom, p.wdUpperTop), prefix: "W", seed: 17 });
   if (p.wdUpperTop > 80) {
     const easy = Math.max(0, 80 - p.wdUpperBottom), high = p.wdUpperTop - Math.max(80, p.wdUpperBottom);
     if (high > 6) warnings.push(`Over the machines, ${frac(high, 8)} of the cabinet sits above 80" - reachable with a stool, not day to day. ${easy > 6 ? `Only ${frac(easy, 8)} is at easy height.` : "None of it is at easy height."}`);
