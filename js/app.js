@@ -14,9 +14,18 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch
 const $ = id => document.getElementById(id);
 let mod = byId(location.hash.slice(1) || lsGet("closets.last"));
 let state = {}, model = null, three = null;
-const storeKey = () => `closets.${mod.INFO.id}.v4`;
+const storeKey = () => `closets.${mod.INFO.id}.v5`;
 
-function loadState() { state = { ...mod.DEFAULTS, ...(lsGet(storeKey()) || {}) }; }
+// Save only what you actually changed, never the whole state. Storing untouched defaults
+// meant that changing a default in code had no effect in a browser that had ever rendered
+// the closet - the old value came straight back out of localStorage.
+const overrides = () => Object.fromEntries(
+  Object.entries(state).filter(([k, v]) => k in mod.DEFAULTS && String(mod.DEFAULTS[k]) !== String(v)));
+
+function loadState() {
+  for (const v of ["v1", "v2", "v3", "v4"]) try { localStorage.removeItem(`closets.${mod.INFO.id}.${v}`); } catch { /* private mode */ }
+  state = { ...mod.DEFAULTS, ...(lsGet(storeKey()) || {}) };
+}
 
 function buildPicker() {
   const sel = $("closetPick");
@@ -94,13 +103,13 @@ function buildControls() {
 
   const reset = document.createElement("button");
   reset.className = "resetbtn"; reset.textContent = "Reset to defaults";
-  reset.onclick = () => { state = { ...mod.DEFAULTS }; lsSet(storeKey(), state); buildControls(); render(); };
+  reset.onclick = () => { state = { ...mod.DEFAULTS }; lsSet(storeKey(), {}); buildControls(); render(); };
   host.append(reset);
 }
 
 let pending = 0;
 function set(key, value) {
-  state[key] = value; lsSet(storeKey(), state); showGaps();
+  state[key] = value; lsSet(storeKey(), overrides()); showGaps();
   cancelAnimationFrame(pending); pending = requestAnimationFrame(render);
 }
 
