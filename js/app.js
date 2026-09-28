@@ -58,9 +58,11 @@ function buildControls() {
   const host = $("controls");
   host.innerHTML = "";
   banks = {};
-  for (const [title, items] of mod.CONTROLS) {
-    const grp = document.createElement("div"); grp.className = "cgroup";
-    grp.innerHTML = `<h4>${title}</h4>`;
+  for (const [title, items, opt = {}] of mod.CONTROLS) {
+    // a folded group is one click away instead of always on screen
+    const grp = document.createElement(opt.fold ? "details" : "div");
+    grp.className = "cgroup" + (opt.fold ? " fold" : "");
+    grp.innerHTML = opt.fold ? `<summary>${title}</summary>` : `<h4>${title}</h4>`;
     for (const c of items) {
       const row = document.createElement("div"); row.className = "ctrl" + (c.type === "check" ? " check" : "");
       const id = "c_" + c.key;
@@ -81,7 +83,7 @@ function buildControls() {
         cb.checked = !!state[c.onKey]; inp.value = state[c.key]; out.textContent = frac(+inp.value, 8); sync();
         cb.onchange = () => { sync(); set(c.onKey, cb.checked); };
         inp.oninput = () => { out.textContent = frac(+inp.value, 8); set(c.key, +inp.value); };
-        (banks[c.key.replace(/\d+$/, "")] ??= []).push({ on: () => cb.checked, inp, gap });
+        (banks[c.bank || c.key.replace(/\d+$/, "")] ??= []).push({ on: () => cb.checked, inp, gap });
       } else if (c.type === "text") {
         row.innerHTML = `<label for="${id}">${c.label}</label><input type="text" id="${id}" spellcheck="false">`;
         const inp = row.querySelector("input"); inp.value = state[c.key];

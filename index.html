@@ -148,6 +148,12 @@
   .wago{fill:#E8A33D;stroke:var(--ink);stroke-width:.6}
   .m-dress{fill:var(--hang);stroke:var(--hang-bd);stroke-width:1}
   .m-cabinets{fill:var(--wood);stroke:var(--wood-dk);stroke-width:1}
+  details.cgroup.fold>summary{font:600 11px/1.4 var(--ui);letter-spacing:.06em;text-transform:uppercase;
+    color:var(--accent);cursor:pointer;list-style:none;padding:2px 0;display:flex;align-items:center;gap:6px}
+  details.cgroup.fold>summary::-webkit-details-marker{display:none}
+  details.cgroup.fold>summary::before{content:"▸";font-size:9px;transition:transform .12s}
+  details.cgroup.fold[open]>summary::before{transform:rotate(90deg)}
+  details.cgroup.fold>summary:hover{color:var(--ink)}
   .p-sinkbowl{fill:#B9B6AE;stroke:var(--ink);stroke-width:.8}
   .m-appliance,.m-sink,.m-dresser{fill:#E9E7E2;stroke:var(--ink-soft);stroke-width:1}
   .m-counter{fill:#D8D4CC;stroke:var(--ink-soft);stroke-width:1}

@@ -12,10 +12,27 @@ export function shelfSlots(prefix, on, off = []) {
 
 export function shelfControls(prefix, n, title, extra = []) {
   return [title, [
-    ...Array.from({ length: n }, (_, k) => ({ key: `${prefix}${k + 1}`, onKey: `${prefix}${k + 1}on`, type: "shelf",
+    ...Array.from({ length: n }, (_, k) => ({ key: `${prefix}${k + 1}`, onKey: `${prefix}${k + 1}on`, type: "shelf", bank: prefix,
       label: k === 0 ? "Shelf 1 (lowest)" : `Shelf ${k + 1}`, min: 4, max: 116, step: 0.5 })),
     ...extra,
   ]];
+}
+
+/* ---------- A shelf bank per cabinet, where a cabinet can copy a neighbour instead of
+   being set by hand. `banks` maps prefix -> how many slots that bank has. ---------- */
+export function matchControl(prefix, neighbours) {
+  return { key: `${prefix}match`, label: "Shelf heights", type: "select",
+    options: [["own", "Set below"], ...neighbours.map(([k, lbl]) => [k, `Same as ${lbl}`])] };
+}
+
+// Follow `match` links until one sets its own heights; a loop falls back to reading its own.
+export function resolveShelves(p, prefix, banks, seen = new Set()) {
+  const to = p[`${prefix}match`];
+  if (to && to !== "own" && banks[to] && !seen.has(prefix)) {
+    seen.add(prefix);
+    return resolveShelves(p, to, banks, seen);
+  }
+  return readShelves(p, prefix, banks[prefix]);
 }
 
 export function readShelves(p, prefix, n) {
