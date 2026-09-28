@@ -14,7 +14,7 @@ export const INFO = { id: "maya", name: "Maya's Closet", room: "Maya's room",
 export const FIELD = { W: 112.4, D: 29.8, ceiling: 120, stubL: 8.6, opening: 95.8, stubR: 8.1, wallAtOpening: 6.3, doorH: 96 };
 
 export const DEFAULTS = {
-  esPlan: "36, 36", esAlign: "centre", esTop: 84, depth: 24, fronts: "10, 11, 12", rodZ: 68,
+  esPlan: "30, 30", esAlign: "centre", esTop: 84, depth: 24, fronts: "10, 11, 12", rodZ: 68,
   ...shelfSlots("e", [40, 74], [54, 64, 84]),
   gableOn: false,
   ...shelfSlots("s", [30, 46, 62, 78], [16, 86]),
@@ -130,7 +130,7 @@ export function build(p) {
   if (m0 < p.stubL) warnings.push(`A drawer front reaches to ${frac(m0, 8)} and the left door frame comes in ${frac(p.stubL, 8)}. It would hit it on the way out.`);
   if (m1 > W - p.stubR) warnings.push(`A drawer front reaches to ${frac(m1, 8)} and the right door frame starts at ${frac(W - p.stubR, 8)}. It would hit it on the way out.`);
   if (worstSlide === 0) warnings.push(`A drawer front is wider than two door panels - it can never be fully opened.`);
-  else if (worstSlide > 1) warnings.push(`Each drawer needs ${worstSlide} panel slides before it will open, because a ${esW[0]}" box straddles two of the three door panels. Narrower boxes sat on the outer panels would take one slide.`);
+  else if (worstSlide > 1) warnings.push(`Each drawer needs ${worstSlide} panel slides before it will open: a ${esW[0]}" box straddles two of the three ${frac(pw, 8)} door panels. Sitting them on the outer panels would take one slide, but it leaves under 1" to the door-frame stubs - not enough for framing tolerance. Two slides is the better trade.`);
   if (basket < 24) warnings.push(`Only ${frac(basket, 8)} under the lowest end shelf. A tall hamper wants about 28".`);
   if (eLv.length && eLv[0] < fronts.reduce((a, b) => a + b, 0) + 1) warnings.push(`The lowest shelf inside the boxes (${frac(eLv[0], 8)}) is below the top of the drawers (${frac(fronts.reduce((a, b) => a + b, 0), 8)}).`);
   if (eLv.some(z => Math.abs(z - p.rodZ) < 3)) warnings.push(`A shelf lands within 3" of the rod at ${frac(p.rodZ, 8)}. Hangers need about 2" of clear above the rod.`);
@@ -192,7 +192,7 @@ export function build(p) {
     ].join("\n"),
     warnings,
     notes: [
-      `The East Star boxes are centred on purpose. At the ends, a ${esW[0]}" drawer front would have to pass the door-frame stub (${frac(p.stubL, 8)} left, ${frac(p.stubR, 8)} right) on its way out and would hit it. In the middle they pull straight through the opening.`,
+      `The East Star boxes are centred on purpose. At the ends, a ${esW[0]}" drawer front would have to pass the door-frame stub (${frac(p.stubL, 8)} left, ${frac(p.stubR, 8)} right) on its way out and would hit it. Centred, they sit ${frac(m0 - p.stubL, 8)} and ${frac((W - m1) - p.stubR, 8)} clear of those stubs and pull straight through the opening. That clearance is the reason to keep them centred: framing moves more than an inch, and boxes sat on the outer panels would have under 1" to spare.`,
       `East Star only makes ${ES_WIDTHS.join(", ")}" wide, so the boxes come to ${frac(esRun0, 8)} and the plywood takes the ${frac(endW, 8)} left at each end.`,
       `The boxes stop at ${frac(d, 8)} deep because that is East Star's maximum. The ${frac(D - d, 8)} in front is not wasted: a 3-track slider needs about 5" for its tracks.`,
       `Bought boxes show as white oak in the 3D, site-built plywood in the finish you pick.`,
