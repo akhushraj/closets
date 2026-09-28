@@ -18,7 +18,7 @@ export const DEFAULTS = {
   ...shelfSlots("e", [40, 74], [54, 64, 84]),
   gableOn: false,
   ...shelfSlots("s", [30, 46, 62, 78], [16, 86]),
-  aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, drawersOut: false,
+  aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, midDiv: true, drawersOut: false,
   finish: "white", lights: true,
 };
 
@@ -43,6 +43,7 @@ export const CONTROLS = [
     { key: "above2On", label: "A second one higher up", type: "check" },
     { key: "aboveZ2", label: "Its height", min: 94, max: 112, step: 1 },
     { key: "aboveDepth2", label: "Its depth (shallower, you reach it over the header)", min: 12, max: 24, step: 1.5 },
+    { key: "midDiv", label: "One divider in the middle, between the two shelves", type: "check" },
   ]],
   LOOK,
 ];
@@ -110,6 +111,14 @@ export function build(p) {
     // so every slice of it cantilevers over its 18" depth rather than spanning the room: about
     // 1/25" of droop at the front. Posts would only be needed if it rested on its two ends.
     if (p.above2On) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.aboveDepth2, levels: [p.aboveZ2], label: "Top shelf" }));
+    // One divider on the centre line, which is also the seam between the two boxes, so it lands
+    // straight over two box sides. It splits the long open band in two - it is not holding
+    // anything up, the top shelf is cleated along its back edge.
+    if (p.above2On && p.midDiv) {
+      const mu = W / 2;
+      parts.push(box(w.T, "carcass", mu - PLY / 2, mu + PLY / 2, 0, p.aboveDepth2, aboveZ + PLY, p.aboveZ2 - PLY,
+        { mark: true, label: "Divider, on the centre line" }));
+    }
   }
 
   const u0 = W - (p.stubL + p.opening), u1 = W - p.stubL;
@@ -164,7 +173,7 @@ export function build(p) {
       { k: "Clear of the door frames", v: `${frac(m0 - p.stubL, 8)} / ${frac((W - m1) - p.stubR, 8)}`, s: "left / right, box face to frame" },
       { k: "To open a drawer", v: worstSlide === 1 ? "one panel slide" : worstSlide ? `${worstSlide} panel slides` : "cannot", s: `panels are ${frac(pw, 8)}; a box is ${esW.join("/")}"` },
       { k: "Shelf on the box tops", v: p.aboveOn ? frac(aboveZ, 8) : "off", s: p.aboveOn ? `${frac((p.above2On ? p.aboveZ2 : p.ceiling) - aboveZ - PLY, 8)} clear above it, under the ${frac(p.doorH, 8)} header` : "" },
-      { k: "Top shelf", v: p.above2On ? `${frac(p.aboveZ2, 8)} × ${frac(p.aboveDepth2, 8)} deep` : "off", s: p.above2On ? `${frac(p.aboveZ2 - p.doorH, 8)} above the header, no posts - cleated along the back` : "" },
+      { k: "Top shelf", v: p.above2On ? `${frac(p.aboveZ2, 8)} × ${frac(p.aboveDepth2, 8)} deep` : "off", s: p.above2On ? `${frac(p.aboveZ2 - p.doorH, 8)} above the header, cleated along the back${p.midDiv ? `, one divider on the centre line at ${frac(W / 2, 8)}` : ", no posts"}` : "" },
     ],
     titleMeta: [
       { k: "Closet", v: `${ftin(W)} × ${ftin(D)}` },
@@ -177,7 +186,7 @@ export function build(p) {
       `EAST STAR, centred: ${esW.join('" + ')}" boxes, ${frac(top, 8)} tall, NO doors. Each: ${fronts.length} drawers at the bottom (${fronts.slice().reverse().join('", ')}" fronts, top down), rod at ${frac(p.rodZ, 8)}, shelves at ${eLv.join('", ')}". Floor-standing, screwed through the back into studs.`,
       `They start ${frac(m0, 8)} in from each end, so the drawers pull straight out through the opening and clear the door frames.`,
       ...(p.gableOn ? [`AMIR: one 3/4" plywood gable at each join, floor to ${frac(gTop, 8)}, standing against the side of the box. The end shelves land on it.`] : []),
-      `AMIR: 3/4" birch plywood shelves on 1x2 cleats into the studs, ${frac(endW - g, 8)} wide at each end, ${frac(d, 8)} deep, at ${lv.map(z => frac(z, 8)).join(", ")}.${p.aboveOn ? ` Plus one shelf right across the full ${frac(W, 8)}, sitting on the box tops at ${frac(aboveZ, 8)}.` : ""}${p.above2On ? ` And a top shelf at ${frac(p.aboveZ2, 8)}, only ${frac(p.aboveDepth2, 8)} deep, on 1x2 cleats into the studs - no posts under it.` : ""}`,
+      `AMIR: 3/4" birch plywood shelves on 1x2 cleats into the studs, ${frac(endW - g, 8)} wide at each end, ${frac(d, 8)} deep, at ${lv.map(z => frac(z, 8)).join(", ")}.${p.aboveOn ? ` Plus one shelf right across the full ${frac(W, 8)}, sitting on the box tops at ${frac(aboveZ, 8)}.` : ""}${p.above2On ? ` And a top shelf at ${frac(p.aboveZ2, 8)}, only ${frac(p.aboveDepth2, 8)} deep, on 1x2 cleats into the studs.` : ""}${p.above2On && p.midDiv ? ` One 3/4" divider between the two upper shelves, on the centre line at ${frac(W / 2, 8)} from the left wall - it lands on the seam between the two boxes.` : ""}`,
       `Nothing below ${frac(lv[0] || 0, 8)} at the ends - ${frac(basket, 8)} clear for laundry baskets.`,
       `Paint room colour, all sides.`,
     ].join("\n"),
@@ -189,6 +198,7 @@ export function build(p) {
       `Bought boxes show as white oak in the 3D, site-built plywood in the finish you pick.`,
       `The rod starts at ${frac(p.rodZ, 8)} and moves up as she grows.`,
       `${frac(top, 8)} boxes rather than 94". A 94" box puts its shelf at 94-3/4", right under the ${frac(p.doorH, 8)} header, where you can neither see onto it nor reach across it. At ${frac(top, 8)} the shelf lands at ${frac(aboveZ, 8)} with ${frac(p.aboveZ2 - aboveZ - PLY, 8)} of clear, visible space over it, and the awkward height moves up to the ${frac(p.aboveZ2, 8)} shelf where it belongs.`,
+      ...(p.midDiv && p.above2On ? [`The one divider between the upper shelves is there to split a ${frac(W, 8)} run in two so stacks have something to lean on, not to hold the shelf up - that shelf is cleated along its whole back edge and droops about 1/25" at the front whatever its length. It sits on the centre line, which is also the seam between the two boxes, so it bears straight onto two box sides.`] : []),
       `That top shelf is only ${frac(p.aboveDepth2, 8)} deep on purpose: you reach it over the header, so your arm cannot go 24" back.`,
       `The shelf across needs nothing hanging from the ceiling. Sitting straight on the ${frac(top, 8)} box tops, the boxes carry the middle ${frac(esRun0, 8)} of it continuously and the end walls carry the ${frac(endW - g, 8)} at each side. That leaves ${frac(p.ceiling - aboveZ, 8)} open above it.`,
       `The end shelves sit on the back wall, the side wall, and a third cleat screwed into the side of the East Star box${p.gableOn ? "" : " - no gable, so none of that 20-odd inches is given up to a slab of plywood"}. On the shaker grade that side is plywood; on the chipboard grade use coarse cabinet screws.`,
