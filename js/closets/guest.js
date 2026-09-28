@@ -148,8 +148,8 @@ export function build(p) {
     ],
     gcText: [
       `GUEST CLOSET - 3/4" birch ply, painted.`,
-      `Rod at ${frac(p.rodZ, 8)}${dv ? `, in two sections either side of a 3/4" ply divider (${frac(p.upDepth, 8)} deep, ${frac(p.lowZ, 8)} up to ${frac(p.topZ, 8)})` : `, one piece wall to wall${p.centre === "bracket" ? `. Centre support: a 3/4" ply plate ${frac(rodV + 1.5, 8)} deep, screwed up into the ${frac(up[0] || p.topZ, 8)} shelf, notched from below to take the rod.` : ""}`}.`,
-      `Shelf at ${frac(p.lowZ, 8)} under it, ${frac(p.lowDepth, 8)} deep - IKEA MALM fits below.`,
+      `Rod at ${frac(p.rodZ, 8)}${dv ? `, in two sections either side of a 3/4" ply divider (${frac(p.upDepth, 8)} deep, ${frac(p.lowZ, 8)} up to ${frac(p.topZ, 8)})` : `, one piece wall to wall${p.centre === "bracket" ? `. Centre support: a 3/4" ply plate ${frac(rodV + 1.5, 8)} deep, screwed up into the ${frac(up[0] || p.topZ, 8)} shelf, notched from below to take the rod.` : ""}`}`,
+      ...(p.lowOn ? [`Shelf at ${frac(p.lowZ, 8)} under it, ${frac(p.lowDepth, 8)} deep - a ${frac(DR.h, 8)} chest fits below.`] : [`No shelf under the clothes - the floor is left open for a chest up to ${frac(clothesBottom - 1, 8)} tall.`]),
       `Above the rod: ${up.map(z => frac(z, 8)).join(", ")} at ${frac(p.upDepth, 8)} deep${p.topOn ? `, then ${frac(p.topZ, 8)} at ${frac(p.topDepth, 8)} deep` : ""}.`,
       `1x2 cleats into studs on all 3 walls; shelves sit loose. 1/4" x 3/4" poplar front edge.`,
       `Paint room colour, all sides. No lights.`,
