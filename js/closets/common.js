@@ -22,7 +22,7 @@ export function shelfControls(prefix, n, title, extra = [], from = 1) {
    being set by hand. `banks` maps prefix -> how many slots that bank has. ---------- */
 export function matchControl(prefix, neighbours) {
   return { key: `${prefix}match`, label: "Shelf heights", type: "select",
-    options: [["own", "Set below"], ...neighbours.map(([k, lbl]) => [k, `Same as ${lbl}`])] };
+    options: [["own", "Set below"], ...neighbours.map(([k, lbl]) => [k, `Same heights as ${lbl}`])] };
 }
 
 // Follow `match` links until one sets its own heights; a loop falls back to reading its own.

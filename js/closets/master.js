@@ -24,7 +24,7 @@ export const DEFAULTS = {
   leftDepth: 24, leftPlan: "30, 36, 36", leftDoors: false, rightDoors: false,
   doorsOpen: false, drawersOut: false,
   nookDepth: 26.5,
-  fronts2: "9, 10, 11, 12", fronts3: "9, 10, 11, 12", rod2: 84, rod3: 84,
+  fronts1: "", rod1: 0, fronts2: "9, 10, 11, 12", fronts3: "9, 10, 11, 12", rod2: 84, rod3: 84,
   rightDepth: 15.5, rightPlan: "30, 30, 15",
   fillerOn: true,
   aboveLOn: true, aboveROn: true,
@@ -83,10 +83,11 @@ export const CONTROLS = [
   cab("r2", "Right 2 shelves", [["r1", "right 1"], ["r3", "right 3"]]),
   cab("r3", "Right 3 shelves · by the nook", [["r2", "right 2"]]),
   ["Left wall · drawers and rods", [
-    { key: "rod2", label: "Left 2 rod height", min: 66, max: 90, step: 0.5 },
-    { key: "rod3", label: "Left 3 rod height", min: 66, max: 90, step: 0.5 },
-    { key: "fronts2", label: "Left 2 drawer fronts, top → bottom", type: "text" },
-    { key: "fronts3", label: "Left 3 drawer fronts, top → bottom", type: "text" },
+    { type: "note", text: "Each box is set on its own. Leave the fronts blank for no drawers, or the rod at 0 for no rod. The \u201csame heights as\u201d picker in each shelf group only copies shelf heights - it does not copy these." },
+    ...[1, 2, 3].flatMap(i => [
+      { key: `rod${i}`, label: `Left ${i} rod height (0 = none)`, min: 0, max: 90, step: 0.5 },
+      { key: `fronts${i}`, label: `Left ${i} drawer fronts, top \u2192 bottom (blank = none)`, type: "text" },
+    ]),
   ], { fold: true }],
   ["Doors", [
     { key: "leftDoors", label: "Doors on the left wall", type: "check" },
@@ -136,12 +137,14 @@ export function build(p) {
   const lw = parsePlan(p.leftPlan, Lh), lRun = lw.reduce((a, b) => a + b, 0);
   const lv = i => resolveShelves(p, ["l1", "l2", "l3"][Math.min(i, 2)], BANKS);
   const rv = i => resolveShelves(p, ["r1", "r2", "r3"][Math.min(i, 2)], BANKS);
-  const fr = s => [...parseFronts(s, [7, 8, 9, 10])].reverse();
-  const inside = [
-    { levels: lv(0), label: "Long-term" },
-    { fronts: fr(p.fronts2), rods: [p.rod2], levels: lv(1), label: "Daily 1" },
-    { fronts: fr(p.fronts3), rods: [p.rod3], levels: lv(2), label: "Daily 2" },
-  ];
+  const fr = s => String(s ?? "").split(/[\s,]+/).map(Number).filter(n => n >= 3 && n <= 16).reverse();
+  const NAMES = ["Long-term", "Daily 1", "Daily 2"];
+  const fit = i => {   // whatever that box has been given: drawers, a rod, shelves, or a mix
+    const f = fr(p[`fronts${i + 1}`]), r = +(p[`rod${i + 1}`] || 0);
+    return { ...(f.length ? { fronts: f } : {}), ...(r ? { rods: [r] } : {}), levels: lv(i),
+      label: NAMES[i] || `Left ${i + 1}` };
+  };
+  const inside = lw.map((_, i) => fit(i));
   const rw = parsePlan(p.rightPlan, RT), rRun = rw.reduce((a, b) => a + b, 0);
   const lFill = Lh - lRun, rFill = RT - rRun;
   // The right run goes right up to the nook. Its end panel is what carries the near end of the
@@ -150,7 +153,7 @@ export function build(p) {
   const mat = p.grade === "chip" ? "melamine" : null;   // chipboard reads flatter in the 3D
   const common = { doorsOpen: p.doorsOpen, drawersOut: p.drawersOut, ...(mat ? { mat } : {}) };
   const left = add(esRun(w.L, { u0: 0, depth: d, top, doors: p.leftDoors, ...common,
-    bays: lw.map((width, i) => ({ w: width, ...(inside[i] || { levels: lv(i) }) })), prefix: "L", seed: 5 }));
+    bays: lw.map((width, i) => ({ w: width, ...inside[i] })), prefix: "L", seed: 5 }));
   const right = add(esRun(w.R, { u0: rGap, depth: rd, top, doors: p.rightDoors, ...common,
     bays: rw.map((width, i) => ({ w: width, levels: rv(i) })), prefix: "R", seed: 9 }));
 
@@ -256,7 +259,7 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Noo
       { k: "Nook", v: `${nLv.length} planks × ${frac(nd, 8)}`, s: `full ${frac(nookRun, 8)} long, floor to ${frac(nLv[nLv.length - 1] || 0, 8)}; its own run, nothing to do with the cabinets` },
       { k: "Above the left run", v: aOn.L ? `deck ${frac(deck, 8)}${aLv.L.length ? ` + ${aLv.L.map(z => frac(z, 8)).join(", ")}` : ""}` : "off", s: aOn.L ? `${frac(p.ceiling - (aLv.L[aLv.L.length - 1] || deck) - PLY, 8)} left to the ceiling` : "" },
       { k: "Above the right run", v: aOn.R ? `deck ${frac(deck, 8)}${aLv.R.length ? ` + ${aLv.R.map(z => frac(z, 8)).join(", ")}` : ""}` : "off", s: aOn.R ? `${frac(p.ceiling - (aLv.R[aLv.R.length - 1] || deck) - PLY, 8)} left to the ceiling` : "" },
-      { k: "Drawers", v: `${left.drawers.length + right.drawers.length}`, s: `in the two ${lw[1] || 36}" boxes on the left wall` },
+      { k: "Drawers", v: `${left.drawers.length + right.drawers.length}`, s: lw.map((wd, i) => fr(p[`fronts${i + 1}`]).length ? `${fr(p[`fronts${i + 1}`]).length} in the ${wd}"` : null).filter(Boolean).join(", ") || "none" },
       { k: "Aisle", v: frac(aisle, 8), s: `widest door swings ${frac(swing, 8)}` },
       { k: "Back wall", v: p.pressOn ? `press board, ${frac(p.pressW, 8)}` : "clear", s: `${frac(bwFree, 8)} between the runs, kept open for access` },
     ],
@@ -271,8 +274,14 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Noo
       `All ${lw.length + rw.length} boxes ${frac(top, 8)} tall, floor-standing, screwed through the back into studs. Two door leaves on anything over 24".`,
       ``,
       `LEFT WALL, ${frac(Lh, 8)} long, ${frac(d, 8)} deep. From the door: ${lw.join('" + ')}", then ${frac(lFill, 8)} ${p.fillerOn ? "filler panel" : "gap"} in the back corner.`,
-      `  ${lw[0]}": shelves at ${lv(0).join('", ')}".`,
-      ...lw.slice(1).map((width, i) => `  ${width}": ${fr(i ? p.fronts3 : p.fronts2).length} drawers at the bottom (${fr(i ? p.fronts3 : p.fronts2).slice().reverse().join('", ')}" fronts, top down), rod at ${frac(i ? p.rod3 : p.rod2, 8)}, open above.`),
+      ...lw.map((width, i) => {
+        const f = fr(p[`fronts${i + 1}`]), r = +(p[`rod${i + 1}`] || 0);
+        const bits = [];
+        if (f.length) bits.push(`${f.length} drawers at the bottom (${f.slice().reverse().join('", ')}" fronts, top down)`);
+        if (r) bits.push(`rod at ${frac(r, 8)}`);
+        if (lv(i).length) bits.push(`shelves at ${lv(i).join('", ')}"`);
+        return `  ${width}": ${bits.join(", ") || "empty box"}.`;
+      }),
       `RIGHT WALL, ${frac(RT, 8)} long, ${frac(rd, 8)} deep. ${p.fillerOn && rGap > 0.5 ? `${frac(rGap, 8)} filler in the back corner, then ` : "From the back corner: "}${rw.join('" + ')}", finishing flush with the nook. The last box's end panel is what the nook shelves screw into, so it must be a finished side. No rods, no doors.`,
       ...rw.map((width, i) => `  ${width}": shelves at ${rv(i).join('", ')}".`),
       `Q: anything shallower than 15-1/2"? And a topper box for the ${frac(p.ceiling - top, 8)} above a ${frac(top, 8)} box?`,
