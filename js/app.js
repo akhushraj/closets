@@ -134,7 +134,7 @@ function set(key, value) {
 
 function render() {
   model = mod.build(state);
-  const I = mod.INFO;
+  const I = { ...mod.INFO, ...(model.info || {}) };
   document.title = `${I.name} — Closets`;
   $("title").textContent = `${I.name} — ${I.room}`;
   $("eyebrow").textContent = ["Closets · Shop Drawing Set", I.concept, I.rev].filter(Boolean).join(" · ");

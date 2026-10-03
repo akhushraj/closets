@@ -2,7 +2,7 @@
 // no doors) with site-built plywood shelves filling the middle. The middle's lowest shelf sits
 // high enough for a laundry basket. Above the cabinets, a plywood deck and one long shelf on
 // dividers use the 26" that a 94" box leaves under the 10' ceiling. 3-panel sliding doors.
-import { box, esRun, fixedShelves, collector } from "../model/builders.js";
+import { box, esRun, fixedShelves, packStock, collector } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK } from "./common.js";
@@ -16,7 +16,7 @@ export const FIELD = { W: 112.4, D: 29.8, ceiling: 120, stubL: 8.6, opening: 95.
 export const DEFAULTS = {
   esPlan: "30, 30", esAlign: "centre", esTop: 84, depth: 24, fronts: "10, 11, 12", rodZ: 68,
   ...shelfSlots("e", [40, 74], [54, 64, 84]),
-  gableOn: false,
+  ends: "ply", gableOn: false,
   ...shelfSlots("s", [30, 46, 62, 78], [16, 86]),
   aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, midDiv: true, drawersOut: false,
   finish: "white", lights: true,
@@ -34,10 +34,12 @@ export const CONTROLS = [
     { key: "drawersOut", label: "Show the drawers open", type: "check" },
   ]],
   shelfControls("e", 5, "Shelves inside the East Star boxes"),
-  ["Where plywood meets East Star", [
-    { key: "gableOn", label: "Plywood gable at each join (instead of cleating to the box)", type: "check" },
+  ["The two ends", [
+    { key: "ends", label: "What goes either side of the middle boxes", type: "select",
+      options: [["ply", "Plywood shelves by Amir"], ["es", "East Star boxes (filler at each wall)"]] },
+    { key: "gableOn", label: "Plywood gable at each join (plywood ends only)", type: "check" },
   ]],
-  shelfControls("s", 6, "Plywood shelves · both ends"),
+  shelfControls("s", 6, "Shelves at the two ends"),
   ["Plywood over the boxes", [
     { key: "aboveOn", label: "Shelf right across, sitting on the box tops", type: "check" },
     { key: "above2On", label: "A second one higher up", type: "check" },
@@ -96,10 +98,33 @@ export function build(p) {
     if (gap1 - gap0 > 10) add(fixedShelves(w.T, { u0: gap0 + g, u1: gap1 - g, depth: d, levels: lv, label: "Shelves · middle" }));
   }
   const gTop = p.aboveOn ? p.aboveZ - PLY : (lv[lv.length - 1] || top);
-  if (p.gableOn) for (const u of [m0, m1 + PLY])
-    parts.push(box(w.T, "carcass", u - PLY, u, 0, d, 0, gTop, { mark: u === m0, label: "Gable, plywood meets East Star" }));
-  add(fixedShelves(w.T, { u0: 0, u1: m0 - g, depth: d, levels: lv, label: "Shelves · left end" }));
-  add(fixedShelves(w.T, { u0: m1 + g, u1: W, depth: d, levels: lv, label: "Shelves · right end" }));
+  const endFill = [];
+  if (p.ends === "es") {
+    // East Star at both ends too. Stock widths only go 15/18/21/24/30/36, so each end takes the
+    // widest set that fits and the remainder becomes a filler scribed to the side wall.
+    const run = (u0, u1, outerIsLeft, seed) => {
+      const widths = packStock(u1 - u0);
+      const used = widths.reduce((a, b) => a + b, 0), fill = (u1 - u0) - used;
+      if (!used) return;
+      // boxes butt the middle run; the filler lands against the side wall
+      const start = outerIsLeft ? u0 + fill : u0;
+      add(esRun(w.T, { u0: start, depth: d, top, doors: false,
+        bays: widths.map(x => ({ w: x, levels: lv })), prefix: outerIsLeft ? "EL" : "ER", seed }));
+      if (fill > 0.5) {
+        const f0 = outerIsLeft ? u0 : u1 - fill;
+        parts.push(box(w.T, "carcass", f0, f0 + fill, 0, d, 0, top,
+          { mat: "oak", mark: outerIsLeft, label: `Filler, ${frac(fill, 8)}, at the wall` }));
+        endFill.push(fill);
+      }
+    };
+    run(0, m0, true, 31);
+    run(m1, W, false, 37);
+  } else {
+    if (p.gableOn) for (const u of [m0, m1 + PLY])
+      parts.push(box(w.T, "carcass", u - PLY, u, 0, d, 0, gTop, { mark: u === m0, label: "Gable, plywood meets East Star" }));
+    add(fixedShelves(w.T, { u0: 0, u1: m0 - g, depth: d, levels: lv, label: "Shelves · left end" }));
+    add(fixedShelves(w.T, { u0: m1 + g, u1: W, depth: d, levels: lv, label: "Shelves · right end" }));
+  }
   const basket = lv.length ? lv[0] - PLY - 1.5 : top;
 
   // One plywood shelf right across, sitting straight on the box tops. The boxes carry the
@@ -124,7 +149,9 @@ export function build(p) {
   const u0 = W - (p.stubL + p.opening), u1 = W - p.stubL;
   const door = { wall: "F", u0, u1, slab: p.opening / 3 + 1, h: p.doorH, roH: p.doorH + 2.5, swing: "slide", panels: 3, hingeU: u0, label: "3-track slider" };
 
-  const endW = m0;   // each plywood end run
+  const endW = m0;   // each end run
+  const esEnds = p.ends === "es";
+  const endPlan = endFill.length ? packStock(endW) : [];
   if (!esW.length) warnings.push(`No usable box widths in "${p.esPlan}". East Star makes ${ES_WIDTHS.join(", ")}".`);
   // what matters is whether a drawer front overlaps a door-frame stub, not how wide the end run is
   if (m0 < p.stubL) warnings.push(`A drawer front reaches to ${frac(m0, 8)} and the left door frame comes in ${frac(p.stubL, 8)}. It would hit it on the way out.`);
@@ -150,7 +177,8 @@ export function build(p) {
 
   const drawers = es.drawers;
   return {
-    info: INFO, params: p,
+    info: { ...INFO, concept: esEnds ? "East Star right across, filler at the walls" : "East Star in the middle + plywood ends" },
+    params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
     parts, modules, doors: [door], hatches: [],
     elevations: ["T", "L", "R"],
@@ -167,7 +195,8 @@ export function build(p) {
       { k: "Layout", v: onThirds ? `${frac(m0, 8)} + ${esW[0]}" + ${frac(boxAt[1] - boxAt[0] - esW[0], 8)} + ${esW[1]}" + ${frac(W - m1, 8)}` : `${frac(endW, 8)} + ${esW.join(" + ")}" + ${frac(endW, 8)}`,
         s: onThirds ? `boxes on the outer door panels, plywood between and beside them` : `plywood ends, East Star middle, all ${frac(d, 8)} deep` },
       { k: "Rods", v: `${esW.length} × ${frac(esW[0] - 1.5, 8)}`, s: `at ${frac(p.rodZ, 8)}, ${fronts.length} drawers under each` },
-      { k: "End shelves", v: `${lv.length} × ${frac(endW - g, 8)} wide`, s: p.gableOn ? "back wall, side wall, plywood gable" : "back wall, side wall, cleat into the box side" },
+      { k: "The two ends", v: esEnds ? `East Star ${endPlan.join(" + ")}"` : `plywood, ${frac(endW - g, 8)} wide`,
+        s: esEnds ? `${frac(endFill[0] || 0, 8)} filler at each wall; ${lv.length} shelves inside` : `${lv.length} shelves${p.gableOn ? ", on a plywood gable" : ", cleated into the box side"}` },
       { k: "Inside the boxes", v: `${eLv.length} shelves`, s: `at ${eLv.join('", ')}", rod at ${frac(p.rodZ, 8)}` },
       { k: "Under the lowest shelf", v: frac(basket, 8), s: "clear at the cleats, for a laundry basket" },
       { k: "Clear of the door frames", v: `${frac(m0 - p.stubL, 8)} / ${frac((W - m1) - p.stubR, 8)}`, s: "left / right, box face to frame" },
@@ -185,15 +214,18 @@ export function build(p) {
       `MAYA'S CLOSET - ${frac(W, 8)} wide, everything ${frac(d, 8)} deep.`,
       `EAST STAR, centred: ${esW.join('" + ')}" boxes, ${frac(top, 8)} tall, NO doors. Each: ${fronts.length} drawers at the bottom (${fronts.slice().reverse().join('", ')}" fronts, top down), rod at ${frac(p.rodZ, 8)}, shelves at ${eLv.join('", ')}". Floor-standing, screwed through the back into studs.`,
       `They start ${frac(m0, 8)} in from each end, so the drawers pull straight out through the opening and clear the door frames.`,
-      ...(p.gableOn ? [`AMIR: one 3/4" plywood gable at each join, floor to ${frac(gTop, 8)}, standing against the side of the box. The end shelves land on it.`] : []),
-      `AMIR: 3/4" birch plywood shelves on 1x2 cleats into the studs, ${frac(endW - g, 8)} wide at each end, ${frac(d, 8)} deep, at ${lv.map(z => frac(z, 8)).join(", ")}.${p.aboveOn ? ` Plus one shelf right across the full ${frac(W, 8)}, sitting on the box tops at ${frac(aboveZ, 8)}.` : ""}${p.above2On ? ` And a top shelf at ${frac(p.aboveZ2, 8)}, only ${frac(p.aboveDepth2, 8)} deep, on 1x2 cleats into the studs.` : ""}${p.above2On && p.midDiv ? ` One 3/4" divider between the two upper shelves, on the centre line at ${frac(W / 2, 8)} from the left wall - it lands on the seam between the two boxes.` : ""}`,
+      ...(p.gableOn && !esEnds ? [`AMIR: one 3/4" plywood gable at each join, floor to ${frac(gTop, 8)}, standing against the side of the box. The end shelves land on it.`] : []),
+      ...(esEnds ? [`EAST STAR, the two ends: one ${endPlan.join(" + ")}" box at each end, ${frac(top, 8)} tall, ${frac(d, 8)} deep, no doors, shelves at ${lv.map(z => frac(z, 8)).join(", ")}. ${frac(endFill[0] || 0, 8)} filler at each side wall, scribed. Boxes butt the middle run.`] : []),
+      `AMIR:${esEnds ? "" : ` 3/4" birch plywood shelves on 1x2 cleats into the studs, ${frac(endW - g, 8)} wide at each end, ${frac(d, 8)} deep, at ${lv.map(z => frac(z, 8)).join(", ")}.`}${p.aboveOn ? `${esEnds ? "" : " Plus"} one shelf right across the full ${frac(W, 8)}, sitting on the box tops at ${frac(aboveZ, 8)}.` : ""}${p.above2On ? ` And a top shelf at ${frac(p.aboveZ2, 8)}, only ${frac(p.aboveDepth2, 8)} deep, on 1x2 cleats into the studs.` : ""}${p.above2On && p.midDiv ? ` One 3/4" divider between the two upper shelves, on the centre line at ${frac(W / 2, 8)} from the left wall - it lands on the seam between the two boxes.` : ""}`,
       `Nothing below ${frac(lv[0] || 0, 8)} at the ends - ${frac(basket, 8)} clear for laundry baskets.`,
       `Paint room colour, all sides.`,
     ].join("\n"),
     warnings,
     notes: [
       `The East Star boxes are centred on purpose. At the ends, a ${esW[0]}" drawer front would have to pass the door-frame stub (${frac(p.stubL, 8)} left, ${frac(p.stubR, 8)} right) on its way out and would hit it. Centred, they sit ${frac(m0 - p.stubL, 8)} and ${frac((W - m1) - p.stubR, 8)} clear of those stubs and pull straight through the opening. That clearance is the reason to keep them centred: framing moves more than an inch, and boxes sat on the outer panels would have under 1" to spare.`,
-      `East Star only makes ${ES_WIDTHS.join(", ")}" wide, so the boxes come to ${frac(esRun0, 8)} and the plywood takes the ${frac(endW, 8)} left at each end.`,
+      esEnds
+        ? `All East Star: ${endPlan.join(" + ")}" at each end and ${esW.join(" + ")}" in the middle, ${frac(esRun0 + 2 * endPlan.reduce((a, b) => a + b, 0), 8)} of box in a ${frac(W, 8)} wall. Stock widths are ${ES_WIDTHS.join(", ")}" only, so the ${frac(endFill[0] || 0, 8)} that will not divide becomes a filler at each side wall, where it scribes to the plaster and nobody sees it.`
+        : `East Star only makes ${ES_WIDTHS.join(", ")}" wide, so the boxes come to ${frac(esRun0, 8)} and the plywood takes the ${frac(endW, 8)} left at each end.`,
       `The boxes stop at ${frac(d, 8)} deep because that is East Star's maximum. The ${frac(D - d, 8)} in front is not wasted: a 3-track slider needs about 5" for its tracks.`,
       `Bought boxes show as white oak in the 3D, site-built plywood in the finish you pick.`,
       `The rod starts at ${frac(p.rodZ, 8)} and moves up as she grows.`,
@@ -201,7 +233,7 @@ export function build(p) {
       ...(p.midDiv && p.above2On ? [`The one divider between the upper shelves is there to split a ${frac(W, 8)} run in two so stacks have something to lean on, not to hold the shelf up - that shelf is cleated along its whole back edge and droops about 1/25" at the front whatever its length. It sits on the centre line, which is also the seam between the two boxes, so it bears straight onto two box sides.`] : []),
       `That top shelf is only ${frac(p.aboveDepth2, 8)} deep on purpose: you reach it over the header, so your arm cannot go 24" back.`,
       `The shelf across needs nothing hanging from the ceiling. Sitting straight on the ${frac(top, 8)} box tops, the boxes carry the middle ${frac(esRun0, 8)} of it continuously and the end walls carry the ${frac(endW - g, 8)} at each side. That leaves ${frac(p.ceiling - aboveZ, 8)} open above it.`,
-      `The end shelves sit on the back wall, the side wall, and a third cleat screwed into the side of the East Star box${p.gableOn ? "" : " - no gable, so none of that 20-odd inches is given up to a slab of plywood"}. On the shaker grade that side is plywood; on the chipboard grade use coarse cabinet screws.`,
+      ...(esEnds ? [] : [`The end shelves sit on the back wall, the side wall, and a third cleat screwed into the side of the East Star box${p.gableOn ? "" : " - no gable, so none of that 20-odd inches is given up to a slab of plywood"}. On the shaker grade that side is plywood; on the chipboard grade use coarse cabinet screws.`]),
       `The opening is ${frac(p.doorH, 8)} tall in a ${ftin(p.ceiling)} room, so ${frac(p.ceiling - p.doorH, 8)} of wall sits above it and nothing above that header can be reached. ${frac(top, 8)} boxes plus the shelf at ${frac(p.aboveZ, 8)} stay under it.`,
     ],
   };
