@@ -36,7 +36,7 @@ export const DEFAULTS = {
   ...shelfSlots("r2", [20, 34, 48, 62, 76], [88]), r2match: "r1",
   ...shelfSlots("r3", [20, 34, 48, 62, 76], [88]), r3match: "r2",
   // Nook: first at 24", then every 12". 60" is left off so 48-72" is one tall opening for the puja.
-  ...shelfSlots("n", [24, 36, 48, 72, 84], [60]),
+  ...shelfSlots("n", [24, 36, 48, 72, 84, 96, 108], [60]),
   finish: "white", lights: true,
 };
 
@@ -55,15 +55,15 @@ export const CONTROLS = [
     { key: "rightPlan", label: "Right wall widths, from the back", type: "text" },
     { key: "rightDepth", label: "Right wall depth", min: 15.5, max: 24, step: 8.5 },
   ]],
-  ["Plywood above · cabinets and nook", [
-    { key: "aboveOn", label: "Deck and shelf over the cabinets, carried on into the nook", type: "check" },
+  ["Plywood above the cabinets · left and right only", [
+    { key: "aboveOn", label: "Deck and shelf over the cabinets", type: "check" },
     { key: "aboveZ", label: "Upper shelf height", min: 100, max: 116, step: 1 },
   ]],
   ["Nook · plywood planks", [
     { key: "nookDepth", label: "Shelf depth (past 12-3/8\" it needs a gable)", min: 12, max: 28, step: 0.5 },
   ]],
-  shelfControls("n", 6, "Nook shelves", [
-    { type: "note", text: "Two more sit above these, at the same heights as the plywood over the right wall, so the lines run round the corner. They follow \u201cPlywood above\u201d, not this list." },
+  shelfControls("n", 8, "Nook shelves · floor to ceiling, its own run", [
+    { type: "note", text: "The nook is independent of the plywood over the cabinets. Every shelf in it is set here." },
   ]),
   cab("l1", "Left 1 shelves · by the door", [["l2", "left 2"]]),
   cab("l2", "Left 2 shelves", [["l1", "left 1"], ["l3", "left 3"]]),
@@ -179,21 +179,20 @@ export function build(p) {
 
   // ---- nook. Its shelves can run deeper than the 12.4" recess if a plywood gable extends the
   // NT-side wall out into the closet; the door wall carries the other end.
-  const nookRun = Lh - RT, nLv = readShelves(p, "n", 7);
+  const nookRun = Lh - RT, nLv = readShelves(p, "n", 8);
   // two things stop the nook coming further forward: the face of the right cabinets, and the
   // near jamb of the entry door. Whichever is shallower wins.
   const capCab = XN - (W - rd), capDoor = XN - (p.doorAt + p.doorRO), nookCap = Math.min(capCab, capDoor);
   const nd = Math.min(p.nookDepth, nookCap);
   // The plank that carries the open end of the nook shelves stands in the right wall's leftover
   // rather than in the nook, so the nook keeps its full length. It runs to the upper shelf.
-  const nAbove = p.aboveOn ? [deck, p.aboveZ] : [];          // match the planks over the right wall
-  const plankTo = p.aboveOn ? p.aboveZ + PLY : (nLv[nLv.length - 1] || 0) + PLY;
+  const plankTo = (nLv[nLv.length - 1] || 0) + PLY;   // the plank runs to the nook's own top shelf
   if (nd > p.nookD + 0.05)
     parts.push(box(w.R, "carcass", RT - PLY, RT, 0, W - (XN - nd), 0, plankTo,
       { mark: true, label: "Plank, carries the nook shelves" }));
-  add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: [...nLv, ...nAbove], label: "Nook shelves" }));
-  if (nAbove.length && nLv.length && deck - nLv[nLv.length - 1] < 6)
-    warnings.push(`The top nook shelf at ${frac(nLv[nLv.length - 1], 8)} is only ${frac(deck - nLv[nLv.length - 1], 8)} under the deck the nook picks up from the right wall at ${frac(deck, 8)}. Turn it off or drop it.`);
+  add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Nook shelves" }));
+  if (nLv.length && p.ceiling - nLv[nLv.length - 1] > 20)
+    warnings.push(`The nook's top shelf is at ${frac(nLv[nLv.length - 1], 8)}, leaving ${frac(p.ceiling - nLv[nLv.length - 1], 8)} of bare wall to the ceiling. Turn another one on.`);
   const nose = XN - nd;
   if (p.nookDepth > nookCap + 0.01) warnings.push(`The nook can only come forward to ${frac(nookCap, 8)} deep - past that it runs into ${capDoor < capCab ? "the entry door's near jamb" : "the face of the right cabinets"}.`);
   if (nose < p.hatchX1) warnings.push(`At ${frac(nd, 8)} the nook shelves overhang the crawl hatch by ${frac(p.hatchX1 - nose, 8)}, in the air. The gable and the floor stay clear, but you will be tilting the hatch lid out from under them.`);
@@ -207,7 +206,7 @@ export function build(p) {
   if (hatchClashes(parts, hatches).length) warnings.push("Something that stands on the floor covers the crawl-space hatch.");
   for (const [i, n] of [[0, "Left 1"], [1, "Left 2"], [2, "Left 3"]]) warnings.push(...spacingWarnings(lv(i), n));
   for (const [i, n] of [[0, "Right 1"], [1, "Right 2"], [2, "Right 3"]]) warnings.push(...spacingWarnings(rv(i), n));
-  warnings.push(...spacingWarnings([...nLv, ...nAbove], "Nook"));
+  warnings.push(...spacingWarnings(nLv, "Nook"));
 
   const drawers = [...left.drawers, ...right.drawers];
   return {
@@ -228,7 +227,7 @@ export function build(p) {
       { k: "Boxes", v: `${lw.length + rw.length}`, s: `${frac(top, 8)} tall · ${frac(lFill + rFill, 8)} filler in total · East Star quotes both grades` },
       { k: "Left wall", v: lw.join(" + ") + '"', s: `${frac(d, 8)} deep${lFill ? ` · ${frac(lFill, 8)} filler` : ""}` },
       { k: "Right wall", v: rw.join(" + ") + '"', s: `${frac(rd, 8)} deep · ${frac(rFill, 8)} left at the nook end, ${frac(rFill - PLY, 8)} of it filler` },
-      { k: "Nook", v: `${nLv.length + nAbove.length} planks × ${frac(nd, 8)}`, s: `full ${frac(nookRun, 8)} long${nAbove.length ? `, top two at ${frac(deck, 8)} and ${frac(p.aboveZ, 8)} to match the right wall` : ""}` },
+      { k: "Nook", v: `${nLv.length} planks × ${frac(nd, 8)}`, s: `full ${frac(nookRun, 8)} long, floor to ${frac(nLv[nLv.length - 1] || 0, 8)}; its own run, nothing to do with the cabinets` },
       { k: "Above the cabinets", v: p.aboveOn ? `deck ${frac(deck, 8)} · shelf ${frac(p.aboveZ, 8)}` : "off", s: `plywood planks, ${frac(p.ceiling - p.aboveZ - PLY, 8)} left to the ceiling` },
       { k: "Drawers", v: `${left.drawers.length + right.drawers.length}`, s: `in the two ${lw[1] || 36}" boxes on the left wall` },
       { k: "Aisle", v: frac(aisle, 8), s: `widest door swings ${frac(swing, 8)}` },
@@ -252,7 +251,7 @@ export function build(p) {
       `Q: anything shallower than 15-1/2"? And a topper box for the ${frac(p.ceiling - top, 8)} above a ${frac(top, 8)} box?`,
       ``,
       `AMIR - 3/4" birch ply planks on 1x2 cleats, painted:`,
-      `  Nook: ${nLv.length + nAbove.length} shelves at ${[...nLv, ...nAbove].join('", ')}", ${frac(nd, 8)} deep, over the full ${frac(nookRun, 8)}. The recess is only ${frac(p.nookD, 8)}, so a 3/4" plank runs out ${frac(W - (XN - nd), 8)} from the corner to carry the open end - floor to ${frac(plankTo, 8)}. It sits in the ${frac(rFill, 8)} left at the nook end of the right wall, not in the nook.`,
+      `  Nook: ${nLv.length} shelves at ${nLv.join('", ')}", ${frac(nd, 8)} deep, over the full ${frac(nookRun, 8)}. The recess is only ${frac(p.nookD, 8)}, so a 3/4" plank runs out ${frac(W - (XN - nd), 8)} from the corner to carry the open end - floor to ${frac(plankTo, 8)}. It sits in the ${frac(rFill, 8)} left at the nook end of the right wall, not in the nook.`,
       ...(p.aboveOn ? [`  Over the cabinets: deck at ${frac(deck, 8)}, planks on edge at each seam, shelf at ${frac(p.aboveZ, 8)}.`] : []),
     ].join("\n"),
     warnings,
@@ -260,7 +259,7 @@ export function build(p) {
       `East Star does the two walls - anything with a drawer, a door or a carcass. Amir does the flat plywood: the nook shelves and the deck and shelf above the cabinets, cut and painted, sitting on 1x2 cleats.`,
       `Stock widths are ${ES_WIDTHS.join(", ")}", so every run adds up to a multiple of 3. ${frac(Lh, 8)} and ${frac(RT, 8)} land on ${lRun}" and ${rRun}". The left wall's ${frac(lFill, 8)} is filler in the back corner; the right wall's ${frac(rFill, 8)} goes to the nook end, where 3/4" of it becomes the plank that carries the nook shelves.`,
       `The dividers above the cabinets run from the deck all the way to the ceiling, so the upper shelf is braced top and bottom rather than sitting on short posts.`,
-      `Nook shelves start at ${frac(nLv[0] || 24, 8)} and then step about 12" - and the one at eye level is deliberately left out, so 48" to 72" is a single ${frac(23.25, 8)} opening for the puja. Above them the nook picks up the same two plywood heights as the right wall, ${frac(deck, 8)} and ${frac(p.aboveZ, 8)}, so the lines run straight round the corner.`,
+      `Nook shelves start at ${frac(nLv[0] || 24, 8)} and then step about 12" - and the one at eye level is deliberately left out, so 48" to 72" is a single ${frac(23.25, 8)} opening for the puja. It runs its own shelves floor to ceiling - the deck and upper shelf over the cabinets stop at the right wall and do not carry into it.`,
       `The nook is planks rather than a box on purpose: the recess is only ${frac(p.nookD, 8)} and East Star's shallowest is 15-1/2", which would stand proud and lap the crawl hatch. Planks fit it exactly.`,
       `The ${lw[0]}" box by the door sits behind the entry door. Opened fully the door stands about ${frac(p.doorAt + 1 - 1.4 - d, 8)} in front of it, so shut the entry door before opening that one.`,
       `A ${frac(top, 8)} box under a ${ftin(p.ceiling)} ceiling leaves ${frac(p.ceiling - top, 8)} above it. This is a walk-in, so a step ladder reaches it. Planks on the cabinet tops turn it into two more shelves.`,
