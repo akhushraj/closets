@@ -26,6 +26,7 @@ export const DEFAULTS = {
   nookDepth: 26.5,
   fronts2: "9, 10, 11, 12", fronts3: "9, 10, 11, 12", rod2: 84, rod3: 84,
   rightDepth: 15.5, rightPlan: "30, 30, 15",
+  fillerOn: true,
   aboveLOn: true, aboveROn: true,
   // over each run: a deck resting on the cabinet tops, then adjustable planks above it
   ...shelfSlots("al", [107], [101, 113]),
@@ -57,6 +58,7 @@ export const CONTROLS = [
     { key: "leftDepth", label: "Left wall depth", min: 15.5, max: 24, step: 8.5 },
     { key: "rightPlan", label: "Right wall widths, from the back", type: "text" },
     { key: "rightDepth", label: "Right wall depth", min: 15.5, max: 24, step: 8.5 },
+    { key: "fillerOn", label: "Filler panel in the leftover, at the back corner", type: "check" },
   ]],
   ...["l", "r"].map(side => {
     const pre = "a" + side, name = side === "l" ? "left" : "right";
@@ -141,12 +143,21 @@ export function build(p) {
   ];
   const rw = parsePlan(p.rightPlan, RT), rRun = rw.reduce((a, b) => a + b, 0);
   const lFill = Lh - lRun, rFill = RT - rRun;
+  const nookPlank = p.nookDepth > p.nookD + 0.05 ? PLY : 0;     // the fin that carries the nook shelves
+  const rGap = Math.max(0, RT - rRun - nookPlank);              // what is left, now at the back corner
   const mat = p.grade === "chip" ? "melamine" : null;   // chipboard reads flatter in the 3D
   const common = { doorsOpen: p.doorsOpen, drawersOut: p.drawersOut, ...(mat ? { mat } : {}) };
   const left = add(esRun(w.L, { u0: 0, depth: d, top, doors: p.leftDoors, ...common,
     bays: lw.map((width, i) => ({ w: width, ...(inside[i] || { levels: lv(i) }) })), prefix: "L", seed: 5 }));
-  const right = add(esRun(w.R, { u0: 0, depth: rd, top, doors: p.rightDoors, ...common,
+  const right = add(esRun(w.R, { u0: rGap, depth: rd, top, doors: p.rightDoors, ...common,
     bays: rw.map((width, i) => ({ w: width, levels: rv(i) })), prefix: "R", seed: 9 }));
+
+  if (p.fillerOn) {
+    if (lFill > 0.5) parts.push(box(w.L, "carcass", lRun, Lh, 0, d, 0, top,
+      { ...(mat ? { mat } : { mat: "oak" }), mark: true, label: `Filler, ${frac(lFill, 8)}, back corner` }));
+    if (rGap > 0.5) parts.push(box(w.R, "carcass", 0, rGap, 0, rd, 0, top,
+      { ...(mat ? { mat } : { mat: "oak" }), mark: true, label: `Filler, ${frac(rGap, 8)}, back corner` }));
+  }
 
   const aisle = W - d - rd;
   const swing = Math.max(0, ...[...(p.leftDoors ? lw : []), ...(p.rightDoors ? rw : [])].map(x => (x > 24 ? x / 2 : x)));
@@ -160,10 +171,10 @@ export function build(p) {
   const aLv = { L: readShelves(p, "al", 3), R: readShelves(p, "ar", 3) };
   const aOn = { L: p.aboveLOn, R: p.aboveROn };
   // the dividers run deck to ceiling, so every plank between them is braced top and bottom
-  const over = (wall, u0, u1, widths, depth) => {
+  const over = (wall, u0, u1, widths, depth, runFrom = u0) => {
     const levels = aLv[wall.id];
     if (!aOn[wall.id] || u1 - u0 < 12) return;
-    const seams = widths.slice(0, -1).map((_, i) => u0 + widths.slice(0, i + 1).reduce((a, b) => a + b, 0));
+    const seams = widths.slice(0, -1).map((_, i) => runFrom + widths.slice(0, i + 1).reduce((a, b) => a + b, 0));
     parts.push(box(wall, "cleat", u0, u1, 0, PLY, top - 1.5, top));
     parts.push(box(wall, "shelf", u0, u1, 0, depth, top, deck, { mark: true, label: "Deck, straight on the cabinet tops" }));
     for (const s2 of [u0 + PLY / 2, ...seams, u1 - PLY / 2])
@@ -176,8 +187,8 @@ export function build(p) {
     modules.push(box(wall, "band", u0, u1, 0, depth, { label: "Plywood above",
       sub: `deck ${frac(deck, 8)}${levels.length ? ` + ${levels.map(z => frac(z, 8)).join(", ")}` : ""}` }));
   };
-  over(w.L, 0, lRun, lw, d);
-  over(w.R, 0, RT, rw, rd);
+  over(w.L, 0, Lh, lw, d, 0);
+  over(w.R, 0, RT, rw, rd, rGap);
   for (const [id, name] of [["L", "Left"], ["R", "Right"]]) {
     if (!aOn[id]) continue;
     const lv2 = [deck, ...aLv[id]];
@@ -242,8 +253,8 @@ export function build(p) {
     drawerGroups: [{ name: "East Star drawers", drawers }],
     stats: [
       { k: "Boxes", v: `${lw.length + rw.length}`, s: `${frac(top, 8)} tall · ${frac(lFill + rFill, 8)} filler in total · East Star quotes both grades` },
-      { k: "Left wall", v: lw.join(" + ") + '"', s: `${frac(d, 8)} deep${lFill ? ` · ${frac(lFill, 8)} filler` : ""}` },
-      { k: "Right wall", v: rw.join(" + ") + '"', s: `${frac(rd, 8)} deep · ${frac(rFill, 8)} left at the nook end, ${frac(rFill - PLY, 8)} of it filler` },
+      { k: "Left wall", v: lw.join(" + ") + '"', s: `${frac(d, 8)} deep${lFill ? ` · ${frac(lFill, 8)} filler at the back corner` : ""}` },
+      { k: "Right wall", v: rw.join(" + ") + '"', s: `${frac(rd, 8)} deep · ${frac(rGap, 8)} filler at the back corner${nookPlank ? `, ${frac(nookPlank, 8)} nook plank at the far end` : ""}` },
       { k: "Nook", v: `${nLv.length} planks × ${frac(nd, 8)}`, s: `full ${frac(nookRun, 8)} long, floor to ${frac(nLv[nLv.length - 1] || 0, 8)}; its own run, nothing to do with the cabinets` },
       { k: "Above the left run", v: aOn.L ? `deck ${frac(deck, 8)}${aLv.L.length ? ` + ${aLv.L.map(z => frac(z, 8)).join(", ")}` : ""}` : "off", s: aOn.L ? `${frac(p.ceiling - (aLv.L[aLv.L.length - 1] || deck) - PLY, 8)} left to the ceiling` : "" },
       { k: "Above the right run", v: aOn.R ? `deck ${frac(deck, 8)}${aLv.R.length ? ` + ${aLv.R.map(z => frac(z, 8)).join(", ")}` : ""}` : "off", s: aOn.R ? `${frac(p.ceiling - (aLv.R[aLv.R.length - 1] || deck) - PLY, 8)} left to the ceiling` : "" },
@@ -261,10 +272,10 @@ export function build(p) {
       `MASTER CLOSET. Quote both grades please: (a) chipboard, (b) shaker on a plywood box. Same boxes either way.`,
       `All ${lw.length + rw.length} boxes ${frac(top, 8)} tall, floor-standing, screwed through the back into studs. Two door leaves on anything over 24".`,
       ``,
-      `LEFT WALL, ${frac(Lh, 8)} long, ${frac(d, 8)} deep. From the door: ${lw.join('" + ')}", then ${frac(lFill, 8)} filler in the back corner.`,
+      `LEFT WALL, ${frac(Lh, 8)} long, ${frac(d, 8)} deep. From the door: ${lw.join('" + ')}", then ${frac(lFill, 8)} ${p.fillerOn ? "filler panel" : "gap"} in the back corner.`,
       `  ${lw[0]}": shelves at ${lv(0).join('", ')}".`,
       ...lw.slice(1).map((width, i) => `  ${width}": ${fr(i ? p.fronts3 : p.fronts2).length} drawers at the bottom (${fr(i ? p.fronts3 : p.fronts2).slice().reverse().join('", ')}" fronts, top down), rod at ${frac(i ? p.rod3 : p.rod2, 8)}, open above.`),
-      `RIGHT WALL, ${frac(RT, 8)} long, ${frac(rd, 8)} deep. Start flush in the back corner: ${rw.join('" + ')}", then ${frac(rFill, 8)} left at the nook end. No rods, no doors.`,
+      `RIGHT WALL, ${frac(RT, 8)} long, ${frac(rd, 8)} deep. ${p.fillerOn && rGap > 0.5 ? `${frac(rGap, 8)} filler in the back corner, then ` : "From the back corner: "}${rw.join('" + ')}"${nookPlank ? `, finishing ${frac(nookPlank, 8)} short of the nook so Amir's plank lands there` : ""}. No rods, no doors.`,
       ...rw.map((width, i) => `  ${width}": shelves at ${rv(i).join('", ')}".`),
       `Q: anything shallower than 15-1/2"? And a topper box for the ${frac(p.ceiling - top, 8)} above a ${frac(top, 8)} box?`,
       ``,
