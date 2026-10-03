@@ -14,8 +14,9 @@ export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9
   outRightF: 11.3 };    // right wall, from the front (height not recorded)
 
 export const DEFAULTS = {
-  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, upDepth: 15, maxBay: 20, sideUprights: false, railH: 3.5, diagCorner: true,
-  ...shelfSlots("u", [54, 68, 82, 96, 110], [48]),
+  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, underDepth: 18,
+  upDepth: 18, upDepth2: 24, upShallow: 2, maxBay: 20, sideUprights: false, railH: 3.5, diagCorner: true,
+  ...shelfSlots("u", [56, 69, 82, 95, 108]),
   finish: "white", lights: true,
 };
 
@@ -26,14 +27,17 @@ export const CONTROLS = [
     { key: "top", label: "Top", type: "select", options: [["quartz", "Quartz (3 cm)"], ["porcelain", "Porcelain slab (12 mm on plywood)"]] },
     { key: "underOn", label: "Shelf under the counter", type: "check" },
     { key: "underZ", label: "Its height (top)", min: 8, max: 24, step: 0.5 },
+    { key: "underDepth", label: "Its depth (set back from the counter face)", min: 12, max: 24, step: 0.5 },
     { key: "diagCorner", label: "Diagonal divider at the corner", type: "check" },
     { key: "sideUprights", label: "Extra uprights between it and the walls", type: "check" },
     { key: "maxBay", label: "Widest bay, when those are on", min: 14, max: 44, step: 1 },
     { key: "railH", label: "Front cleat, on edge", type: "select",
       options: [["1.5", "1x2 · 1-1/2\""], ["2.5", "1x3 · 2-1/2\""], ["3.5", "1x4 · 3-1/2\""]] },
   ]],
-  shelfControls("u", 6, "Open shelves above the counter", [
-    { key: "upDepth", label: "Their depth", min: 10, max: 16, step: 0.5 },
+  shelfControls("u", 5, "Open shelves above the counter", [
+    { key: "upShallow", label: "How many of the lowest are set back", min: 0, max: 5, step: 1, fmt: "int" },
+    { key: "upDepth", label: "Depth of those", min: 10, max: 24, step: 0.5 },
+    { key: "upDepth2", label: "Depth of the rest", min: 10, max: 24, step: 0.5 },
   ]),
   LOOK,
 ];
@@ -91,7 +95,7 @@ export function build(p) {
   modules.push(box(w.R, "counter", cd, D, 0, cd, 0, 0, { label: "Counter", sub: "right leg" }));
 
   if (p.underOn) {   // one shelf per bay, so nothing spans past an upright
-    const sd = cd - 1, z0 = p.underZ - PLY;   // 1" shy of the front edge
+    const sd = Math.min(p.underDepth, cd - 1), z0 = p.underZ - PLY;
     const shelf = (wall, u0, u1) => add(fixedShelves(wall, { u0, u1, depth: sd, levels: [p.underZ],
       label: "Under-counter shelf", nosing: 0.75, nosingT: 0.25, led: false }));
     const be = [0, ...backG.flatMap(g => [g - PLY / 2, g + PLY / 2]), corner - PLY];
@@ -114,10 +118,16 @@ export function build(p) {
       shelf(w.T, corner, W);   // the blind corner, reached from the right leg
     }
   }
-  const up = readShelves(p, "u", 6);
+  const up = readShelves(p, "u", 5);
   const edge = { nosing: 1.25, nosingT: 0.25 };   // 1/4" x 1-1/4" poplar: just deep enough to hide the LED channel
-  add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.upDepth, levels: up, label: "Open shelves", ...edge }));
-  add(fixedShelves(w.R, { u0: p.upDepth, u1: D, depth: p.upDepth, levels: up, label: "Open shelves", ...edge }));
+  // The lowest few are set back so you are not working under them at the counter; above head
+  // height they go full depth, where reaching over is no longer the thing that limits them.
+  const dOf = i => i < p.upShallow ? p.upDepth : p.upDepth2;
+  up.forEach((z, i) => {
+    const dd = dOf(i);
+    add(fixedShelves(w.T, { u0: 0, u1: W, depth: dd, levels: [z], label: "Open shelf", ...edge }));
+    add(fixedShelves(w.R, { u0: dd, u1: D, depth: dd, levels: [z], label: "Open shelf", ...edge }));
+  });
 
   // door on the bottom wall, LHI: hinge on the left jamb, swings in along the left wall
   const u0 = W - (p.doorAt + p.doorRO), u1 = W - p.doorAt;
