@@ -10,10 +10,10 @@ export function shelfSlots(prefix, on, off = []) {
   return o;
 }
 
-export function shelfControls(prefix, n, title, extra = []) {
+export function shelfControls(prefix, n, title, extra = [], from = 1) {
   return [title, [
     ...Array.from({ length: n }, (_, k) => ({ key: `${prefix}${k + 1}`, onKey: `${prefix}${k + 1}on`, type: "shelf", bank: prefix,
-      label: k === 0 ? "Shelf 1 (lowest)" : `Shelf ${k + 1}`, min: 4, max: 116, step: 0.5 })),
+      label: k + from === 1 ? "Shelf 1 (lowest)" : `Shelf ${k + from}`, min: 4, max: 116, step: 0.5 })),
     ...extra,
   ]];
 }

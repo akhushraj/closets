@@ -66,6 +66,14 @@ function buildControls() {
     for (const c of items) {
       const row = document.createElement("div"); row.className = "ctrl" + (c.type === "check" ? " check" : "");
       const id = "c_" + c.key;
+      if (c.type === "fixedshelf") {
+        const z = c.value(state);
+        row.className = "ctrl shelf fixed";
+        row.innerHTML = `<label><span>${c.label}</span><span class="vals"><output class="gap"></output><output></output></span></label><div class="lockrow">${c.why || "fixed"}</div>`;
+        row.querySelector("output:not(.gap)").textContent = frac(z, 8);
+        (banks[c.bank] ??= []).push({ on: () => true, inp: { value: z }, gap: row.querySelector("output.gap") });
+        grp.append(row); continue;
+      }
       if (c.type === "note") {
         row.className = "ctrl note"; row.textContent = c.text;
         grp.append(row); continue;
@@ -113,9 +121,14 @@ function buildControls() {
   host.append(reset);
 }
 
+const feedsLocked = key => mod.CONTROLS.some(([, items]) =>
+  items.some(c => c.type === "fixedshelf" && (c.deps || []).includes(key)));
+
 let pending = 0;
 function set(key, value) {
-  state[key] = value; lsSet(storeKey(), overrides()); showGaps();
+  state[key] = value; lsSet(storeKey(), overrides());
+  if (feedsLocked(key)) { buildControls(); render(); return; }
+  showGaps();
   cancelAnimationFrame(pending); pending = requestAnimationFrame(render);
 }
 

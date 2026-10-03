@@ -62,10 +62,11 @@ export const CONTROLS = [
   ]],
   ...["l", "r"].map(side => {
     const pre = "a" + side, name = side === "l" ? "left" : "right";
-    const [t, rows] = shelfControls(pre, 3, `Plywood above the ${name} cabinets`);
+    const [t, rows] = shelfControls(pre, 3, `Plywood above the ${name} cabinets`, [], 2);
     return [t, [
       { key: `above${side.toUpperCase()}On`, label: `Deck and planks over the ${name} run`, type: "check" },
-      { type: "note", text: "The deck is fixed - it rests straight on the cabinet tops, so its height follows the box height. These set the planks above it." },
+      { type: "fixedshelf", bank: pre, label: "Shelf 1 · the deck", value: st => +st.esTop + PLY, deps: ["esTop"],
+        why: "sits straight on the cabinet tops - move \u201cCabinet height\u201d and it follows" },
       ...rows,
     ]];
   }),
