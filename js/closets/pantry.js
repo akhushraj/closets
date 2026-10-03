@@ -14,7 +14,7 @@ export const FIELD = { W: 60.6, D: 53.8, ceiling: 120, doorAt: 2.5, doorRO: 27.9
   outRightF: 11.3 };    // right wall, from the front (height not recorded)
 
 export const DEFAULTS = {
-  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 16, underDepth: 18,
+  counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 18, underDepth: 24,
   upDepth: 18, upDepth2: 24, upShallow: 2, maxBay: 20, sideUprights: false, railH: 3.5, diagCorner: true,
   ...shelfSlots("u", [56, 69, 82, 95, 108]),
   finish: "white", lights: true,
@@ -27,7 +27,7 @@ export const CONTROLS = [
     { key: "top", label: "Top", type: "select", options: [["quartz", "Quartz (3 cm)"], ["porcelain", "Porcelain slab (12 mm on plywood)"]] },
     { key: "underOn", label: "Shelf under the counter", type: "check" },
     { key: "underZ", label: "Its height (top)", min: 8, max: 24, step: 0.5 },
-    { key: "underDepth", label: "Its depth (set back from the counter face)", min: 12, max: 24, step: 0.5 },
+    { key: "underDepth", label: "Its depth (24\" = full, behind the front cleat)", min: 12, max: 24, step: 0.5 },
     { key: "diagCorner", label: "Diagonal divider at the corner", type: "check" },
     { key: "sideUprights", label: "Extra uprights between it and the walls", type: "check" },
     { key: "maxBay", label: "Widest bay, when those are on", min: 14, max: 44, step: 1 },
