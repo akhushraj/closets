@@ -13,13 +13,13 @@ export const INFO = { id: "rohan", name: "Rohan's Closet", room: "Bedroom 2", st
 export const FIELD = { closetW: 46.2, mainD: 52.1, alcoveW: 25.2, totalL: 78.7, ceiling: 120,
   doorAt: 31.1, doorRO: 30.3, doorSlab: 28, doorH: 96, hinge: "near" };
 
-// IKEA HEMNES 3-drawer dresser
-const HEMNES = { w: 42.5, d: 19.625, h: 37.75 };
+// Default is IKEA HAVSTA 6-drawer, 47-5/8 x 18-1/2 x 35 - the widest thing that still clears
+// the bottom of the hanging clothes. Adjust to whatever chest you actually buy.
 
 export const DEFAULTS = {
   layout: "rodC", rodZ: 72, hang: 36, bDepth: 21, cDepth: 24,
   ...slots("l", [76, 96], [108, 111, 114]),   // above the rod, these run the full L
-  lowOn: false, dresser: true,
+  lowOn: false, dresser: true, dressW: 47.625, dressD: 18.5, dressH: 35,
   chestOn: true, chestW: 14, chestD: 18, chestH: 50,
   s1: 16, s1on: false, s2: 24, s2on: true, s3: 36, s3on: true, s4: 48, s4on: true,
   s5: 60, s5on: true, s6: 72, s6on: true, s7: 84, s7on: true, s8: 96, s8on: true,
@@ -39,7 +39,10 @@ export const CONTROLS = [
   shelfControls("l", 5, "Above the rod · these run the full L on B and C"),
   ["Under the rod · dresser shelf", [
     { key: "lowOn", label: "Shelf along the rod wall, under the clothes", type: "check" },
-    { key: "dresser", label: "IKEA HEMNES 3-drawer under it", type: "check" },
+    { key: "dresser", label: "Chest of drawers under it", type: "check" },
+    { key: "dressW", label: "Chest width", min: 24, max: 60, step: 0.125 },
+    { key: "dressD", label: "Chest depth", min: 14, max: 24, step: 0.125 },
+    { key: "dressH", label: "Chest height", min: 24, max: 48, step: 0.125 },
   ]],
   ["Narrow chest in the corner · if storage gets tight", [
     { key: "chestOn", label: "Stand one in the far corner", type: "check" },
@@ -95,15 +98,16 @@ export function build(p) {
   // the rod, its wall, and the shelf right across under it
   add(hangRun(rodW, { u0: 0, u1: rodLen, depth: rodDepth, rodZ: p.rodZ, coatsTo: 0.1, hat: false }));
   if (p.lowOn) add(fixedShelves(rodW, { u0: 0, u1: rodLen, depth: rodDepth, levels: [lowZ], label: "Shelf under the clothes" }));
-  if (p.dresser) {   // HEMNES 3-drawer, standing under that shelf
-    const a = 1.5, b = a + HEMNES.w, v1 = 0.5 + HEMNES.d, fh = (HEMNES.h - 3) / 3;
-    parts.push(box(rodW, "dresser", a, b, 0.5, v1 - 0.6, 0, HEMNES.h - 0.75, { label: "HEMNES dresser" }));
-    parts.push(box(rodW, "dresser", a, b, 0.5, v1, HEMNES.h - 0.75, HEMNES.h, { mark: true, label: "Dresser top" }));
+  const DR = { w: p.dressW, d: p.dressD, h: p.dressH };
+  if (p.dresser) {   // the chest, standing under the clothes
+    const a = 1.5, b = a + DR.w, v1 = 0.5 + DR.d, fh = (DR.h - 3) / 3;
+    parts.push(box(rodW, "dresser", a, b, 0.5, v1 - 0.6, 0, DR.h - 0.75, { label: "Chest of drawers" }));
+    parts.push(box(rodW, "dresser", a, b, 0.5, v1, DR.h - 0.75, DR.h, { mark: true, label: "Chest top" }));
     for (let i = 0; i < 3; i++) {
       const z0 = 1 + i * (fh + 0.4);
       parts.push(box(rodW, "dresserfront", a + 0.4, b - 0.4, v1 - 0.6, v1, z0, z0 + fh));
     }
-    modules.push(box(rodW, "dresser", a, b, 0.5, v1, 0, 0, { label: "HEMNES 3-drawer", sub: `${HEMNES.w} × ${HEMNES.d} × ${HEMNES.h}"` }));
+    modules.push(box(rodW, "dresser", a, b, 0.5, v1, 0, 0, { label: "Chest of drawers", sub: `${frac(DR.w, 8)} × ${frac(DR.d, 8)} × ${frac(DR.h, 8)}` }));
   }
 
   add(fixedShelves(rodW, { u0: 0, u1: rodLen, depth: rodDepth, levels: lLv, label: "The L" }));
@@ -140,18 +144,24 @@ export function build(p) {
   const rodName0 = onC ? "Wall C" : "Wall B";
   const underCleats = lowZ - PLY - 1.5;
   // room in front of the dresser, measured off its own face, not the shelf's
-  const dFront = 0.5 + HEMNES.d;
+  const dFront = 0.5 + DR.d;
   const inFront = onC ? Math.min(M, L - alcDepth) - dFront : W - dFront;
   const aisle = onC ? M - cd : W - bd;
-  if (p.lowOn && p.dresser && underCleats < HEMNES.h)
-    warnings.push(`The shelf lands at ${frac(lowZ, 8)}, leaving ${frac(underCleats, 8)} under its cleats, and the HEMNES is ${HEMNES.h}" tall. Raise the rod or shorten the hang so the shelf sits at ${frac(HEMNES.h + PLY + 1.5 + 1, 8)} or higher.`);
+  if (p.lowOn && p.dresser && underCleats < DR.h)
+    warnings.push(`The shelf lands at ${frac(lowZ, 8)}, leaving ${frac(underCleats, 8)} under its cleats, and the chest is ${frac(DR.h, 8)} tall. Raise the rod or shorten the hang so the shelf sits at ${frac(DR.h + PLY + 1.5 + 1, 8)} or higher.`);
   if (p.chestOn && p.chestH > overRod - 2)
     warnings.push(`The chest is ${frac(p.chestH, 8)} tall and the first L shelf is at ${frac(overRod, 8)}. It won't go under.`);
   if (p.chestOn && othRun <= p.chestW + 2)
     warnings.push(`${othName} is only ${frac(othRun, 8)} clear of the corner - no room for a ${frac(p.chestW, 8)} chest.`);
   if (p.hang < 34) warnings.push(`${frac(p.hang, 8)} of hanging is short - a jacket is about 34" on the hanger.`);
-  if (p.dresser && HEMNES.w > rodLen - 3)
-    warnings.push(`The HEMNES is ${HEMNES.w}" wide and that wall is ${frac(rodLen, 8)}. It only just fits.`);
+  if (p.dresser && !p.lowOn && DR.h > clothesTo)
+    warnings.push(`The chest is ${frac(DR.h, 8)} tall and the clothes hang down to ${frac(clothesTo, 8)}, so the bottom ${frac(DR.h - clothesTo, 8)} of every shirt rests on its top. Keep it under ${frac(clothesTo, 8)}.`);
+  if (p.dresser && DR.d > rodDepth + 0.5)
+    warnings.push(`The chest is ${frac(DR.d, 8)} deep against the ${frac(rodDepth, 8)} shelf above it, so it stands ${frac(DR.d - rodDepth, 8)} proud of the shelf front.`);
+  if (p.dresser && DR.w > rodLen)
+    warnings.push(`The chest is ${frac(DR.w, 8)} wide and that wall is only ${frac(rodLen, 8)}. It will not go in.`);
+  else if (p.dresser && DR.w > rodLen - 1)
+    warnings.push(`The chest is ${frac(DR.w, 8)} into a ${frac(rodLen, 8)} wall - ${frac(rodLen - DR.w, 8)} total to spare. Measure before you buy.`);
   if (overRod - p.rodZ < 4) warnings.push(`The first L is only ${frac(overRod - p.rodZ, 8)} over the rod. Hangers need about 2" plus room to lift them off.`);
   if (Math.abs(alcDepth - rodDepth) > 0.5) warnings.push(`Wall A shelves are ${frac(alcDepth, 8)} deep against ${rodName0}'s ${frac(rodDepth, 8)} - the entry door casing caps wall A, so they can't match.`);
   warnings.push(...spacingWarnings([...(p.lowOn ? [p.lowZ] : []), ...lLv].sort((a, b) => a - b), "Shelves"));
@@ -193,7 +203,7 @@ export function build(p) {
       { k: "Layout", v: `Rod on ${rodName}`, s: `${frac(rodLen, 8)} end to end at ${frac(p.rodZ, 8)}, ${frac(rodDepth, 8)} deep` },
       { k: "The L, above the rod", v: lLv.map(z => frac(z, 8)).join(", "), s: `${rodName} full length, ${othName} ${frac(othRun, 8)} round the corner` },
       { k: "Hanging", v: frac(p.hang, 8), s: `rod ${frac(p.rodZ, 8)}, shelf under it ${frac(lowZ, 8)}` },
-      { k: "Under that shelf", v: p.lowOn ? frac(underCleats, 8) : "open", s: p.lowOn && p.dresser ? `clear at the cleats; HEMNES is ${HEMNES.h}" tall` : "" },
+      { k: "Under that shelf", v: p.lowOn ? frac(underCleats, 8) : "open", s: p.lowOn && p.dresser ? `clear at the cleats; HEMNES is ${DR.h}" tall` : "" },
       { k: "In front of the dresser", v: frac(inFront, 8), s: `${frac(inFront - 18, 8)} left with a drawer out; aisle off the shelf face is ${frac(aisle, 8)}` },
       { k: "Open as you walk in", v: frac(onC ? W : W - bd, 8), s: onC ? `wall B carries nothing below the L, so the floor runs clear to it` : `wall B's run stops you ${frac(W - bd, 8)} in` },
       ...(p.chestOn ? [{ k: "Corner chest", v: `${p.chestW} × ${p.chestD} × ${p.chestH}"`, s: `${onC ? "notch corner" : "wall D corner"} of ${othName}, clear of ${rodName}` }] : []),
@@ -209,7 +219,7 @@ export function build(p) {
       `ROHAN'S CLOSET - all plywood, 3/4" birch, painted, on 1x2 cleats screwed through the drywall into the studs. Only bought item is the dresser.`,
       ``,
       `${rodName.toUpperCase()} (${frac(rodLen, 8)} long, ${frac(rodDepth, 8)} deep): rod at ${frac(p.rodZ, 8)} end to end, no hat shelf.`,
-      ...(p.lowOn ? [`  One shelf along it at ${frac(lowZ, 8)}, ${frac(p.hang, 8)} below the rod, ${frac(underCleats, 8)} clear under its cleats.${p.dresser ? ` An IKEA HEMNES 3-drawer (${HEMNES.w} x ${HEMNES.d} x ${HEMNES.h}") stands under it.` : ""}`] : []),
+      ...(p.lowOn ? [`  One shelf along it at ${frac(lowZ, 8)}, ${frac(p.hang, 8)} below the rod, ${frac(underCleats, 8)} clear under its cleats.${p.dresser ? ` An IKEA HEMNES 3-drawer (${DR.w} x ${DR.d} x ${DR.h}") stands under it.` : ""}`] : []),
       `  Shelves above the rod at ${lLv.map(z => frac(z, 8)).join(", ")}.`,
       ``,
       `${othName.toUpperCase()} (${frac(othDepth, 8)} deep, starting ${frac(othU0, 8)} off the corner, ${frac(othRun, 8)} long): only the ${lLv.length} shelves above the rod, at the same heights, so they carry round as one L. Nothing below them.`,
@@ -225,10 +235,10 @@ export function build(p) {
       `The shelves above the rod are the same either way - they run round B and C as one L. What the layout changes is which wall gets the rod and the dresser shelf under it. ${rodName} gives ${frac(rodLen, 8)} of rod at ${frac(rodDepth, 8)} deep; the other would give ${frac(onC ? M : W, 8)} at ${frac(onC ? bd : cd, 8)}.`,
       `${othName} carries only the L shelves, and it starts ${frac(othU0, 8)} off the corner so it never runs into the hanging clothes.`,
       `That matters for how the room feels. ${onC ? `With the rod on wall C, wall B has nothing below ${frac(overRod, 8)}, so you walk in to ${frac(W, 8)} of clear floor and can turn to wall C on your right or wall A on your left from where you stand.` : `With the rod on wall B, its run stops you ${frac(W - bd, 8)} in, and you work in the strip between it and the door wall.`}`,
-      `The HEMNES is ${HEMNES.h}" tall, so the shelf over it cannot sit lower than ${frac(HEMNES.h + PLY + 1.5 + 1, 8)}. At ${frac(p.hang, 8)} of hanging the shelf lands at ${frac(lowZ, 8)} and clears it by ${frac(underCleats - HEMNES.h, 8)}.`,
-      ...(!p.lowOn && p.dresser ? [`Nothing over the dresser, so the clothes hang past it. At ${frac(p.hang, 8)} they reach ${frac(clothesTo, 8)} against a ${HEMNES.h}" dresser top - fine at his size now, and the rod moves up when it stops being.`] : []),
+      `The HEMNES is ${DR.h}" tall, so the shelf over it cannot sit lower than ${frac(DR.h + PLY + 1.5 + 1, 8)}. At ${frac(p.hang, 8)} of hanging the shelf lands at ${frac(lowZ, 8)} and clears it by ${frac(underCleats - DR.h, 8)}.`,
+      ...(!p.lowOn && p.dresser ? [`Nothing over the dresser, so the clothes hang past it. At ${frac(p.hang, 8)} they reach ${frac(clothesTo, 8)} against a ${DR.h}" dresser top - fine at his size now, and the rod moves up when it stops being.`] : []),
       `${frac(p.hang, 8)} of hanging clears a jacket, which is about 34" on the hanger. Only a full-length coat would want more, and that would push the rod to ${frac(lowZ + 43, 8)}.`,
-      `Room to open a drawer is measured off the dresser's own face, ${frac(HEMNES.d, 8)} off the wall - not off the ${frac(rodDepth, 8)} shelf above it. That leaves ${frac(inFront, 8)} here, ${frac(inFront - 18, 8)} with a drawer pulled right out.`,
+      `Room to open a drawer is measured off the dresser's own face, ${frac(DR.d, 8)} off the wall - not off the ${frac(rodDepth, 8)} shelf above it. That leaves ${frac(inFront, 8)} here, ${frac(inFront - 18, 8)} with a drawer pulled right out.`,
       `Wall A can't match the others for depth. The return beside the entry door is ${frac(belowDoor, 8)}; take off a ${frac(cw, 8)} casing and 1/4" and the alcove shelves cap out at ${frac(alcDepth, 8)}.`,
       "Mounting: the drywall is up, so shelves can't be nailed straight to studs. Under each, screw a 3/4\" x 1-1/2\" cleat through the drywall into the studs, then set the shelf on the cleats.",
     ],
