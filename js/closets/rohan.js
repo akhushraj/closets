@@ -17,7 +17,7 @@ export const FIELD = { closetW: 46.2, mainD: 52.1, alcoveW: 25.2, totalL: 78.7, 
 // the bottom of the hanging clothes. Adjust to whatever chest you actually buy.
 
 export const DEFAULTS = {
-  layout: "rodC", rodZ: 72, hang: 36, bDepth: 21, cDepth: 24,
+  layout: "rodB", rodZ: 72, hang: 36, bDepth: 21, cDepth: 24,
   ...slots("l", [76, 96], [108, 111, 114]),   // above the rod, these run the full L
   lowOn: false, dresser: true, dressW: 47.625, dressD: 18.5, dressH: 35,
   chestOn: true, chestW: 14, chestD: 18, chestH: 50,
