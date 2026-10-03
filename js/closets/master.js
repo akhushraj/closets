@@ -29,8 +29,8 @@ export const DEFAULTS = {
   fillerOn: true,
   aboveLOn: true, aboveROn: true,
   // over each run: a deck resting on the cabinet tops, then adjustable planks above it
-  ...shelfSlots("al", [107], [101, 113]),
-  ...shelfSlots("ar", [107], [101, 113]),
+  ...shelfSlots("al", [107], [114]),
+  ...shelfSlots("ar", [107], [114]),
   pressOn: true, pressW: 15, pressZ: 18, pressDown: false,
   // one shelf bank per cabinet. l3/r2/r3 copy a neighbour until you tell them not to.
   ...shelfSlots("l1", [14, 28, 42, 56, 70, 84], [98]), l1match: "own",
@@ -62,7 +62,7 @@ export const CONTROLS = [
   ]],
   ...["l", "r"].map(side => {
     const pre = "a" + side, name = side === "l" ? "left" : "right";
-    const [t, rows] = shelfControls(pre, 3, `Plywood above the ${name} cabinets`, [], 2);
+    const [t, rows] = shelfControls(pre, 2, `Plywood above the ${name} cabinets`, [], 2);
     return [t, [
       { key: `above${side.toUpperCase()}On`, label: `Deck and planks over the ${name} run`, type: "check" },
       { type: "fixedshelf", bank: pre, label: "Shelf 1 · the deck", value: st => +st.esTop + PLY, deps: ["esTop"],
@@ -170,7 +170,7 @@ export function build(p) {
   // ---- plywood over the cabinets: a deck on their tops, dividers at the seams screwed to the
   // top studs, and one shelf. Nothing hangs off the cabinets; the cleats carry the back edge.
   const deck = top + PLY;
-  const aLv = { L: readShelves(p, "al", 3), R: readShelves(p, "ar", 3) };
+  const aLv = { L: readShelves(p, "al", 2), R: readShelves(p, "ar", 2) };
   const aOn = { L: p.aboveLOn, R: p.aboveROn };
   // the dividers run deck to ceiling, so every plank between them is braced top and bottom
   const over = (wall, u0, u1, widths, depth, runFrom = u0) => {
