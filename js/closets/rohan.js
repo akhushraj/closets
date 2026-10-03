@@ -163,7 +163,6 @@ export function build(p) {
   else if (p.dresser && DR.w > rodLen - 1)
     warnings.push(`The chest is ${frac(DR.w, 8)} into a ${frac(rodLen, 8)} wall - ${frac(rodLen - DR.w, 8)} total to spare. Measure before you buy.`);
   if (overRod - p.rodZ < 4) warnings.push(`The first L is only ${frac(overRod - p.rodZ, 8)} over the rod. Hangers need about 2" plus room to lift them off.`);
-  if (Math.abs(alcDepth - rodDepth) > 0.5) warnings.push(`Wall A shelves are ${frac(alcDepth, 8)} deep against ${rodName0}'s ${frac(rodDepth, 8)} - the entry door casing caps wall A, so they can't match.`);
   warnings.push(...spacingWarnings([...(p.lowOn ? [p.lowZ] : []), ...lLv].sort((a, b) => a - b), "Shelves"));
   for (let i = 1; i < alcLevels.length; i++)
     if (alcLevels[i] - alcLevels[i - 1] < 6)
@@ -239,7 +238,7 @@ export function build(p) {
       ...(!p.lowOn && p.dresser ? [`Nothing over the dresser, so the clothes hang past it. At ${frac(p.hang, 8)} they reach ${frac(clothesTo, 8)} against a ${DR.h}" dresser top - fine at his size now, and the rod moves up when it stops being.`] : []),
       `${frac(p.hang, 8)} of hanging clears a jacket, which is about 34" on the hanger. Only a full-length coat would want more, and that would push the rod to ${frac(lowZ + 43, 8)}.`,
       `Room to open a drawer is measured off the dresser's own face, ${frac(DR.d, 8)} off the wall - not off the ${frac(rodDepth, 8)} shelf above it. That leaves ${frac(inFront, 8)} here, ${frac(inFront - 18, 8)} with a drawer pulled right out.`,
-      `Wall A can't match the others for depth. The return beside the entry door is ${frac(belowDoor, 8)}; take off a ${frac(cw, 8)} casing and 1/4" and the alcove shelves cap out at ${frac(alcDepth, 8)}.`,
+      `Wall A is its own depth, set by what the alcove gives: the return beside the entry door is ${frac(belowDoor, 8)}, so after a ${frac(cw, 8)} casing and 1/4" the shelves come out at ${frac(alcDepth, 8)}. ${rodName0} is ${frac(rodDepth, 8)} because that is what hanging needs - they are different on purpose.`,
       "Mounting: the drywall is up, so shelves can't be nailed straight to studs. Under each, screw a 3/4\" x 1-1/2\" cleat through the drywall into the studs, then set the shelf on the cleats.",
     ],
     wiring,
