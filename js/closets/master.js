@@ -26,7 +26,10 @@ export const DEFAULTS = {
   nookDepth: 26.5,
   fronts2: "9, 10, 11, 12", fronts3: "9, 10, 11, 12", rod2: 84, rod3: 84,
   rightDepth: 15.5, rightPlan: "30, 30, 15",
-  aboveOn: true, aboveZ: 107,
+  aboveLOn: true, aboveROn: true,
+  // over each run: a deck resting on the cabinet tops, then adjustable planks above it
+  ...shelfSlots("al", [107], [101, 113]),
+  ...shelfSlots("ar", [107], [101, 113]),
   pressOn: true, pressW: 15, pressZ: 18, pressDown: false,
   // one shelf bank per cabinet. l3/r2/r3 copy a neighbour until you tell them not to.
   ...shelfSlots("l1", [14, 28, 42, 56, 70, 84], [98]), l1match: "own",
@@ -55,10 +58,15 @@ export const CONTROLS = [
     { key: "rightPlan", label: "Right wall widths, from the back", type: "text" },
     { key: "rightDepth", label: "Right wall depth", min: 15.5, max: 24, step: 8.5 },
   ]],
-  ["Plywood above the cabinets · left and right only", [
-    { key: "aboveOn", label: "Deck and shelf over the cabinets", type: "check" },
-    { key: "aboveZ", label: "Upper shelf height", min: 100, max: 116, step: 1 },
-  ]],
+  ...["l", "r"].map(side => {
+    const pre = "a" + side, name = side === "l" ? "left" : "right";
+    const [t, rows] = shelfControls(pre, 3, `Plywood above the ${name} cabinets`);
+    return [t, [
+      { key: `above${side.toUpperCase()}On`, label: `Deck and planks over the ${name} run`, type: "check" },
+      { type: "note", text: "The deck is fixed - it rests straight on the cabinet tops, so its height follows the box height. These set the planks above it." },
+      ...rows,
+    ]];
+  }),
   ["Nook · plywood planks", [
     { key: "nookDepth", label: "Shelf depth (past 12-3/8\" it needs a gable)", min: 12, max: 28, step: 0.5 },
   ]],
@@ -149,24 +157,33 @@ export function build(p) {
   // ---- plywood over the cabinets: a deck on their tops, dividers at the seams screwed to the
   // top studs, and one shelf. Nothing hangs off the cabinets; the cleats carry the back edge.
   const deck = top + PLY;
-  if (p.aboveOn) {
-    // the dividers run deck to ceiling, so the shelf between them is braced top and bottom
-    const over = (wall, u0, u1, widths, depth) => {
-      if (u1 - u0 < 12) return;
-      const seams = widths.slice(0, -1).map((_, i) => u0 + widths.slice(0, i + 1).reduce((a, b) => a + b, 0));
-      parts.push(box(wall, "cleat", u0, u1, 0, PLY, top - 1.5, top));
-      parts.push(box(wall, "shelf", u0, u1, 0, depth, top, deck, { mark: true, label: "Deck over the cabinets" }));
-      for (const s of [u0 + PLY / 2, ...seams, u1 - PLY / 2])
-        parts.push(box(wall, "carcass", s - PLY / 2, s + PLY / 2, 0, depth, deck, p.ceiling,
-          { mark: s === u0 + PLY / 2, label: "Divider, deck to ceiling" }));
-      parts.push(box(wall, "cleat", u0, u1, 0, PLY, p.aboveZ - 1.5, p.aboveZ));
-      parts.push(box(wall, "shelf", u0, u1, 0, depth, p.aboveZ, p.aboveZ + PLY, { mark: true, label: "Upper shelf" }));
-      modules.push(box(wall, "band", u0, u1, 0, depth, { label: "Plywood above", sub: `deck ${frac(deck, 8)}, shelf ${frac(p.aboveZ, 8)}` }));
-    };
-    over(w.L, 0, lRun, lw, d);
-    over(w.R, 0, RT, rw, rd);
-    if (p.aboveZ < deck + 10) warnings.push(`Only ${frac(p.aboveZ - deck, 8)} between the deck and the upper shelf.`);
-    if (p.aboveZ + PLY > p.ceiling - 8) warnings.push(`The upper shelf leaves ${frac(p.ceiling - p.aboveZ - PLY, 8)} to the ceiling.`);
+  const aLv = { L: readShelves(p, "al", 3), R: readShelves(p, "ar", 3) };
+  const aOn = { L: p.aboveLOn, R: p.aboveROn };
+  // the dividers run deck to ceiling, so every plank between them is braced top and bottom
+  const over = (wall, u0, u1, widths, depth) => {
+    const levels = aLv[wall.id];
+    if (!aOn[wall.id] || u1 - u0 < 12) return;
+    const seams = widths.slice(0, -1).map((_, i) => u0 + widths.slice(0, i + 1).reduce((a, b) => a + b, 0));
+    parts.push(box(wall, "cleat", u0, u1, 0, PLY, top - 1.5, top));
+    parts.push(box(wall, "shelf", u0, u1, 0, depth, top, deck, { mark: true, label: "Deck, straight on the cabinet tops" }));
+    for (const s2 of [u0 + PLY / 2, ...seams, u1 - PLY / 2])
+      parts.push(box(wall, "carcass", s2 - PLY / 2, s2 + PLY / 2, 0, depth, deck, p.ceiling,
+        { mark: s2 === u0 + PLY / 2, label: "Divider, deck to ceiling" }));
+    for (const z of levels) {
+      parts.push(box(wall, "cleat", u0, u1, 0, PLY, z - 1.5, z));
+      parts.push(box(wall, "shelf", u0, u1, 0, depth, z, z + PLY, { mark: z === levels[0], label: "Plank over the deck" }));
+    }
+    modules.push(box(wall, "band", u0, u1, 0, depth, { label: "Plywood above",
+      sub: `deck ${frac(deck, 8)}${levels.length ? ` + ${levels.map(z => frac(z, 8)).join(", ")}` : ""}` }));
+  };
+  over(w.L, 0, lRun, lw, d);
+  over(w.R, 0, RT, rw, rd);
+  for (const [id, name] of [["L", "Left"], ["R", "Right"]]) {
+    if (!aOn[id]) continue;
+    const lv2 = [deck, ...aLv[id]];
+    warnings.push(...spacingWarnings(lv2, `${name} wall, above the cabinets`));
+    const topZ = lv2[lv2.length - 1];
+    if (p.ceiling - topZ > 20) warnings.push(`${name} wall: the top plank is at ${frac(topZ, 8)}, leaving ${frac(p.ceiling - topZ, 8)} of bare wall to the ceiling.`);
   }
 
   // ---- back wall stays clear so you can reach the back end of both runs; the only thing on it
@@ -228,7 +245,8 @@ export function build(p) {
       { k: "Left wall", v: lw.join(" + ") + '"', s: `${frac(d, 8)} deep${lFill ? ` · ${frac(lFill, 8)} filler` : ""}` },
       { k: "Right wall", v: rw.join(" + ") + '"', s: `${frac(rd, 8)} deep · ${frac(rFill, 8)} left at the nook end, ${frac(rFill - PLY, 8)} of it filler` },
       { k: "Nook", v: `${nLv.length} planks × ${frac(nd, 8)}`, s: `full ${frac(nookRun, 8)} long, floor to ${frac(nLv[nLv.length - 1] || 0, 8)}; its own run, nothing to do with the cabinets` },
-      { k: "Above the cabinets", v: p.aboveOn ? `deck ${frac(deck, 8)} · shelf ${frac(p.aboveZ, 8)}` : "off", s: `plywood planks, ${frac(p.ceiling - p.aboveZ - PLY, 8)} left to the ceiling` },
+      { k: "Above the left run", v: aOn.L ? `deck ${frac(deck, 8)}${aLv.L.length ? ` + ${aLv.L.map(z => frac(z, 8)).join(", ")}` : ""}` : "off", s: aOn.L ? `${frac(p.ceiling - (aLv.L[aLv.L.length - 1] || deck) - PLY, 8)} left to the ceiling` : "" },
+      { k: "Above the right run", v: aOn.R ? `deck ${frac(deck, 8)}${aLv.R.length ? ` + ${aLv.R.map(z => frac(z, 8)).join(", ")}` : ""}` : "off", s: aOn.R ? `${frac(p.ceiling - (aLv.R[aLv.R.length - 1] || deck) - PLY, 8)} left to the ceiling` : "" },
       { k: "Drawers", v: `${left.drawers.length + right.drawers.length}`, s: `in the two ${lw[1] || 36}" boxes on the left wall` },
       { k: "Aisle", v: frac(aisle, 8), s: `widest door swings ${frac(swing, 8)}` },
       { k: "Back wall", v: p.pressOn ? `press board, ${frac(p.pressW, 8)}` : "clear", s: `${frac(bwFree, 8)} between the runs, kept open for access` },
