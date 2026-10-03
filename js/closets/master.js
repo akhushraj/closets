@@ -36,7 +36,7 @@ export const DEFAULTS = {
   ...shelfSlots("r2", [20, 34, 48, 62, 76], [88]), r2match: "r1",
   ...shelfSlots("r3", [20, 34, 48, 62, 76], [88]), r3match: "r2",
   // Nook: first at 24", then every 12". 60" is left off so 48-72" is one tall opening for the puja.
-  ...shelfSlots("n", [24, 36, 48, 72, 84], [60, 96]),
+  ...shelfSlots("n", [24, 36, 48, 72, 84], [60]),
   finish: "white", lights: true,
 };
 
@@ -62,7 +62,9 @@ export const CONTROLS = [
   ["Nook · plywood planks", [
     { key: "nookDepth", label: "Shelf depth (past 12-3/8\" it needs a gable)", min: 12, max: 28, step: 0.5 },
   ]],
-  shelfControls("n", 7, "Nook shelves"),
+  shelfControls("n", 6, "Nook shelves", [
+    { type: "note", text: "Two more sit above these, at the same heights as the plywood over the right wall, so the lines run round the corner. They follow \u201cPlywood above\u201d, not this list." },
+  ]),
   cab("l1", "Left 1 shelves · by the door", [["l2", "left 2"]]),
   cab("l2", "Left 2 shelves", [["l1", "left 1"], ["l3", "left 3"]]),
   cab("l3", "Left 3 shelves · at the back", [["l2", "left 2"]]),

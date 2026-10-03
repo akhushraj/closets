@@ -66,6 +66,10 @@ function buildControls() {
     for (const c of items) {
       const row = document.createElement("div"); row.className = "ctrl" + (c.type === "check" ? " check" : "");
       const id = "c_" + c.key;
+      if (c.type === "note") {
+        row.className = "ctrl note"; row.textContent = c.text;
+        grp.append(row); continue;
+      }
       if (c.type === "check") {
         row.innerHTML = `<label for="${id}"><input type="checkbox" id="${id}"> ${c.label}</label>`;
         const inp = row.querySelector("input"); inp.checked = !!state[c.key];
