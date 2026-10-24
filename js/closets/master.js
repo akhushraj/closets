@@ -101,7 +101,7 @@ export const CONTROLS = [
       { key: `rod${i}`, label: `Left ${i} rod height (0 = none)`, min: 0, max: 90, step: 0.5 },
       { key: `fronts${i}`, label: `Left ${i} drawer fronts, top \u2192 bottom (blank = none)`, type: "text" },
     ]),
-  ], { fold: true }],
+  ]],
   ["Doors", [
     { key: "leftDoors", label: "Doors on the left wall", type: "check" },
     { key: "rightDoors", label: "Doors on the right wall", type: "check" },

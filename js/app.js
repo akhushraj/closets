@@ -21,7 +21,7 @@ const $ = id => document.getElementById(id);
 let mod = byId(location.hash.slice(1) || lsGet("closets.last"));
 if (FOR_ABS && !ABS_ROOMS.includes(mod.INFO.id)) mod = byId("master");
 let state = {}, model = null, three = null;
-const storeKey = () => `closets.${mod.INFO.id}.v5`;
+const storeKey = () => `closets.${mod.INFO.id}.v6`;
 
 // Save only what you actually changed, never the whole state. Storing untouched defaults
 // meant that changing a default in code had no effect in a browser that had ever rendered
@@ -32,7 +32,7 @@ const overrides = () => Object.fromEntries(
     && !(FOR_ABS && k === "supplier")));
 
 function loadState() {
-  for (const v of ["v1", "v2", "v3", "v4"]) try { localStorage.removeItem(`closets.${mod.INFO.id}.${v}`); } catch { /* private mode */ }
+  for (const v of ["v1", "v2", "v3", "v4", "v5"]) try { localStorage.removeItem(`closets.${mod.INFO.id}.${v}`); } catch { /* private mode */ }
   state = { ...mod.DEFAULTS, ...(lsGet(storeKey()) || {}) };
   if (FOR_ABS) state.supplier = "abs";
 }
