@@ -162,6 +162,11 @@
   .tag3d.warn{background:var(--amber);color:#201C14}
   .tag3d:hover{filter:brightness(1.25)}
   .tag3d.sel{box-shadow:0 0 0 2px #fff,0 2px 8px rgba(0,0,0,.6);z-index:2}
+  .editbar{display:flex;align-items:center;gap:8px;justify-content:space-between;
+    background:color-mix(in srgb,var(--amber) 16%,transparent);border:1px solid var(--amber);
+    border-radius:4px;padding:5px 8px;margin-bottom:10px;font-size:11.5px;color:var(--ink)}
+  .editbar button{background:var(--amber);color:#201C14;border:0;border-radius:3px;
+    padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
   .ctrl{position:relative}
   .ctrl.edited{border-left:2px solid var(--amber);padding-left:7px;margin-left:-9px}
   .ctrl.edited>label{color:var(--amber)}

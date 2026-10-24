@@ -6,7 +6,7 @@
 import { box, esRun, fixedShelves, pressBoard, collector, hatchClashes } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
-import { shelfSlots, shelfControls, readShelves, resolveShelves, matchControl, spacingWarnings, LOOK, SUPPLIER_CTRL, absDepth, quoteTagger, dimTag } from "./common.js";
+import { shelfSlots, shelfControls, readShelves, resolveShelves, matchControl, spacingWarnings, LOOK, SUPPLIER_CTRL, absDepth, quoteTagger, dimTag, matchLoops } from "./common.js";
 
 export const INFO = { id: "master", name: "Master Closet", room: "Master bedroom",
   stuff: "folded", concept: "East Star boxes · plywood planks by Amir", rev: "" };
@@ -218,6 +218,12 @@ export function build(p) {
   };
   over(w.L, 0, Lh, lw, d, 0);
   over(w.R, 0, RT, rw, rd, rGap);
+  const loops = matchLoops(p, BANKS);
+  if (loops.length) {
+    const names = { l1: "Left 1", l2: "Left 2", l3: "Left 3", r1: "Right 1", r2: "Right 2", r3: "Right 3" };
+    const list = loops.map(k => names[k] || k);
+    warnings.push(`${list.slice(0, -1).join(", ")} and ${list[list.length - 1]} are set to follow each other, which is a loop. They all take ${names[loops.sort()[0]]}'s heights. Set one of them to "Set below" if you meant something else.`);
+  }
   for (const [id, name] of [["L", "Left"], ["R", "Right"]]) {
     if (!aOn[id]) continue;
     const lv2 = [deck, ...aLv[id]];

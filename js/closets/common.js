@@ -25,14 +25,35 @@ export function matchControl(prefix, neighbours) {
     options: [["own", "Set below"], ...neighbours.map(([k, lbl]) => [k, `Same heights as ${lbl}`])] };
 }
 
-// Follow `match` links until one sets its own heights; a loop falls back to reading its own.
+// Follow `match` links until one sets its own heights. If they point at each other, that is
+// still a request for them to be the same, so the whole loop reads from one bank rather than
+// each quietly falling back to its own - which looked like the match doing nothing at all.
 export function resolveShelves(p, prefix, banks, seen = new Set()) {
   const to = p[`${prefix}match`];
-  if (to && to !== "own" && banks[to] && !seen.has(prefix)) {
+  if (to && to !== "own" && banks[to]) {
+    if (seen.has(to) || to === prefix) return readShelves(p, loopSource(seen, prefix), banks[loopSource(seen, prefix)]);
     seen.add(prefix);
     return resolveShelves(p, to, banks, seen);
   }
   return readShelves(p, prefix, banks[prefix]);
+}
+
+const loopSource = (seen, prefix) => [...seen, prefix].sort()[0];
+
+// Which banks are in a match loop, so the drawing can say so.
+export function matchLoops(p, banks) {
+  const bad = new Set();
+  for (const k of Object.keys(banks)) {
+    const seen = new Set();
+    let at = k;
+    while (true) {
+      const to = p[`${at}match`];
+      if (!to || to === "own" || !banks[to]) break;
+      if (seen.has(to) || to === at) { bad.add(k); break; }
+      seen.add(at); at = to;
+    }
+  }
+  return [...bad];
 }
 
 export function readShelves(p, prefix, n) {

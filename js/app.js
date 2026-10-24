@@ -68,6 +68,18 @@ function buildControls() {
   const host = $("controls");
   host.innerHTML = "";
   banks = {};
+
+  const over = overrides();
+  const n = Object.keys(over).length;
+  if (n) {
+    const bar = document.createElement("div");
+    bar.className = "editbar";
+    bar.innerHTML = `<span>${n} setting${n > 1 ? "s" : ""} changed from the default</span><button type="button">Reset all</button>`;
+    bar.querySelector("button").onclick = () => {
+      state = { ...mod.DEFAULTS }; lsSet(storeKey(), {}); buildControls(); render();
+    };
+    host.append(bar);
+  }
   const visible = c => !FOR_ABS || (c.key !== "supplier" && !c.esOnly);
   for (const [title, allItems, opt = {}] of mod.CONTROLS) {
     const items = allItems.filter(visible);
