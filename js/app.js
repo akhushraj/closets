@@ -3,6 +3,7 @@ import { renderPlan } from "./views/plan.js";
 import { renderElevations } from "./views/elevation.js";
 import { renderSchedule } from "./views/schedule.js";
 import { renderWiring } from "./views/wiring.js";
+import { renderPricing } from "./views/pricing.js";
 import { frac, ftin } from "./lib/units.js";
 
 const UPCOMING = [];
@@ -182,6 +183,16 @@ function render() {
   renderPlan($("plan"), model);
   renderElevations($("elevs"), model);
   renderSchedule($("sched"), model);
+
+  // A-5 only exists for the closets that use bought boxes; it costs the same design both ways
+  const ptab = document.querySelector('[data-tab="pPrice"]');
+  if ("supplier" in mod.DEFAULTS) {
+    ptab.hidden = false;
+    renderPricing($("price"), mod.build({ ...state, supplier: "abs" }), mod.build({ ...state, supplier: "es" }));
+  } else {
+    ptab.hidden = true;
+    if (ptab.classList.contains("on")) document.querySelector('[data-tab="pPlan"]').click();
+  }
   const wtab = document.querySelector('[data-tab="pWiring"]');
   if (model.wiring && model.wiring.levels.length) { wtab.hidden = false; renderWiring($("wiring"), model); }
   else { wtab.hidden = true; if (wtab.classList.contains("on")) document.querySelector('[data-tab="pPlan"]').click(); }
