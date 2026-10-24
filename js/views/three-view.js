@@ -333,7 +333,9 @@ export function createThreeView(host) {
       el.className = "tag3d" + (m.atag === "no price" ? " warn" : "");
       el.textContent = m.atag || String(m.label).replace(/^(East Star|ABS)\s*/, "").split(" $")[0];
       tagLayer.appendChild(el);
-      return { el, x: (m.x0 + m.x1) / 2, y: (m.y0 + m.y1) / 2, z: 40 };
+      // sit the tag at the middle of the box it names, so bases and uppers do not collide
+      const z = m.za != null && m.zb != null ? (m.za + m.zb) / 2 : 40;
+      return { el, x: (m.x0 + m.x1) / 2, y: (m.y0 + m.y1) / 2, z };
     });
     tagLayer.hidden = !tagsOn;
   }
