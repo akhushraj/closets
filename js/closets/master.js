@@ -6,7 +6,7 @@
 import { box, esRun, fixedShelves, pressBoard, collector, hatchClashes } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
-import { shelfSlots, shelfControls, readShelves, resolveShelves, matchControl, spacingWarnings, LOOK } from "./common.js";
+import { shelfSlots, shelfControls, readShelves, resolveShelves, matchControl, spacingWarnings, LOOK, SUPPLIER_CTRL, absDepth } from "./common.js";
 
 export const INFO = { id: "master", name: "Master Closet", room: "Master bedroom",
   stuff: "folded", concept: "East Star boxes · plywood planks by Amir", rev: "" };
@@ -20,11 +20,12 @@ export const FIELD = { W: 72.3, Lh: 104.5, rightTo: 76.8, nookD: 12.4, ceiling: 
 export const ES_WIDTHS = [15, 18, 21, 24, 30, 36];
 
 export const DEFAULTS = {
+  supplier: "es", absDoors: true,
   grade: "shaker", esTop: 94,
   leftDepth: 24, leftPlan: "30, 36, 36", leftDoors: false, rightDoors: false,
   doorsOpen: false, drawersOut: false,
   nookDepth: 26.5,
-  fronts1: "", rod1: 0, fronts2: "9, 10, 11, 12", fronts3: "9, 10, 11, 12", rod2: 84, rod3: 84,
+  fronts1: "11, 12, 13", rod1: 84, fronts2: "11, 12, 13", fronts3: "11, 12, 13", rod2: 84, rod3: 84,
   rightDepth: 15.5, rightPlan: "30, 30, 15",
   fillerOn: true,
   aboveLOn: true, aboveROn: true,
@@ -51,13 +52,15 @@ const cab = (pre, title, near) => {
 };
 
 export const CONTROLS = [
-  ["East Star · everything is a stock box", [
+  ["Boxes · everything is a stock unit", [
+    SUPPLIER_CTRL,
+    { key: "absDoors", label: "Wood doors (ABS quote them; ignored on East Star)", type: "check" },
     { key: "esTop", label: "Cabinet height", type: "select",
       options: [["84", "84\""], ["90", "90\" (shaker only?)"], ["94", "94\""], ["96", "96\" (shaker only?)"]] },
     { key: "leftPlan", label: "Left wall widths, from the door", type: "text" },
-    { key: "leftDepth", label: "Left wall depth", min: 15.5, max: 24, step: 8.5 },
+    { key: "leftDepth", label: "Left wall depth (15-1/2\" reads 15\" on ABS)", min: 15.5, max: 24, step: 8.5 },
     { key: "rightPlan", label: "Right wall widths, from the back", type: "text" },
-    { key: "rightDepth", label: "Right wall depth", min: 15.5, max: 24, step: 8.5 },
+    { key: "rightDepth", label: "Right wall depth (15-1/2\" reads 15\" on ABS)", min: 15.5, max: 24, step: 8.5 },
     { key: "fillerOn", label: "Filler panel in the leftover, at the back corner", type: "check" },
   ]],
   ...["l", "r"].map(side => {
@@ -119,7 +122,9 @@ export function parsePlan(s, run) {
 export function build(p) {
   p = { ...p, ...FIELD };
   const W = p.W, Lh = p.Lh, RT = p.rightTo, XN = W + p.nookD, t = 4.5;
-  const top = +p.esTop, d = +p.leftDepth, rd = +p.rightDepth;
+  const abs = p.supplier === "abs";
+  const top = +p.esTop, d = absDepth(+p.leftDepth, abs), rd = absDepth(+p.rightDepth, abs);
+  const lDoors = abs ? p.absDoors : p.leftDoors, rDoors = abs ? p.absDoors : p.rightDoors;
   const outline = [[0, 0], [W, 0], [W, RT], [XN, RT], [XN, Lh], [0, Lh]];
   const walls = [
     { id: "T",  name: "Back wall",                  a: [0, 0],   b: [W, 0] },
@@ -152,9 +157,9 @@ export function build(p) {
   const rGap = Math.max(0, RT - rRun);                          // the leftover, at the back corner
   const mat = p.grade === "chip" ? "melamine" : null;   // chipboard reads flatter in the 3D
   const common = { doorsOpen: p.doorsOpen, drawersOut: p.drawersOut, ...(mat ? { mat } : {}) };
-  const left = add(esRun(w.L, { u0: 0, depth: d, top, doors: p.leftDoors, ...common,
+  const left = add(esRun(w.L, { u0: 0, depth: d, top, doors: lDoors, ...common,
     bays: lw.map((width, i) => ({ w: width, ...inside[i] })), prefix: "L", seed: 5 }));
-  const right = add(esRun(w.R, { u0: rGap, depth: rd, top, doors: p.rightDoors, ...common,
+  const right = add(esRun(w.R, { u0: rGap, depth: rd, top, doors: rDoors, ...common,
     bays: rw.map((width, i) => ({ w: width, levels: rv(i) })), prefix: "R", seed: 9 }));
 
   if (p.fillerOn) {
@@ -165,7 +170,7 @@ export function build(p) {
   }
 
   const aisle = W - d - rd;
-  const swing = Math.max(0, ...[...(p.leftDoors ? lw : []), ...(p.rightDoors ? rw : [])].map(x => (x > 24 ? x / 2 : x)));
+  const swing = Math.max(0, ...[...(lDoors ? lw : []), ...(rDoors ? rw : [])].map(x => (x > 24 ? x / 2 : x)));
   if (swing > aisle - 3) warnings.push(`A ${frac(swing, 8)} door nearly fills the ${frac(aisle, 8)} aisle when open. Split the widest box into two doors.`);
   for (const [name, run, fill] of [["Left", Lh, lFill], ["Right", RT, rFill]])
     if (fill > 6) warnings.push(`${name} wall: ${frac(fill, 8)} of filler. East Star widths are ${ES_WIDTHS.join(", ")}" and only add up to multiples of 3.`);
@@ -253,7 +258,8 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Noo
     ],
     drawerGroups: [{ name: "East Star drawers", drawers }],
     stats: [
-      { k: "Boxes", v: `${lw.length + rw.length}`, s: `${frac(top, 8)} tall · ${frac(lFill + rFill, 8)} filler in total · East Star quotes both grades` },
+      { k: "Boxes", v: `${lw.length + rw.length}`, s: `${abs ? "Aydin (ABS)" : "East Star"} · ${frac(top, 8)} tall · ${lDoors || rDoors ? "wood doors" : "no doors"}` },
+      { k: "Filler", v: `${[lFill, rGap].filter(x => x > 0.5).length} pieces`, s: `${[lFill, rGap].filter(x => x > 0.5).map(x => frac(x, 8)).join(" + ")} - left run back corner, right run back corner` },
       { k: "Left wall", v: lw.join(" + ") + '"', s: `${frac(d, 8)} deep${lFill ? ` · ${frac(lFill, 8)} filler at the back corner` : ""}` },
       { k: "Right wall", v: rw.join(" + ") + '"', s: `${frac(rd, 8)} deep · ${frac(rGap, 8)} filler at the back corner, flush to the nook` },
       { k: "Nook", v: `${nLv.length} planks × ${frac(nd, 8)}`, s: `full ${frac(nookRun, 8)} long, floor to ${frac(nLv[nLv.length - 1] || 0, 8)}; its own run, nothing to do with the cabinets` },
@@ -270,7 +276,7 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Noo
       { k: "Drawers", v: `${drawers.length}` },
     ],
     gcText: [
-      `MASTER CLOSET. Quote both grades please: (a) chipboard, (b) shaker on a plywood box. Same boxes either way.`,
+      abs ? `MASTER CLOSET - Aydin Building Supplies.` : `MASTER CLOSET. Quote both grades please: (a) chipboard, (b) shaker on a plywood box. Same boxes either way.`,
       `All ${lw.length + rw.length} boxes ${frac(top, 8)} tall, floor-standing, screwed through the back into studs. Two door leaves on anything over 24".`,
       ``,
       `LEFT WALL, ${frac(Lh, 8)} long, ${frac(d, 8)} deep. From the door: ${lw.join('" + ')}", then ${frac(lFill, 8)} ${p.fillerOn ? "filler panel" : "gap"} in the back corner.`,

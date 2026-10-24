@@ -5,7 +5,7 @@
 import { box, esRun, fixedShelves, packStock, collector } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
-import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK } from "./common.js";
+import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, SUPPLIER_CTRL, absDepth } from "./common.js";
 import { ES_WIDTHS } from "./master.js";
 
 export const INFO = { id: "maya", name: "Maya's Closet", room: "Maya's room",
@@ -14,6 +14,7 @@ export const INFO = { id: "maya", name: "Maya's Closet", room: "Maya's room",
 export const FIELD = { W: 112.4, D: 29.8, ceiling: 120, stubL: 8.6, opening: 95.8, stubR: 8.1, wallAtOpening: 6.3, doorH: 96 };
 
 export const DEFAULTS = {
+  supplier: "es", absDoors: false,
   esPlan: "30, 30", esAlign: "centre", esTop: 84, depth: 24, fronts: "10, 11, 12", rodZ: 68,
   ...shelfSlots("e", [40, 74], [54, 64, 84]),
   ends: "ply", gableOn: false,
@@ -23,7 +24,9 @@ export const DEFAULTS = {
 };
 
 export const CONTROLS = [
-  ["East Star · in the middle, clear of the door frames", [
+  ["Boxes · in the middle, clear of the door frames", [
+    SUPPLIER_CTRL,
+    { key: "absDoors", label: "Wood doors (ABS only)", type: "check" },
     { key: "esPlan", label: "Box widths", type: "text" },
     { key: "esAlign", label: "Where they sit", type: "select",
       options: [["centre", "Centred"], ["thirds", "On the outer door panels (one slide per drawer)"]] },
@@ -52,7 +55,10 @@ export const CONTROLS = [
 
 export function build(p) {
   p = { ...p, ...FIELD };
-  const W = p.W, D = p.D, t = 4.5, d = p.depth, top = +p.esTop, ew = +p.esW;
+  const abs = p.supplier === "abs";
+  const W = p.W, D = p.D, t = 4.5, d = p.depth, ew = +p.esW;
+  const top = abs ? 94 : +p.esTop;        // ABS do not make 84" as a standard box
+  const doors = abs && p.absDoors;
   const outline = [[0, 0], [W, 0], [W, D], [0, D]];
   const walls = [
     { id: "T", name: "Back wall", a: [0, 0], b: [W, 0] },
@@ -83,7 +89,7 @@ export function build(p) {
   const eLv = readShelves(p, "e", 5);
   const es = { drawers: [], parts: [], modules: [] };
   esW.forEach((width, i) => {
-    const r = add(esRun(w.T, { u0: boxAt[i], depth: d, top, doors: false, drawersOut: p.drawersOut,
+    const r = add(esRun(w.T, { u0: boxAt[i], depth: d, top, doors, drawersOut: p.drawersOut,
       prefix: `M${i + 1}`, seed: 5 + i * 4,
       bays: [{ w: width, fronts, rods: [p.rodZ], levels: eLv, garment: "pants" }] }));
     es.drawers.push(...r.drawers);
@@ -108,7 +114,7 @@ export function build(p) {
       if (!used) return;
       // boxes butt the middle run; the filler lands against the side wall
       const start = outerIsLeft ? u0 + fill : u0;
-      add(esRun(w.T, { u0: start, depth: d, top, doors: false,
+      add(esRun(w.T, { u0: start, depth: d, top, doors,
         bays: widths.map(x => ({ w: x, levels: lv })), prefix: outerIsLeft ? "EL" : "ER", seed }));
       if (fill > 0.5) {
         const f0 = outerIsLeft ? u0 : u1 - fill;
@@ -161,6 +167,7 @@ export function build(p) {
   if (basket < 24) warnings.push(`Only ${frac(basket, 8)} under the lowest end shelf. A tall hamper wants about 28".`);
   if (eLv.length && eLv[0] < fronts.reduce((a, b) => a + b, 0) + 1) warnings.push(`The lowest shelf inside the boxes (${frac(eLv[0], 8)}) is below the top of the drawers (${frac(fronts.reduce((a, b) => a + b, 0), 8)}).`);
   if (eLv.some(z => Math.abs(z - p.rodZ) < 3)) warnings.push(`A shelf lands within 3" of the rod at ${frac(p.rodZ, 8)}. Hangers need about 2" of clear above the rod.`);
+  if (abs) warnings.push(`ABS do not make an 84" box as standard, so this is drawn at 94". That puts the shelf on the box tops at ${frac(top + PLY, 8)}, ${frac(p.doorH - top - PLY, 8)} under the ${frac(p.doorH, 8)} header - you can neither see onto it nor reach across it. Custom 84" is priced high; worth a decision.`);
   if (p.aboveOn && p.above2On) {
     const droop = (20 / 144) * p.aboveDepth2 ** 4 / (8 * 1.3e6 * (PLY ** 3 / 12));
     if (droop > 0.12) warnings.push(`At ${frac(p.aboveDepth2, 8)} deep the top shelf's front edge droops ${frac(droop, 16)} off its back cleat. Make it shallower or put a post under it.`);
@@ -177,7 +184,7 @@ export function build(p) {
 
   const drawers = es.drawers;
   return {
-    info: { ...INFO, concept: esEnds ? "East Star right across, filler at the walls" : "East Star in the middle + plywood ends" },
+    info: { ...INFO, concept: abs ? `Aydin (ABS) boxes at 94"${esEnds ? ", right across" : " + plywood ends"}` : esEnds ? "East Star right across, filler at the walls" : "East Star in the middle + plywood ends" },
     params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
     parts, modules, doors: [door], hatches: [],

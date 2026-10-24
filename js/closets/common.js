@@ -55,3 +55,29 @@ export const LOOK = ["Look", [
 ]];
 
 export const PLYWOOD_NOTE = "Fixed shelves: 3/4\" Baltic birch or birch cabinet plywood resting on 3/4\" × 1-1/2\" cleats screwed into the studs on three sides, with a 3/4\" × 1-1/2\" front strip nailed on. The shelves lift out.";
+
+/* ---------- Suppliers. East Star and Aydin (ABS) make nearly the same catalogue; the
+   differences that show up on a drawing are the shallow depth, whether doors are quoted,
+   and how anything over the standard box height gets built. ---------- */
+export const ABS = {
+  name: "Aydin (ABS)",
+  widths: [15, 18, 21, 24, 30, 36],
+  depths: [15, 18, 24],
+  shallow: 15,            // East Star's shallow box is 15-1/2"
+  stdTop: 94,             // taller than this is a second box stacked on the first
+};
+
+export const SUPPLIER_CTRL = {
+  key: "supplier", label: "Priced by", type: "select",
+  options: [["es", "East Star"], ["abs", "Aydin Building Supplies"]],
+};
+
+// In ABS mode a 15-1/2" box becomes 15". Everything else they both make.
+export const absDepth = (d, on) => (on && Math.abs(d - 15.5) < 0.3 ? 15 : d);
+
+// ABS builds anything over 94" as a 94" box with a second box on top. Returns the
+// segments to draw, so the seam shows on the elevation and the count matches the quote.
+export function stackTops(top, on, std = ABS.stdTop) {
+  if (!on || top <= std + 0.01) return [{ z0: 0, top }];
+  return [{ z0: 0, top: std }, { z0: std, top, topper: true }];
+}

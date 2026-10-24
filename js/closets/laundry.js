@@ -6,7 +6,7 @@
 import { box, esRun, floorItem, collector, packStock, packStock as pack, ES, ES_WIDTHS } from "../model/builders.js";
 import { PLY, FRONT, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
-import { LOOK } from "./common.js";
+import { LOOK, SUPPLIER_CTRL, absDepth, ABS } from "./common.js";
 
 export const INFO = { id: "laundry", name: "Laundry / Mudroom", room: "Laundry", stuff: "laundry", concept: "Corner closet + coat run + machines", rev: "" };
 
@@ -23,6 +23,7 @@ export const FIELD = {
 };
 
 export const DEFAULTS = {
+  supplier: "es", absDoors: true,
   backClear: 5, showClear: true, pedestal: false,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   sinkW2: 25, sinkD2: 22, backWall: "counter", wdDoorsOpen: false,
@@ -42,7 +43,7 @@ export const CONTROLS = [
   ]],
   ["Corner closet · wall A right + wall D left", [
     { key: "baseDepth", label: "Base cabinets + counter, depth", type: "select",
-      options: [["24", "24\" (stock)"], ["15.5", "15-1/2\" (stock)"]] },
+      options: [["24", "24\" \u2014 both"], ["15.5", "Shallow \u2014 15-1/2\" ES / 15\" ABS"]] },
     { key: "counterZ", label: "Counter height", min: 34, max: 38, step: 0.25 },
     { key: "sinkBay", label: "Open bay for the sink", min: 24, max: 36, step: 1 },
     { key: "sinkW2", label: "Sink, width", min: 21, max: 33, step: 1 },
@@ -50,7 +51,7 @@ export const CONTROLS = [
     { key: "backWall", label: "Wall D left (the back leg)", type: "select",
       options: [["counter", "Counter, same as the sink leg"], ["tall", "Floor-to-ceiling storage instead"], ["none", "Leave it empty"]] },
     { key: "upperDepth", label: "Uppers, depth", type: "select",
-      options: [["15.5", "15-1/2\" (stock)"], ["24", "24\" (stock)"]] },
+      options: [["15.5", "Shallow \u2014 15-1/2\" ES / 15\" ABS"], ["24", "24\" \u2014 both"]] },
     { key: "upperBottom", label: "Uppers, bottom", min: 48, max: 60, step: 1 },
     { key: "upperTop", label: "Uppers, top", min: 80, max: 120, step: 1 },
   ]],
@@ -58,8 +59,10 @@ export const CONTROLS = [
     { key: "wdUpperBottom", label: "Bottom", min: 42, max: 84, step: 1 },
     { key: "wdUpperTop", label: "Top", min: 80, max: 120, step: 1 },
   ]],
-  ["Grade", [
-    { key: "grade", label: "Boxes", type: "select",
+  ["Boxes", [
+    SUPPLIER_CTRL,
+    { key: "absDoors", label: "Wood doors on the tall runs (ABS quote them)", type: "check" },
+    { key: "grade", label: "Grade (East Star only)", type: "select",
       options: [["shaker", "Shaker, plywood box"], ["chip", "Chipboard, 1/4\" back"]] },
   ]],
   ["Wall B right · coat closet", [
@@ -72,14 +75,15 @@ export const CONTROLS = [
   ["Wall B left · facing the machines", [
     { key: "bPlan", label: "Boxes, right to left (width or width/depth)", type: "text" },
     { key: "facingDepth", label: "Depth, where bPlan doesn't say", type: "select",
-      options: [["24", "24\" (stock)"], ["15.5", "15-1/2\" (stock) - 8-1/2\" more walkway"], ["0", "Leave the wall open"]] },
+      options: [["24", "24\" \u2014 both"], ["15.5", "Shallow \u2014 15-1/2\" ES / 15\" ABS, 8-1/2\" more walkway"], ["0", "Leave the wall open"]] },
   ]],
   LOOK,
 ];
 
 export function build(p) {
   p = { ...p, ...FIELD };
-  for (const k of ["baseDepth", "upperDepth", "facingDepth"]) p[k] = Number(p[k]);
+  const abs = p.supplier === "abs";
+  for (const k of ["baseDepth", "upperDepth", "facingDepth"]) p[k] = absDepth(Number(p[k]), abs);
   const X1 = p.sinkW, X2 = X1 + p.pierT, X3 = X2 + p.wdW;
   const yWD = p.pierLen - p.pierBelow;
   const Yb = p.leftUpper + p.foyerRO + p.leftLower;
@@ -124,10 +128,24 @@ export function build(p) {
   const run = (wall, u0, u1, o) => {
     const wd = o.widths || pack(u1 - u0);
     if (!wd.length) return { drawers: [] };
-    runs.push({ wall: wall.id, u0, u1, wd, fill: (u1 - u0) - wd.reduce((a, b) => a + b, 0), ...o });
-    return add(esRun(wall, { u0, depth: o.depth, z0: o.z0 || 0, top: o.top, doors: o.doors !== false,
-      ...(p.grade === "chip" ? { mat: "melamine" } : {}),
-      bays: wd.map(x => ({ w: x, levels: o.levels, fronts: o.fronts, rods: o.rods })), prefix: o.prefix, seed: o.seed }));
+    const z0 = o.z0 || 0, mat = p.grade === "chip" && !abs ? { mat: "melamine" } : {};
+    const doors = abs ? p.absDoors : o.doors !== false;   // ABS: one With/Without switch for the lot
+    // ABS build anything over 94" as a second box stacked on the first, so draw the seam
+    const split = abs && o.top - z0 > ABS.stdTop + 0.01;
+    const segs = split ? [{ z0, top: z0 + ABS.stdTop }, { z0: z0 + ABS.stdTop, top: o.top, topper: true }]
+                       : [{ z0, top: o.top }];
+    let out = { drawers: [] };
+    for (const [i, g] of segs.entries()) {
+      runs.push({ wall: wall.id, u0, u1, wd, fill: (u1 - u0) - wd.reduce((a, b) => a + b, 0), ...o, z0: g.z0, top: g.top, topper: g.topper });
+      const r = add(esRun(wall, { u0, depth: o.depth, z0: g.z0, top: g.top, doors, ...mat,
+        bays: wd.map(x => ({ w: x,
+          levels: (o.levels || []).filter(z => z > g.z0 && z < g.top),
+          fronts: g.topper ? undefined : o.fronts,
+          rods: g.topper ? undefined : o.rods })),
+        prefix: g.topper ? `${o.prefix}T` : o.prefix, seed: o.seed + i * 2 }));
+      if (!g.topper) out = r;
+    }
+    return out;
   };
 
   // shelves every ~13" through whatever height the box ends up, rather than a fixed two
@@ -201,7 +219,7 @@ export function build(p) {
   // both wide and deep enough to hang in gets a rod and no doors; the rest get shelves and a door.
   const ents = String(p.bPlan).split(",").map(x => x.trim()).filter(Boolean).map(x => {
     const [wv, dv] = x.split("/");
-    return { w: Number(wv), d: dv ? Number(dv) : p.facingDepth };
+    return { w: Number(wv), d: absDepth(dv ? Number(dv) : p.facingDepth, abs) };
   }).filter(e => ES_WIDTHS.includes(e.w) && e.d > 0);
   const bTotal = ents.reduce((a, e) => a + e.w, 0), bFree = coat0 - clearU;
   if (bTotal > bFree)
@@ -249,7 +267,9 @@ export function build(p) {
     warnings.push(`A ${frac(faceD, 8)} cabinet opposite the machines stops their doors opening - the doors reach ${frac(dOpen - yWD, 8)} off that wall and the cabinet face is ${frac(Yb - faceD - yWD, 8)}.`);
 
   // East Star's floor-standing boxes are 84" or 94". Anything taller is two boxes stacked.
-  if (p.tallTop > 94) warnings.push(`Wall B at ${frac(p.tallTop, 8)} is taller than East Star's tallest box (94"). Price it as a 94" box with a ${frac(p.tallTop - 94, 8)} box stacked on top, or 84" + ${frac(p.tallTop - 84, 8)}.`);
+  if (p.tallTop > 94) warnings.push(abs
+    ? `Wall B at ${frac(p.tallTop, 8)} is drawn as ABS build it: a 94" box with a ${frac(p.tallTop - 94, 8)} box on top. Confirm they make that topper height.`
+    : `Wall B at ${frac(p.tallTop, 8)} is taller than East Star's tallest box (94"). Price it as a 94" box with a ${frac(p.tallTop - 94, 8)} box stacked on top, or 84" + ${frac(p.tallTop - 84, 8)}.`);
 
   // ---------- how much storage this actually is. Reach cut-off: 75" is the top shelf you can
   // use without a stool. Anything above is real storage, just not daily.
@@ -276,7 +296,8 @@ export function build(p) {
 
   const lw = X3;
   return {
-    info: INFO, params: p,
+    info: { ...INFO, concept: abs ? "Aydin (ABS) \u00b7 94\" boxes with toppers" : INFO.concept },
+    params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
     parts, modules, doors, hatches: [],
     elevations: ["SA", "L", "WD", "R", "B"],
