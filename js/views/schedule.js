@@ -42,8 +42,8 @@ export function renderSchedule(root, model) {
       <tr class="tot"><td colspan="4"><b>${q.rows.length - miss} of ${q.rows.length} boxes priced</b>${miss ? ` &mdash; ${miss} still to quote` : ""}</td><td class="mono"><b>$${total.toLocaleString()}</b></td></tr>
     </tbody>
   </table></div>
-  <p class="info"><b>Reading the quote line:</b> ${q.rows.some(r => r.q && /pg/.test(r.q.tag))
-    ? `<code>pg1 #2</code> means page 1, item 2 of their handwritten quote. <b>pg1</b> is the sheet they headed &ldquo;ADU kitchenette&rdquo; by mistake &mdash; it is the sink alcove and the machine wall. <b>pg2</b> is the sheet headed &ldquo;laundry&rdquo;, which is wall B.`
+  <p class="info"><b>Reading the quote line:</b> ${q.rows.some(r => r.q && /^p\\d/.test(r.q.tag))
+    ? `<code>p1 #2</code> means page 1, item 2 of their handwritten quote. <b>p1</b> is the sheet they headed &ldquo;ADU kitchenette&rdquo; by mistake &mdash; it is the sink alcove and the machine wall. <b>p2</b> is the sheet headed &ldquo;laundry&rdquo;, which is wall B.`
     : `<code>#2</code> is item 2 of their handwritten quote for this closet.`}
   Boxes only &mdash; no filler, no panels, no tax.</p>`;
   })();

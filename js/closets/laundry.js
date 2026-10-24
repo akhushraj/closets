@@ -81,18 +81,18 @@ export const CONTROLS = [
 ];
 
 // Aydin Building Supplies, the two handwritten pages.
-//   pg1 = the sheet they headed "ADU kitchenette" by mistake - it is the sink alcove and
+//   p1 = the sheet they headed "ADU kitchenette" by mistake - it is the sink alcove and
 //         the machine wall (walls A and D).
-//   pg2 = the sheet headed "laundry" - wall B.
+//   p2 = the sheet headed "laundry" - wall B.
 const ABS_Q = quoteTagger([
-  { n: "pg2 #1", kind: "tall",  w: 18, d: 18, price: 990,  what: "7 shelves, wood door" },
-  { n: "pg2 #2", kind: "tall",  w: 36, d: 24, drawers: false, price: 1450, what: "top shelf, rod, 4 shelves, doors" },
-  { n: "pg2 #3", kind: "tall",  w: 36, d: 24, drawers: true,  price: 1800, what: "top shelf, rod, 6 pull-out trays, no doors" },
-  { n: "pg1 #1", kind: "upper", w: 36, d: 18, price: 1625, what: "wall cabinet, 3 shelves" },
-  { n: "pg1 #2", kind: "upper", w: 24, d: 18, wer: true, price: 1800, what: "WER easy-reach corner" },
-  { n: "pg1 #4", kind: "base",  w: 36, d: 24, sink: true, price: 250, what: "SB36 sink base" },
-  { n: "pg1 #5", kind: "base",  w: 36, d: 24, price: 260, what: "blind corner" },
-  { n: "pg1 #6", kind: "base",  w: 21, d: 24, price: 250, what: "base cabinet" },
+  { n: "p2 #1", kind: "tall",  w: 18, d: 18, price: 990,  what: "7 shelves, wood door" },
+  { n: "p2 #2", kind: "tall",  w: 36, d: 24, drawers: false, price: 1450, what: "top shelf, rod, 4 shelves, doors" },
+  { n: "p2 #3", kind: "tall",  w: 36, d: 24, drawers: true,  price: 1800, what: "top shelf, rod, 6 pull-out trays, no doors" },
+  { n: "p1 #1", kind: "upper", w: 36, d: 18, price: 1625, what: "wall cabinet, 3 shelves" },
+  { n: "p1 #2", kind: "upper", w: 24, d: 18, wer: true, price: 1800, what: "WER easy-reach corner" },
+  { n: "p1 #4", kind: "base",  w: 36, d: 24, sink: true, price: 250, what: "SB36 sink base" },
+  { n: "p1 #5", kind: "base",  w: 36, d: 24, price: 260, what: "blind corner" },
+  { n: "p1 #6", kind: "base",  w: 21, d: 24, price: 250, what: "base cabinet" },
 ]);
 
 export function build(p) {

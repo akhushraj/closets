@@ -281,6 +281,7 @@ export function createThreeView(host) {
   function setSide(id, on) {
     if (on) hiddenSides.delete(id); else hiddenSides.add(id);
     applySides();
+    placeTags();
   }
   function sideShown(id) { return !hiddenSides.has(id); }
 
@@ -336,7 +337,7 @@ export function createThreeView(host) {
       tagLayer.appendChild(el);
       // sit the tag at the middle of the box it names, so bases and uppers do not collide
       const z = m.za != null && m.zb != null ? (m.za + m.zb) / 2 : 40;
-      return { el, x: (m.x0 + m.x1) / 2, y: (m.y0 + m.y1) / 2, z };
+      return { el, side: m.wall, x: (m.x0 + m.x1) / 2, y: (m.y0 + m.y1) / 2, z };
     });
     tagLayer.hidden = !tagsOn;
   }
@@ -345,7 +346,7 @@ export function createThreeView(host) {
     const w = host.clientWidth, h = host.clientHeight;
     for (const t of tags) {
       _v.set(t.x, t.z, t.y).project(camera);
-      const vis = _v.z < 1;
+      const vis = _v.z < 1 && !hiddenSides.has(t.side);
       t.el.style.display = vis ? "" : "none";
       if (!vis) continue;
       t.el.style.left = `${(_v.x * 0.5 + 0.5) * w}px`;
