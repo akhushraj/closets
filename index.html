@@ -155,11 +155,13 @@
   table tr.tot td{border-top:2px solid var(--hair);padding-top:7px}
   #three{position:relative}
   .taglayer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-  .tag3d{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
+  .tag3d{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:auto;cursor:pointer;
     background:var(--blue);color:#fff;border-radius:3px;padding:1px 6px;
     font:700 11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
     box-shadow:0 1px 4px rgba(0,0,0,.45)}
   .tag3d.warn{background:var(--amber);color:#201C14}
+  .tag3d:hover{filter:brightness(1.25)}
+  .tag3d.sel{box-shadow:0 0 0 2px #fff,0 2px 8px rgba(0,0,0,.6);z-index:2}
   .ctrl.note{font-size:11px;line-height:1.45;color:var(--ink-soft);padding:2px 0 4px;border-left:2px solid var(--hair);padding-left:8px;margin-top:2px}
   details.cgroup.fold>summary{font:600 11px/1.4 var(--ui);letter-spacing:.06em;text-transform:uppercase;
     color:var(--accent);cursor:pointer;list-style:none;padding:2px 0;display:flex;align-items:center;gap:6px}

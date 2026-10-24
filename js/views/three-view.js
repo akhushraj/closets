@@ -323,8 +323,25 @@ export function createThreeView(host) {
   const tagLayer = document.createElement("div");
   tagLayer.className = "taglayer";
   host.appendChild(tagLayer);
-  let tags = [], tagsOn = false;
+  let tags = [], tagsOn = false, selTag = null;
   const _v = new THREE.Vector3();
+
+  // a translucent block over the selected box, drawn on top so it reads through the carcass
+  const hiBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshBasicMaterial({ color: 0x2ea8d8, transparent: true, opacity: 0.38, depthTest: false }));
+  hiBox.renderOrder = 999; hiBox.visible = false;
+  scene.add(hiBox);
+
+  function selectTag(t) {
+    selTag = selTag === t ? null : t;
+    if (selTag) {
+      const b = selTag.b;
+      hiBox.position.set((b.x0 + b.x1) / 2, (b.za + b.zb) / 2, (b.y0 + b.y1) / 2);
+      hiBox.scale.set(Math.max(0.5, b.x1 - b.x0), Math.max(0.5, b.zb - b.za), Math.max(0.5, b.y1 - b.y0));
+    }
+    hiBox.visible = !!selTag;
+    for (const q of tags) q.el.classList.toggle("sel", q === selTag);
+  }
 
   function buildTags(model) {
     tagLayer.innerHTML = "";
@@ -336,9 +353,13 @@ export function createThreeView(host) {
       el.title = m.label || "";
       tagLayer.appendChild(el);
       // sit the tag at the middle of the box it names, so bases and uppers do not collide
-      const z = m.za != null && m.zb != null ? (m.za + m.zb) / 2 : 40;
-      return { el, side: m.wall, x: (m.x0 + m.x1) / 2, y: (m.y0 + m.y1) / 2, z };
+      const za = m.za ?? 0, zb = m.zb ?? 80;
+      const t = { el, side: m.wall, x: (m.x0 + m.x1) / 2, y: (m.y0 + m.y1) / 2, z: (za + zb) / 2,
+        b: { x0: m.x0, x1: m.x1, y0: m.y0, y1: m.y1, za, zb } };
+      el.onclick = () => selectTag(t);
+      return t;
     });
+    selTag = null; hiBox.visible = false;
     tagLayer.hidden = !tagsOn;
   }
   function placeTags() {
@@ -347,6 +368,7 @@ export function createThreeView(host) {
     for (const t of tags) {
       _v.set(t.x, t.z, t.y).project(camera);
       const vis = _v.z < 1 && !hiddenSides.has(t.side);
+      if (t === selTag && !vis) { selTag = null; hiBox.visible = false; t.el.classList.remove("sel"); }
       t.el.style.display = vis ? "" : "none";
       if (!vis) continue;
       t.el.style.left = `${(_v.x * 0.5 + 0.5) * w}px`;
@@ -355,7 +377,11 @@ export function createThreeView(host) {
   }
   onModel = buildTags;
   if (last) buildTags(last);
-  const setTags = v => { tagsOn = v; tagLayer.hidden = !v; placeTags(); };
+  const setTags = v => {
+    tagsOn = v; tagLayer.hidden = !v;
+    if (!v) { selTag = null; hiBox.visible = false; tags.forEach(q => q.el.classList.remove("sel")); }
+    placeTags();
+  };
   const tagsShown = () => tagsOn;
 
   renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); placeTags(); });
