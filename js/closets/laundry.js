@@ -53,16 +53,16 @@ export const CONTROLS = [
     { key: "upperDepth", label: "Uppers (wall cabinets), depth", type: "select",
       options: [["15.5", "Shallow \u2014 15-1/2\" ES / 18\" ABS"], ["24", "24\" \u2014 both"]] },
     { key: "upperBottom", label: "Uppers, bottom (60\" puts a 60\" ABS box tight to the ceiling)", min: 48, max: 60, step: 1 },
-    { key: "upperTop", label: "Uppers, top (East Star only \u2014 ABS boxes are a fixed 60\" tall)", min: 80, max: 120, step: 1 },
+    { key: "upperTop", label: "Uppers, top (East Star only \u2014 ABS boxes are a fixed 60\" tall)", min: 80, max: 120, step: 1, esOnly: true },
   ]],
   ["Wall D right · over the machines", [
     { key: "wdUpperBottom", label: "Bottom", min: 42, max: 84, step: 1 },
-    { key: "wdUpperTop", label: "Top (East Star only \u2014 ABS boxes are a fixed 60\" tall)", min: 80, max: 120, step: 1 },
+    { key: "wdUpperTop", label: "Top (East Star only \u2014 ABS boxes are a fixed 60\" tall)", min: 80, max: 120, step: 1, esOnly: true },
   ]],
   ["Boxes", [
     SUPPLIER_CTRL,
-    { key: "absDoors", label: "Wood doors on the tall runs (ABS quote them)", type: "check" },
-    { key: "grade", label: "Grade (East Star only)", type: "select",
+    { key: "absDoors", label: "Wood doors", type: "check" },
+    { key: "grade", label: "Grade (East Star only)", type: "select", esOnly: true,
       options: [["shaker", "Shaker, plywood box"], ["chip", "Chipboard, 1/4\" back"]] },
   ]],
   ["Wall B right · coat closet", [

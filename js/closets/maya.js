@@ -26,7 +26,7 @@ export const DEFAULTS = {
 export const CONTROLS = [
   ["Boxes · in the middle, clear of the door frames", [
     SUPPLIER_CTRL,
-    { key: "absDoors", label: "Wood doors (ABS only)", type: "check" },
+    { key: "absDoors", label: "Wood doors", type: "check" },
     { key: "esPlan", label: "Box widths", type: "text" },
     { key: "esAlign", label: "Where they sit", type: "select",
       options: [["centre", "Centred"], ["thirds", "On the outer door panels (one slide per drawer)"]] },

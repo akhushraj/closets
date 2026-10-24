@@ -62,7 +62,7 @@ const cab = (pre, title, near) => {
 export const CONTROLS = [
   ["Boxes · everything is a stock unit", [
     SUPPLIER_CTRL,
-    { key: "absDoors", label: "Wood doors (ABS quote them; ignored on East Star)", type: "check" },
+    { key: "absDoors", label: "Wood doors", type: "check" },
     { key: "esTop", label: "Cabinet height", type: "select",
       options: [["84", "84\""], ["90", "90\" (shaker only?)"], ["94", "94\""], ["96", "96\" (shaker only?)"]] },
     { key: "leftPlan", label: "Left wall widths, from the door", type: "text" },

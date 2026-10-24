@@ -6,6 +6,12 @@ import { renderWiring } from "./views/wiring.js";
 import { frac, ftin } from "./lib/units.js";
 
 const UPCOMING = [];
+
+// ?for=abs turns the whole page into the Aydin Building Supplies view: only the closets that
+// use bought boxes, the supplier locked, and East Star's own controls out of the way.
+const FOR_ABS = new URLSearchParams(location.search).get("for") === "abs";
+const ABS_ROOMS = ["master", "maya", "laundry"];
+const ROOMS = FOR_ABS ? CLOSETS.filter(c => ABS_ROOMS.includes(c.INFO.id)) : CLOSETS;
 const FMT = { ftin, int: v => v };
 
 function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }
@@ -13,6 +19,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch
 
 const $ = id => document.getElementById(id);
 let mod = byId(location.hash.slice(1) || lsGet("closets.last"));
+if (FOR_ABS && !ABS_ROOMS.includes(mod.INFO.id)) mod = byId("master");
 let state = {}, model = null, three = null;
 const storeKey = () => `closets.${mod.INFO.id}.v5`;
 
@@ -20,22 +27,25 @@ const storeKey = () => `closets.${mod.INFO.id}.v5`;
 // meant that changing a default in code had no effect in a browser that had ever rendered
 // the closet - the old value came straight back out of localStorage.
 const overrides = () => Object.fromEntries(
-  Object.entries(state).filter(([k, v]) => k in mod.DEFAULTS && String(mod.DEFAULTS[k]) !== String(v)));
+  Object.entries(state).filter(([k, v]) => k in mod.DEFAULTS && String(mod.DEFAULTS[k]) !== String(v)
+    // the ABS view forces the supplier; don't let that leak into the normal view's saved settings
+    && !(FOR_ABS && k === "supplier")));
 
 function loadState() {
   for (const v of ["v1", "v2", "v3", "v4"]) try { localStorage.removeItem(`closets.${mod.INFO.id}.${v}`); } catch { /* private mode */ }
   state = { ...mod.DEFAULTS, ...(lsGet(storeKey()) || {}) };
+  if (FOR_ABS) state.supplier = "abs";
 }
 
 function buildPicker() {
   const sel = $("closetPick");
-  sel.innerHTML = CLOSETS.map(c => `<option value="${c.INFO.id}">${c.INFO.name} · ${c.INFO.room}</option>`).join("") +
-    UPCOMING.map(n => `<option disabled>${n} (next)</option>`).join("");
+  sel.innerHTML = ROOMS.map(c => `<option value="${c.INFO.id}">${c.INFO.name} · ${c.INFO.room}</option>`).join("") +
+    (FOR_ABS ? "" : UPCOMING.map(n => `<option disabled>${n} (next)</option>`).join(""));
   sel.value = mod.INFO.id;
   sel.onchange = () => {
     mod = byId(sel.value);
     lsSet("closets.last", mod.INFO.id);
-    history.replaceState(null, "", "#" + mod.INFO.id);
+    history.replaceState(null, "", location.search + "#" + mod.INFO.id);
     loadState(); buildControls(); render();
   };
 }
@@ -58,7 +68,10 @@ function buildControls() {
   const host = $("controls");
   host.innerHTML = "";
   banks = {};
-  for (const [title, items, opt = {}] of mod.CONTROLS) {
+  const visible = c => !FOR_ABS || (c.key !== "supplier" && !c.esOnly);
+  for (const [title, allItems, opt = {}] of mod.CONTROLS) {
+    const items = allItems.filter(visible);
+    if (!items.length) continue;
     // a folded group is one click away instead of always on screen
     const grp = document.createElement(opt.fold ? "details" : "div");
     grp.className = "cgroup" + (opt.fold ? " fold" : "");
@@ -137,7 +150,9 @@ function render() {
   const I = { ...mod.INFO, ...(model.info || {}) };
   document.title = `${I.name} — Closets`;
   $("title").textContent = `${I.name} — ${I.room}`;
-  $("eyebrow").textContent = ["Closets · Shop Drawing Set", I.concept, I.rev].filter(Boolean).join(" · ");
+  $("eyebrow").textContent = [FOR_ABS ? "Closets · ABS order set" : "Closets · Shop Drawing Set", I.concept, I.rev].filter(Boolean).join(" · ");
+  const link = $("abslink");
+  if (link) { link.href = FOR_ABS ? "./" : "?for=abs"; link.textContent = FOR_ABS ? "← all closets" : "ABS order →"; }
   $("meta").innerHTML = model.titleMeta.map(m => `<div><span class="k">${m.k}</span><span class="v">${m.v}</span></div>`).join("");
   renderPlan($("plan"), model);
   renderElevations($("elevs"), model);
