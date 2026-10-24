@@ -122,6 +122,19 @@ function buildControls() {
         inp.oninput = () => { out.textContent = fmt(+inp.value); set(c.key, +inp.value); };
         if (c.gapFrom) (banks[c.gapFrom] ??= []).push({ on: () => !c.onKey || !!state[c.onKey], inp, gap: row.querySelector("output.gap") });
       }
+      // A saved value that differs from the default is invisible otherwise - and a stale one
+      // silently overrides any change made in code. Mark it, and offer a one-click revert.
+      const changed = [c.key, c.onKey].filter(k => k && k in mod.DEFAULTS
+        && String(state[k]) !== String(mod.DEFAULTS[k]));
+      if (changed.length) {
+        row.classList.add("edited");
+        const rb = document.createElement("button");
+        rb.type = "button"; rb.className = "revert"; rb.textContent = "\u21ba";
+        rb.title = `Changed from the default (${mod.DEFAULTS[c.key]}). Click to put it back.`;
+        rb.onclick = () => { for (const k of changed) state[k] = mod.DEFAULTS[k];
+          lsSet(storeKey(), overrides()); buildControls(); render(); };
+        row.appendChild(rb);
+      }
       grp.append(row);
     }
     host.append(grp);

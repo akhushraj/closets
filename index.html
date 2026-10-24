@@ -162,6 +162,12 @@
   .tag3d.warn{background:var(--amber);color:#201C14}
   .tag3d:hover{filter:brightness(1.25)}
   .tag3d.sel{box-shadow:0 0 0 2px #fff,0 2px 8px rgba(0,0,0,.6);z-index:2}
+  .ctrl{position:relative}
+  .ctrl.edited{border-left:2px solid var(--amber);padding-left:7px;margin-left:-9px}
+  .ctrl.edited>label{color:var(--amber)}
+  button.revert{position:absolute;right:0;top:0;background:none;border:0;color:var(--amber);
+    cursor:pointer;font-size:13px;line-height:1;padding:2px 3px;opacity:.75}
+  button.revert:hover{opacity:1}
   .ctrl.note{font-size:11px;line-height:1.45;color:var(--ink-soft);padding:2px 0 4px;border-left:2px solid var(--hair);padding-left:8px;margin-top:2px}
   details.cgroup.fold>summary{font:600 11px/1.4 var(--ui);letter-spacing:.06em;text-transform:uppercase;
     color:var(--accent);cursor:pointer;list-style:none;padding:2px 0;display:flex;align-items:center;gap:6px}
