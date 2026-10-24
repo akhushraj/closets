@@ -72,6 +72,7 @@ export function spacingWarnings(levels, where) {
 
 export const LOOK = ["Look", [
   { key: "finish", label: "Finish", type: "select", options: [["oak", "White oak"], ["white", "Painted white"], ["walnut", "Walnut"]] },
+  { key: "oneFinish", label: "Everything in the finish colour (otherwise bought boxes read as wood, Amir's plywood as the finish)", type: "check" },
   { key: "lights", label: "LED strips on", type: "check" },
 ]];
 

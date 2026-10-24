@@ -18,7 +18,7 @@ export const DEFAULTS = {
   shelfDepth: 22, dresser: true, topOn: false, topZ: 92, topDepth: 12,
   ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
-  finish: "white", lights: true,
+  finish: "white", oneFinish: false, lights: true,
 };
 
 export const CONTROLS = [

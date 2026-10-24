@@ -44,7 +44,7 @@ export const DEFAULTS = {
   ...shelfSlots("r3", [20, 34, 48, 62, 76], [88]), r3match: "r2",
   // Nook: first at 24", then every 12". 60" is left off so 48-72" is one tall opening for the puja.
   ...shelfSlots("n", [24, 36, 48, 72, 84, 96, 108], [60]),
-  finish: "white", lights: true,
+  finish: "white", oneFinish: false, lights: true,
 };
 
 const BANKS = { l1: 6, l2: 6, l3: 6, r1: 6, r2: 6, r3: 6 };

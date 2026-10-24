@@ -13,7 +13,7 @@ export const DEFAULTS = {
   dresserW: 31.5, dresserD: 19, dresserH: 32,
   topOn: true, topZ: 88, topDepth: 12,
   ...shelfSlots("u", [73], [60, 84, 94]),
-  finish: "white",
+  finish: "white", oneFinish: false,
 };
 
 export const CONTROLS = [

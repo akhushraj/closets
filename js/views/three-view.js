@@ -162,7 +162,8 @@ export function createThreeView(host) {
 
     const lights = [];
     for (const part of model.parts) {
-      const wood = part.mat ? (mats[part.mat] || wood0) : wood0;   // bought boxes read differently
+      // bought boxes read as wood and site-built plywood as the finish, unless you ask for one colour
+      const wood = part.mat && !p.oneFinish ? (mats[part.mat] || wood0) : wood0;
       const before = root.children.length;
       switch (part.kind) {
         case "carcass": case "shelf": case "front": addBox(part, wood, true); break;

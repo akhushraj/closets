@@ -31,7 +31,7 @@ export const DEFAULTS = {
   wdUpperBottom: 60, wdUpperTop: 114,
   coatW: 36, bPlan: "36, 18/15.5", grade: "shaker", coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 108,
   facingDepth: 24,
-  finish: "white", lights: false,
+  finish: "white", oneFinish: false, lights: false,
 };
 
 export const CONTROLS = [

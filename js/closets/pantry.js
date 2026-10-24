@@ -17,7 +17,7 @@ export const DEFAULTS = {
   counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 18, underDepth: 24,
   upDepth: 18, upDepth2: 24, upShallow: 2, maxBay: 20, sideUprights: false, railH: 3.5, diagCorner: true,
   ...shelfSlots("u", [56, 71, 86, 101], [116]),
-  finish: "white", lights: true,
+  finish: "white", oneFinish: false, lights: true,
 };
 
 export const CONTROLS = [

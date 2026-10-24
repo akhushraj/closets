@@ -11,7 +11,7 @@ export const FIELD = { W: 27.9, D: 23.7, ceiling: 120, opening: 24.3, doorSlab: 
 export const DEFAULTS = {
   depth: 22, edge: "poplar", topOn: true, topZ: 88, topDepth: 18,
   ...shelfSlots("s", [24, 40, 56, 72], [10, 16, 88, 94]),
-  finish: "white",
+  finish: "white", oneFinish: false,
 };
 
 export const CONTROLS = [

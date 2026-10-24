@@ -20,7 +20,7 @@ export const DEFAULTS = {
   ends: "ply", gableOn: false,
   ...shelfSlots("s", [30, 46, 62, 78], [16, 86]),
   aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, midDiv: true, drawersOut: false,
-  finish: "white", lights: true,
+  finish: "white", oneFinish: false, lights: true,
 };
 
 export const CONTROLS = [

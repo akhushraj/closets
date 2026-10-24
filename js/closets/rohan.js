@@ -24,7 +24,7 @@ export const DEFAULTS = {
   s1: 16, s1on: false, s2: 24, s2on: true, s3: 36, s3on: true, s4: 48, s4on: true,
   s5: 60, s5on: true, s6: 72, s6on: true, s7: 84, s7on: true, s8: 96, s8on: true,
   casingW: 2.25, hamperW: 16, hamperD: 16, hamperH: 20,
-  finish: "oak", lights: true,
+  finish: "oak", oneFinish: false, lights: true,
 };
 
 export const CONTROLS = [
