@@ -94,17 +94,17 @@ export function build(p) {
   const fronts = [...parseFronts(p.fronts, [7, 8, 9])].reverse();
   const eLv = readShelves(p, "e", 5);
   const es = { drawers: [], parts: [], modules: [] };
-  const quoted = [], unquoted = [];
-  const tag = (width, rod) => {
+  const qRows = [];
+  const tag = (width, rod, where) => {
     if (!abs) return {};
     const q = ABS_Q(width, d, { rod });
-    (q ? quoted : unquoted).push(q || { w: width, d });
+    qRows.push({ where, w: width, d, q });
     return { label: q ? `${q.tag} ${q.money}` : "Not in the ABS quote" };
   };
   esW.forEach((width, i) => {
     const r = add(esRun(w.T, { u0: boxAt[i], depth: d, top, doors, drawersOut: p.drawersOut, brand: abs ? "ABS" : "East Star",
       prefix: `M${i + 1}`, seed: 5 + i * 4,
-      bays: [{ w: width, fronts, rods: [p.rodZ], levels: eLv, garment: "pants", ...tag(width, true) }] }));
+      bays: [{ w: width, fronts, rods: [p.rodZ], levels: eLv, garment: "pants", ...tag(width, true, `Middle ${i + 1}`) }] }));
     es.drawers.push(...r.drawers);
   });
   const worstSlide = Math.max(...esW.map((width, i) => slides(boxAt[i], boxAt[i] + width)));
@@ -128,7 +128,7 @@ export function build(p) {
       // boxes butt the middle run; the filler lands against the side wall
       const start = outerIsLeft ? u0 + fill : u0;
       add(esRun(w.T, { u0: start, depth: d, top, doors, brand: abs ? "ABS" : "East Star",
-        bays: widths.map(x => ({ w: x, levels: lv, ...tag(x, false) })), prefix: outerIsLeft ? "EL" : "ER", seed }));
+        bays: widths.map(x => ({ w: x, levels: lv, ...tag(x, false, outerIsLeft ? "Left end" : "Right end") })), prefix: outerIsLeft ? "EL" : "ER", seed }));
       if (fill > 0.5) {
         const f0 = outerIsLeft ? u0 : u1 - fill;
         parts.push(box(w.T, "carcass", f0, f0 + fill, 0, d, 0, top,
@@ -199,6 +199,7 @@ export function build(p) {
   return {
     info: { ...INFO, concept: abs ? `Aydin (ABS) boxes at 94"${esEnds ? ", right across" : " + plywood ends"}` : esEnds ? "East Star right across, filler at the walls" : "East Star in the middle + plywood ends" },
     params: p,
+    quote: abs ? { supplier: "Aydin Building Supplies", rows: qRows } : null,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
     parts, modules, doors: [door], hatches: [],
     elevations: ["T", "L", "R"],
@@ -215,8 +216,8 @@ export function build(p) {
       { k: "Layout", v: onThirds ? `${frac(m0, 8)} + ${esW[0]}" + ${frac(boxAt[1] - boxAt[0] - esW[0], 8)} + ${esW[1]}" + ${frac(W - m1, 8)}` : `${frac(endW, 8)} + ${esW.join(" + ")}" + ${frac(endW, 8)}`,
         s: onThirds ? `boxes on the outer door panels, plywood between and beside them` : `plywood ends, East Star middle, all ${frac(d, 8)} deep` },
       { k: "Rods", v: `${esW.length} × ${frac(esW[0] - 1.5, 8)}`, s: `at ${frac(p.rodZ, 8)}, ${fronts.length} drawers under each` },
-      ...(abs ? [{ k: "ABS quote", v: `$${quoted.reduce((a, q) => a + q.price, 0).toLocaleString()}`,
-        s: `${quoted.length} of ${quoted.length + unquoted.length} boxes matched${unquoted.length ? `; ${unquoted.map(q => `${q.w}x${q.d}`).join(", ")} not on the quote` : ""} · boxes only, no filler, no tax` }] : []),
+      ...(abs ? [{ k: "ABS quote", v: `$${qRows.reduce((a, r) => a + (r.q ? r.q.price : 0), 0).toLocaleString()}`,
+        s: `${qRows.filter(r => r.q).length} of ${qRows.length} boxes matched · boxes only, no filler, no tax` }] : []),
       { k: "The two ends", v: esEnds ? `East Star ${endPlan.join(" + ")}"` : `plywood, ${frac(endW - g, 8)} wide`,
         s: esEnds ? `${frac(endFill[0] || 0, 8)} filler at each wall; ${lv.length} shelves inside` : `${lv.length} shelves${p.gableOn ? ", on a plywood gable" : ", cleated into the box side"}` },
       { k: "Inside the boxes", v: `${eLv.length} shelves`, s: `at ${eLv.join('", ')}", rod at ${frac(p.rodZ, 8)}` },

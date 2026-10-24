@@ -148,7 +148,7 @@ export function build(p) {
 
   // ---- left wall. u runs from the door wall up to the back wall, so cabinet 1 is by the door.
   const lw = parsePlan(p.leftPlan, Lh), lRun = lw.reduce((a, b) => a + b, 0);
-  const quoted = [], unquoted = [];
+  const qRows = [];
   const lv = i => resolveShelves(p, ["l1", "l2", "l3"][Math.min(i, 2)], BANKS);
   const rv = i => resolveShelves(p, ["r1", "r2", "r3"][Math.min(i, 2)], BANKS);
   const fr = s => String(s ?? "").split(/[\s,]+/).map(Number).filter(n => n >= 3 && n <= 16).reverse();
@@ -156,7 +156,7 @@ export function build(p) {
   const fit = i => {   // whatever that box has been given: drawers, a rod, shelves, or a mix
     const f = fr(p[`fronts${i + 1}`]), r = +(p[`rod${i + 1}`] || 0);
     const q = abs ? ABS_Q(lw[i], d, { rod: !!r }) : null;
-    if (abs) (q ? quoted : unquoted).push(q || { w: lw[i], d });
+    if (abs) qRows.push({ where: `Left ${i + 1}`, w: lw[i], d, q });
     return { ...(f.length ? { fronts: f } : {}), ...(r ? { rods: [r] } : {}), levels: lv(i),
       label: q ? `${q.tag} ${q.money}` : abs ? "Not in the ABS quote" : (NAMES[i] || `Left ${i + 1}`) };
   };
@@ -173,7 +173,7 @@ export function build(p) {
   const right = add(esRun(w.R, { u0: rGap, depth: rd, top, doors: rDoors, ...common,
     bays: rw.map((width, i) => {
       const q = abs ? ABS_Q(width, rd, { rod: false }) : null;
-      if (abs) (q ? quoted : unquoted).push(q || { w: width, d: rd });
+      if (abs) qRows.push({ where: `Right ${i + 1}`, w: width, d: rd, q });
       return { w: width, levels: rv(i), ...(q ? { label: `${q.tag} ${q.money}` } : abs ? { label: "Not in the ABS quote" } : {}) };
     }), prefix: "R", seed: 9 }));
 
@@ -259,7 +259,9 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Noo
 
   const drawers = [...left.drawers, ...right.drawers];
   return {
-    info: INFO, params: p,
+    info: { ...INFO, concept: abs ? "Aydin (ABS) boxes \u00b7 plywood planks by Amir" : INFO.concept },
+    params: p,
+    quote: abs ? { supplier: "Aydin Building Supplies", rows: qRows } : null,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
     parts, modules, doors: [door], hatches,
     elevations: ["L", "R", "NR", "T"],
@@ -274,8 +276,8 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Noo
     drawerGroups: [{ name: "East Star drawers", drawers }],
     stats: [
       { k: "Boxes", v: `${lw.length + rw.length}`, s: `${abs ? "Aydin (ABS)" : "East Star"} · ${frac(top, 8)} tall · ${lDoors || rDoors ? "wood doors" : "no doors"}` },
-      ...(abs ? [{ k: "ABS quote", v: `$${quoted.reduce((a, q) => a + q.price, 0).toLocaleString()}`,
-        s: `${quoted.length} of ${quoted.length + unquoted.length} boxes matched${unquoted.length ? `; ${unquoted.map(q => `${q.w}x${q.d}`).join(", ")} not on the quote` : ""} · boxes only, no filler, no tax` }] : []),
+      ...(abs ? [{ k: "ABS quote", v: `$${qRows.reduce((a, r) => a + (r.q ? r.q.price : 0), 0).toLocaleString()}`,
+        s: `${qRows.filter(r => r.q).length} of ${qRows.length} boxes matched · boxes only, no filler, no tax` }] : []),
       { k: "Filler", v: `${[lFill, rGap].filter(x => x > 0.5).length} pieces`, s: `${[lFill, rGap].filter(x => x > 0.5).map(x => frac(x, 8)).join(" + ")} - left run back corner, right run back corner` },
       { k: "Left wall", v: lw.join(" + ") + '"', s: `${frac(d, 8)} deep${lFill ? ` · ${frac(lFill, 8)} filler at the back corner` : ""}` },
       { k: "Right wall", v: rw.join(" + ") + '"', s: `${frac(rd, 8)} deep · ${frac(rGap, 8)} filler at the back corner, flush to the nook` },

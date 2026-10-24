@@ -118,7 +118,7 @@ export function build(p) {
   const w = Object.fromEntries(walls.map(x => [x.id, x]));
   const { parts, modules, add } = collector();
   const warnings = [];
-  const quoted = [], unquoted = [];
+  const qRows = [];
 
   // washer (left, by the washer box) and dryer (right, by the vent), with space behind
   const bc = p.backClear, W1 = p.washer, D1 = p.dryer;
@@ -159,7 +159,7 @@ export function build(p) {
           let lab = o.bayLabel;
           if (abs && !g.topper) {
             const q = ABS_Q(x, o.depth, { kind: o.qKind, rod: !!(o.rods || []).length, drawers: !!(o.fronts || []).length, wer: !!o.wer, sink: !!o.sink });
-            (q ? quoted : unquoted).push(q || { w: x, d: o.depth, kind: o.qKind });
+            qRows.push({ where: `${wall.name.split(" \u00b7 ")[0]} ${o.qKind || ""}`.trim(), w: x, d: o.depth, q });
             lab = q ? `${q.tag} ${q.money}` : "Not in the ABS quote";
           }
           return { w: x, label: lab,
@@ -340,6 +340,7 @@ export function build(p) {
 
   const lw = X3;
   return {
+    quote: abs ? { supplier: "Aydin Building Supplies", rows: qRows } : null,
     info: { ...INFO, concept: abs ? "Aydin (ABS) \u00b7 94\" boxes with toppers" : INFO.concept },
     params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
@@ -382,8 +383,8 @@ export function build(p) {
       { k: "Storage volume", v: `${cuft(vol)} cu ft`, s: `inside the boxes${pedH ? `, plus ${cuft(pedVol)} cu ft in the two pedestal drawers` : ""}` },
       { k: "Pedestal trade", v: pedH ? `${frac(reachIn(mTop), 8)} reachable` : `${frac(reachIn(W1.h), 8)} reachable`,
         s: `over the machines, under ${REACH}". Without pedestals it would be ${frac(reachIn(W1.h), 8)}, with them ${frac(reachIn(W1.h + p.pedH), 8)}` },
-      ...(abs ? [{ k: "ABS quote", v: `$${quoted.reduce((a, q) => a + q.price, 0).toLocaleString()}`,
-        s: `${quoted.length} of ${quoted.length + unquoted.length} boxes matched; not on the quote: ${unquoted.map(q => `${q.w}x${q.d} ${q.kind}`).join(", ") || "none"}` }] : []),
+      ...(abs ? [{ k: "ABS quote", v: `$${qRows.reduce((a, r) => a + (r.q ? r.q.price : 0), 0).toLocaleString()}`,
+        s: `${qRows.filter(r => r.q).length} of ${qRows.length} boxes matched · boxes only, no filler, no tax` }] : []),
       { k: "Filler in total", v: frac(runs.reduce((a, r) => a + r.fill, 0), 8), s: `${runs.length} runs of stock-width boxes` },
     ],
     titleMeta: [

@@ -22,7 +22,31 @@ export function renderSchedule(root, model) {
     </tbody>
   </table></div>`;
 
+  // The supplier's quote, box by box, so the drawing can be counted against the paper.
+  const q = model.quote;
+  const quoteTable = !q ? "" : (() => {
+    const total = q.rows.reduce((a, r) => a + (r.q ? r.q.price : 0), 0);
+    const miss = q.rows.filter(r => !r.q).length;
+    return `
+  <h3 class="tblh">${q.supplier} &mdash; quote against the drawing</h3>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Where</th><th>Box</th><th>Quote line</th><th>What they quoted</th><th>Price</th></tr></thead>
+    <tbody>
+      ${q.rows.map(r => `<tr${r.q ? "" : ' class="nq"'}>
+        <td>${r.where}</td>
+        <td class="mono">${r.w}" &times; ${r.d}" deep</td>
+        <td>${r.q ? `<span class="tag2">${r.q.tag}</span>` : "&mdash;"}</td>
+        <td>${r.q ? r.q.what : "<i>not on the quote</i>"}</td>
+        <td class="mono">${r.q ? "$" + r.q.price.toLocaleString() : "&mdash;"}</td>
+      </tr>`).join("")}
+      <tr class="tot"><td colspan="4"><b>${q.rows.length - miss} of ${q.rows.length} boxes priced</b>${miss ? ` &mdash; ${miss} still to quote` : ""}</td><td class="mono"><b>$${total.toLocaleString()}</b></td></tr>
+    </tbody>
+  </table></div>
+  <p class="info">Boxes only &mdash; no filler, no panels, no tax.</p>`;
+  })();
+
   root.innerHTML = `
+  ${quoteTable}
   ${model.gcText ? `<div class="gcbox"><div class="gchead"><b>Send to Amir</b><button class="copybtn" type="button">Copy</button></div><pre class="gctext">${model.gcText}</pre></div>` : ""}
   ${model.warnings.map(w => `<div class="warn">${w}</div>`).join("")}
   <details class="more"><summary>Everything else &mdash; numbers, notes${model.drawerGroups.length ? ", drawer boxes" : ""}</summary>
