@@ -6,7 +6,7 @@
 import { box, esRun, fixedShelves, pressBoard, collector, hatchClashes } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
-import { shelfSlots, shelfControls, readShelves, resolveShelves, matchControl, spacingWarnings, LOOK, SUPPLIER_CTRL, absDepth, quoteTagger } from "./common.js";
+import { shelfSlots, shelfControls, readShelves, resolveShelves, matchControl, spacingWarnings, LOOK, SUPPLIER_CTRL, absDepth, quoteTagger, dimTag } from "./common.js";
 
 export const INFO = { id: "master", name: "Master Closet", room: "Master bedroom",
   stuff: "folded", concept: "East Star boxes · plywood planks by Amir", rev: "" };
@@ -156,10 +156,10 @@ export function build(p) {
   const fit = i => {   // whatever that box has been given: drawers, a rod, shelves, or a mix
     const f = fr(p[`fronts${i + 1}`]), r = +(p[`rod${i + 1}`] || 0);
     const q = abs ? ABS_Q(lw[i], d, { rod: !!r }) : null;
-    if (abs) qRows.push({ where: `Left ${i + 1}`, w: lw[i], d, q });
+    if (abs) qRows.push({ where: `Left ${i + 1}`, w: lw[i], d, h: top, q });
     return { ...(f.length ? { fronts: f } : {}), ...(r ? { rods: [r] } : {}), levels: lv(i),
       label: q ? `${q.tag} ${q.money}` : abs ? "Not in the ABS quote" : (NAMES[i] || `Left ${i + 1}`),
-      ...(abs ? { atag: q ? q.tag : "no price" } : {}) };
+      ...(abs ? { atag: q ? q.tag : dimTag(top, lw[i], d), aw: !q } : {}) };
   };
   const inside = lw.map((_, i) => fit(i));
   const rw = parsePlan(p.rightPlan, RT), rRun = rw.reduce((a, b) => a + b, 0);
@@ -174,8 +174,8 @@ export function build(p) {
   const right = add(esRun(w.R, { u0: rGap, depth: rd, top, doors: rDoors, ...common,
     bays: rw.map((width, i) => {
       const q = abs ? ABS_Q(width, rd, { rod: false }) : null;
-      if (abs) qRows.push({ where: `Right ${i + 1}`, w: width, d: rd, q });
-      return { w: width, levels: rv(i), ...(abs ? { atag: q ? q.tag : "no price" } : {}),
+      if (abs) qRows.push({ where: `Right ${i + 1}`, w: width, d: rd, h: top, q });
+      return { w: width, levels: rv(i), ...(abs ? { atag: q ? q.tag : dimTag(top, width, rd), aw: !q } : {}),
         ...(q ? { label: `${q.tag} ${q.money}` } : abs ? { label: "Not in the ABS quote" } : {}) };
     }), prefix: "R", seed: 9 }));
 

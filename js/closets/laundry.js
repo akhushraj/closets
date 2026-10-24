@@ -6,7 +6,7 @@
 import { box, esRun, floorItem, collector, packStock, packStock as pack, ES, ES_WIDTHS } from "../model/builders.js";
 import { PLY, FRONT, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
-import { LOOK, SUPPLIER_CTRL, absDepth, ABS, quoteTagger } from "./common.js";
+import { LOOK, SUPPLIER_CTRL, absDepth, ABS, quoteTagger, dimTag } from "./common.js";
 
 export const INFO = { id: "laundry", name: "Laundry / Mudroom", room: "Laundry", stuff: "laundry", concept: "Corner closet + coat run + machines", rev: "" };
 
@@ -163,14 +163,15 @@ export function build(p) {
       runs.push({ wall: wall.id, u0, u1, wd, fill: (u1 - u0) - wd.reduce((a, b) => a + b, 0), ...o, z0: g.z0, top: g.top, topper: g.topper });
       const r = add(esRun(wall, { u0: start, depth: o.depth, z0: g.z0, top: g.top, doors, ...mat, brand: abs ? "ABS" : "East Star",
         bays: wd.map(x => {
-          let lab = o.bayLabel, atag = abs ? "" : null;
+          let lab = o.bayLabel, atag = abs ? "" : null, aw = false;
           if (abs && !g.topper && !o.noQuote) {
             const q = ABS_Q(x, o.depth, { kind: o.qKind, rod: !!(o.rods || []).length, drawers: !!(o.fronts || []).length, wer: !!o.wer, sink: !!o.sink });
-            qRows.push({ where: `${wall.name.split(" \u00b7 ")[0]} ${o.qKind || ""}`.trim(), w: x, d: o.depth, q });
+            qRows.push({ where: `${wall.name.split(" \u00b7 ")[0]} ${o.qKind || ""}`.trim(), w: x, d: o.depth, h: g.top - g.z0, q });
             lab = q ? `${q.tag} ${q.money}` : "Not in the ABS quote";
-            atag = q ? q.tag : "no price";
+            atag = q ? q.tag : dimTag(g.top - g.z0, x, o.depth);
+            aw = !q;
           }
-          return { w: x, label: lab, atag,
+          return { w: x, label: lab, atag, aw,
           levels: (o.levels || []).filter(z => z > g.z0 && z < g.top),
           fronts: g.topper ? undefined : o.fronts,
           rods: g.topper ? undefined : o.rods };

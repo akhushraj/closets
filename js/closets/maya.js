@@ -5,7 +5,7 @@
 import { box, esRun, fixedShelves, packStock, collector } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
-import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, SUPPLIER_CTRL, absDepth, quoteTagger } from "./common.js";
+import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, SUPPLIER_CTRL, absDepth, quoteTagger, dimTag } from "./common.js";
 import { ES_WIDTHS } from "./master.js";
 
 export const INFO = { id: "maya", name: "Maya's Closet", room: "Maya's room",
@@ -98,8 +98,8 @@ export function build(p) {
   const tag = (width, rod, where) => {
     if (!abs) return {};
     const q = ABS_Q(width, d, { rod });
-    qRows.push({ where, w: width, d, q });
-    return { label: q ? `${q.tag} ${q.money}` : "Not in the ABS quote", atag: q ? q.tag : "no price" };
+    qRows.push({ where, w: width, d, h: top, q });
+    return { label: q ? `${q.tag} ${q.money}` : "Not in the ABS quote", atag: q ? q.tag : dimTag(top, width, d), aw: !q };
   };
   esW.forEach((width, i) => {
     const r = add(esRun(w.T, { u0: boxAt[i], depth: d, top, doors, drawersOut: p.drawersOut, brand: abs ? "ABS" : "East Star",

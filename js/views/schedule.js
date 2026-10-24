@@ -34,7 +34,7 @@ export function renderSchedule(root, model) {
     <tbody>
       ${q.rows.map(r => `<tr${r.q ? "" : ' class="nq"'}>
         <td>${r.where}</td>
-        <td class="mono">${r.w}" &times; ${r.d}" deep</td>
+        <td class="mono">${r.h ? `${frac(r.h, 8)} h &times; ` : ""}${r.w}" w &times; ${r.d}" d</td>
         <td>${r.q ? `<span class="tag2">${r.q.tag}</span>` : "&mdash;"}</td>
         <td>${r.q ? r.q.what : "<i>not on the quote</i>"}</td>
         <td class="mono">${r.q ? "$" + r.q.price.toLocaleString() : "&mdash;"}</td>

@@ -330,7 +330,7 @@ export function createThreeView(host) {
     // one tag per orderable unit: the quote line where there is one, otherwise just the width
     tags = (model.modules || []).filter(m => m.kind === "cabinets" && m.atag !== "" && (m.atag || m.label)).map(m => {
       const el = document.createElement("span");
-      el.className = "tag3d" + (m.atag === "no price" ? " warn" : "");
+      el.className = "tag3d" + (m.aw ? " warn" : "");
       el.textContent = m.atag || String(m.label).replace(/^(East Star|ABS)\s*/, "").split(" $")[0];
       el.title = m.label || "";
       tagLayer.appendChild(el);
