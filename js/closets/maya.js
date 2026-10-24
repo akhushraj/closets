@@ -89,7 +89,7 @@ export function build(p) {
   const eLv = readShelves(p, "e", 5);
   const es = { drawers: [], parts: [], modules: [] };
   esW.forEach((width, i) => {
-    const r = add(esRun(w.T, { u0: boxAt[i], depth: d, top, doors, drawersOut: p.drawersOut,
+    const r = add(esRun(w.T, { u0: boxAt[i], depth: d, top, doors, drawersOut: p.drawersOut, brand: abs ? "ABS" : "East Star",
       prefix: `M${i + 1}`, seed: 5 + i * 4,
       bays: [{ w: width, fronts, rods: [p.rodZ], levels: eLv, garment: "pants" }] }));
     es.drawers.push(...r.drawers);
@@ -114,7 +114,7 @@ export function build(p) {
       if (!used) return;
       // boxes butt the middle run; the filler lands against the side wall
       const start = outerIsLeft ? u0 + fill : u0;
-      add(esRun(w.T, { u0: start, depth: d, top, doors,
+      add(esRun(w.T, { u0: start, depth: d, top, doors, brand: abs ? "ABS" : "East Star",
         bays: widths.map(x => ({ w: x, levels: lv })), prefix: outerIsLeft ? "EL" : "ER", seed }));
       if (fill > 0.5) {
         const f0 = outerIsLeft ? u0 : u1 - fill;

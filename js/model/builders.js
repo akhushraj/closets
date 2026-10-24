@@ -251,7 +251,7 @@ export function packStock(run) {
 
 export function esRun(w, o) {
   const { u0 = 0, depth = 24, top = 94, z0 = 0, doors = true, bays = [], prefix = "E", seed = 4,
-          doorsOpen = false, drawersOut = false, mat = "oak" } = o;
+          doorsOpen = false, drawersOut = false, mat = "oak", brand = "East Star" } = o;
   const parts = [], modules = [], drawers = [], r = rng(seed), cD = depth - FRONT;
   const f = frame(w), P = (u, v) => [f.ax + f.dx * u + f.nx * v, f.ay + f.dy * u + f.ny * v];
   const oak = x => ({ ...x, mat });
@@ -262,7 +262,7 @@ export function esRun(w, o) {
     parts.push(box(w, "carcass", a, a + ES, 0, cD, z0, top, oak({})));
     parts.push(box(w, "carcass", b - ES, b, 0, cD, z0, top, oak({})));
     parts.push(box(w, "carcass", ia, ib, 0, cD, z0, z0 + ES, oak({})));
-    parts.push(box(w, "carcass", ia, ib, 0, cD, top - ES, top, oak({ mark: n === 1, label: `East Star ${frac(top, 8)} cabinet` })));
+    parts.push(box(w, "carcass", ia, ib, 0, cD, top - ES, top, oak({ mark: n === 1, label: `${brand} ${frac(top, 8)} cabinet` })));
     parts.push(box(w, "carcass", ia, ib, 0, 0.25, z0 + ES, top - ES, oak({})));   // 1/4" back
 
     let z = z0;
@@ -308,7 +308,7 @@ export function esRun(w, o) {
       parts.push(box(w, "pull", pu - 0.4, pu + 0.4, depth, depth + 1.1, pz - 2.5, pz + 2.5));
     }
 
-    modules.push(module(w, "cabinets", a, b, 0, depth, { label: bay.label || `East Star ${frac(bay.w, 8)}`,
+    modules.push(module(w, "cabinets", a, b, 0, depth, { label: bay.label || `${brand} ${frac(bay.w, 8)}`,
       sub: `${frac(bay.w, 8)} × ${frac(top - z0, 8)}${leaves ? `, ${leaves} door${leaves > 1 ? "s" : ""}` : ""}`,
       ...(leaves ? { ghost: { u0: a, u1: b, v0: depth, v1: depth + bay.w / leaves, label: "door swing" } } : {}) }));
   }

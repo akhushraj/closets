@@ -156,7 +156,7 @@ export function build(p) {
   // nook shelves, so there is no plank - Amir screws the shelves straight into it.
   const rGap = Math.max(0, RT - rRun);                          // the leftover, at the back corner
   const mat = p.grade === "chip" ? "melamine" : null;   // chipboard reads flatter in the 3D
-  const common = { doorsOpen: p.doorsOpen, drawersOut: p.drawersOut, ...(mat ? { mat } : {}) };
+  const common = { doorsOpen: p.doorsOpen, drawersOut: p.drawersOut, brand: abs ? "ABS" : "East Star", ...(mat ? { mat } : {}) };
   const left = add(esRun(w.L, { u0: 0, depth: d, top, doors: lDoors, ...common,
     bays: lw.map((width, i) => ({ w: width, ...inside[i] })), prefix: "L", seed: 5 }));
   const right = add(esRun(w.R, { u0: rGap, depth: rd, top, doors: rDoors, ...common,

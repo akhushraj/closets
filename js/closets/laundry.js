@@ -83,7 +83,9 @@ export const CONTROLS = [
 export function build(p) {
   p = { ...p, ...FIELD };
   const abs = p.supplier === "abs";
-  for (const k of ["baseDepth", "upperDepth", "facingDepth"]) p[k] = absDepth(Number(p[k]), abs);
+  for (const k of ["baseDepth", "facingDepth"]) p[k] = absDepth(Number(p[k]), abs);
+  // ABS's laundry wall cabinets are 18" deep; East Star's shallow box is 15-1/2"
+  p.upperDepth = abs && Math.abs(Number(p.upperDepth) - 15.5) < 0.3 ? 18 : Number(p.upperDepth);
   const X1 = p.sinkW, X2 = X1 + p.pierT, X3 = X2 + p.wdW;
   const yWD = p.pierLen - p.pierBelow;
   const Yb = p.leftUpper + p.foyerRO + p.leftLower;
@@ -137,8 +139,8 @@ export function build(p) {
     let out = { drawers: [] };
     for (const [i, g] of segs.entries()) {
       runs.push({ wall: wall.id, u0, u1, wd, fill: (u1 - u0) - wd.reduce((a, b) => a + b, 0), ...o, z0: g.z0, top: g.top, topper: g.topper });
-      const r = add(esRun(wall, { u0, depth: o.depth, z0: g.z0, top: g.top, doors, ...mat,
-        bays: wd.map(x => ({ w: x,
+      const r = add(esRun(wall, { u0, depth: o.depth, z0: g.z0, top: g.top, doors, ...mat, brand: abs ? "ABS" : "East Star",
+        bays: wd.map(x => ({ w: x, label: o.bayLabel,
           levels: (o.levels || []).filter(z => z > g.z0 && z < g.top),
           fronts: g.topper ? undefined : o.fronts,
           rods: g.topper ? undefined : o.rods })),
@@ -157,7 +159,17 @@ export function build(p) {
   run(w.L, sb1, Yb, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3 });
   run(w.L, sb0, sb1, { depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5 });   // sink base: no shelf, the trap lives there
   modules.push(box(w.L, "counter", aU0, Yb, 0, bd, 0, 0, { label: "Corner closet", sub: `counter at ${frac(cz, 8)}` }));
-  run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11 });
+  // ABS put a Wall Easy Reach unit in the inside corner - an L-shaped wall cabinet with a
+  // bi-fold door, so the corner has no blind spot and no centre post. East Star have no
+  // equivalent, so there the A run just carries on into the corner.
+  const WER = 24;
+  if (abs) {
+    run(w.L, Yb - WER, Yb, { widths: [WER], depth: ud, z0: p.upperBottom, top: p.upperTop,
+      levels: lvls(p.upperBottom, p.upperTop), prefix: "WER", seed: 9, bayLabel: `WER ${WER}" easy-reach corner` });
+    run(w.L, aU0, Yb - WER, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11 });
+  } else {
+    run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11 });
+  }
 
   // the sink: a standard drop-in, centred on the measured drain, not on the cabinet
   const skW = p.sinkW2, skD = Math.min(p.sinkD2, bd - 1);
@@ -267,6 +279,10 @@ export function build(p) {
     warnings.push(`A ${frac(faceD, 8)} cabinet opposite the machines stops their doors opening - the doors reach ${frac(dOpen - yWD, 8)} off that wall and the cabinet face is ${frac(Yb - faceD - yWD, 8)}.`);
 
   // East Star's floor-standing boxes are 84" or 94". Anything taller is two boxes stacked.
+  if (abs) {
+    const legA = Yb - sb1;                       // sink leg, sink base to the inside corner
+    if (legA < 36) warnings.push(`ABS quoted a 36" blind corner base, but the sink leg only has ${frac(legA, 8)} between the sink base and the corner. Either the blind box goes on the back-wall leg instead, or the ${frac(p.sinkBay, 8)} sink base narrows.`);
+  }
   if (p.tallTop > 94) warnings.push(abs
     ? `Wall B at ${frac(p.tallTop, 8)} is drawn as ABS build it: a 94" box with a ${frac(p.tallTop - 94, 8)} box on top. Confirm they make that topper height.`
     : `Wall B at ${frac(p.tallTop, 8)} is taller than East Star's tallest box (94"). Price it as a 94" box with a ${frac(p.tallTop - 94, 8)} box stacked on top, or 84" + ${frac(p.tallTop - 84, 8)}.`);
