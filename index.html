@@ -153,6 +153,13 @@
   table tr.nq td{opacity:.62}
   table tr.nq td i{color:var(--accent)}
   table tr.tot td{border-top:2px solid var(--hair);padding-top:7px}
+  #three{position:relative}
+  .taglayer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .tag3d{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
+    background:var(--blue);color:#fff;border-radius:3px;padding:1px 6px;
+    font:700 11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+    box-shadow:0 1px 4px rgba(0,0,0,.45)}
+  .tag3d.warn{background:var(--amber);color:#201C14}
   .ctrl.note{font-size:11px;line-height:1.45;color:var(--ink-soft);padding:2px 0 4px;border-left:2px solid var(--hair);padding-left:8px;margin-top:2px}
   details.cgroup.fold>summary{font:600 11px/1.4 var(--ui);letter-spacing:.06em;text-transform:uppercase;
     color:var(--accent);cursor:pointer;list-style:none;padding:2px 0;display:flex;align-items:center;gap:6px}
@@ -231,7 +238,7 @@
     <div>
       <section class="tabpanel on" id="p3d">
         <div class="draw" id="three">
-          <div class="viewbtns"><button data-view="overview">Overview</button><button data-view="door">From the door</button><button data-toggle="stuff" class="on">With stuff</button><button data-toggle="real">Real look</button><button data-toggle="walls">Hide walls</button></div>
+          <div class="viewbtns"><button data-view="overview">Overview</button><button data-view="door">From the door</button><button data-toggle="stuff" class="on">With stuff</button><button data-toggle="real">Real look</button><button data-toggle="tags">Show annotations</button><button data-toggle="walls">Hide walls</button></div>
           <div class="sidebtns" id="sidebtns"></div>
           <span class="hint">Drag to orbit · scroll to zoom · right-drag to pan</span>
         </div>

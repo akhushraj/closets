@@ -99,7 +99,7 @@ export function build(p) {
     if (!abs) return {};
     const q = ABS_Q(width, d, { rod });
     qRows.push({ where, w: width, d, q });
-    return { label: q ? `${q.tag} ${q.money}` : "Not in the ABS quote" };
+    return { label: q ? `${q.tag} ${q.money}` : "Not in the ABS quote", atag: q ? q.tag : "no price" };
   };
   esW.forEach((width, i) => {
     const r = add(esRun(w.T, { u0: boxAt[i], depth: d, top, doors, drawersOut: p.drawersOut, brand: abs ? "ABS" : "East Star",

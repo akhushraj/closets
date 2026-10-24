@@ -137,8 +137,10 @@ export function createThreeView(host) {
     root.add(m);
   }
 
+  let onModel = null;
   function update(model) {
     last = model;
+    if (onModel) onModel(model);
     if (root) { root.traverse(o => o.geometry && o.geometry.dispose()); scene.remove(root); }
     root = new THREE.Group(); scene.add(root);
     const c = model.closet, p = model.params, ceil = c.ceiling;
@@ -314,7 +316,45 @@ export function createThreeView(host) {
     renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
   }
   new ResizeObserver(resize).observe(host);
-  renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+
+  /* ---------- Annotations: a small HTML tag floating over each box, projected from its
+     centre through the camera every frame. Cheap, and it reads at any angle. ---------- */
+  const tagLayer = document.createElement("div");
+  tagLayer.className = "taglayer";
+  host.appendChild(tagLayer);
+  let tags = [], tagsOn = false;
+  const _v = new THREE.Vector3();
+
+  function buildTags(model) {
+    tagLayer.innerHTML = "";
+    // one tag per orderable unit: the quote line where there is one, otherwise just the width
+    tags = (model.modules || []).filter(m => m.kind === "cabinets" && m.atag !== "" && (m.atag || m.label)).map(m => {
+      const el = document.createElement("span");
+      el.className = "tag3d" + (m.atag === "no price" ? " warn" : "");
+      el.textContent = m.atag || String(m.label).replace(/^(East Star|ABS)\s*/, "").split(" $")[0];
+      tagLayer.appendChild(el);
+      return { el, x: (m.x0 + m.x1) / 2, y: (m.y0 + m.y1) / 2, z: 40 };
+    });
+    tagLayer.hidden = !tagsOn;
+  }
+  function placeTags() {
+    if (!tagsOn || !tags.length) return;
+    const w = host.clientWidth, h = host.clientHeight;
+    for (const t of tags) {
+      _v.set(t.x, t.z, t.y).project(camera);
+      const vis = _v.z < 1;
+      t.el.style.display = vis ? "" : "none";
+      if (!vis) continue;
+      t.el.style.left = `${(_v.x * 0.5 + 0.5) * w}px`;
+      t.el.style.top = `${(-_v.y * 0.5 + 0.5) * h}px`;
+    }
+  }
+  onModel = buildTags;
+  if (last) buildTags(last);
+  const setTags = v => { tagsOn = v; tagLayer.hidden = !v; placeTags(); };
+  const tagsShown = () => tagsOn;
+
+  renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); placeTags(); });
 
   function setWalls(v) {
     showWalls = !!v;
@@ -332,5 +372,5 @@ export function createThreeView(host) {
   }
   const isReal = () => real;
 
-  return { update, resize, view, setWalls, setSide, sideShown, setReal, isReal, setStuff, stuffShown };
+  return { update, resize, view, setWalls, setSide, sideShown, setReal, isReal, setStuff, stuffShown, setTags, tagsShown };
 }

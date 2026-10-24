@@ -158,7 +158,8 @@ export function build(p) {
     const q = abs ? ABS_Q(lw[i], d, { rod: !!r }) : null;
     if (abs) qRows.push({ where: `Left ${i + 1}`, w: lw[i], d, q });
     return { ...(f.length ? { fronts: f } : {}), ...(r ? { rods: [r] } : {}), levels: lv(i),
-      label: q ? `${q.tag} ${q.money}` : abs ? "Not in the ABS quote" : (NAMES[i] || `Left ${i + 1}`) };
+      label: q ? `${q.tag} ${q.money}` : abs ? "Not in the ABS quote" : (NAMES[i] || `Left ${i + 1}`),
+      ...(abs ? { atag: q ? q.tag : "no price" } : {}) };
   };
   const inside = lw.map((_, i) => fit(i));
   const rw = parsePlan(p.rightPlan, RT), rRun = rw.reduce((a, b) => a + b, 0);
@@ -174,7 +175,8 @@ export function build(p) {
     bays: rw.map((width, i) => {
       const q = abs ? ABS_Q(width, rd, { rod: false }) : null;
       if (abs) qRows.push({ where: `Right ${i + 1}`, w: width, d: rd, q });
-      return { w: width, levels: rv(i), ...(q ? { label: `${q.tag} ${q.money}` } : abs ? { label: "Not in the ABS quote" } : {}) };
+      return { w: width, levels: rv(i), ...(abs ? { atag: q ? q.tag : "no price" } : {}),
+        ...(q ? { label: `${q.tag} ${q.money}` } : abs ? { label: "Not in the ABS quote" } : {}) };
     }), prefix: "R", seed: 9 }));
 
   if (p.fillerOn) {

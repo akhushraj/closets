@@ -204,6 +204,11 @@ import("./views/three-view.js").then(m => {
   const applyStuff = () => { three.setStuff(stuff); sb.classList.toggle("on", stuff); };
   sb.onclick = () => { stuff = !stuff; lsSet("closets.stuff", stuff); applyStuff(); };
   applyStuff();
+  const tb = document.querySelector("[data-toggle=tags]");
+  let tagsOn = lsGet("closets.tags") ?? false;
+  const applyTags = () => { three.setTags(tagsOn); tb.classList.toggle("on", tagsOn); };
+  tb.onclick = () => { tagsOn = !tagsOn; lsSet("closets.tags", tagsOn); applyTags(); };
+  applyTags();
   const rb = document.querySelector("[data-toggle=real]");
   rb.onclick = () => { three.setReal(!three.isReal()); rb.classList.toggle("on", three.isReal()); wb.hidden = three.isReal(); };
   const wb = document.querySelector("[data-toggle=walls]");

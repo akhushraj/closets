@@ -150,6 +150,7 @@ export function build(p) {
     const wd = o.widths || pack(u1 - u0);
     if (!wd.length) return { drawers: [] };
     const z0 = o.z0 || 0, mat = p.grade === "chip" && !abs ? { mat: "melamine" } : {};
+    const start = o.flushEnd ? u1 - wd.reduce((a, b) => a + b, 0) : u0;
     const doors = abs ? p.absDoors : o.doors !== false;   // ABS: one With/Without switch for the lot
     // ABS build anything over 94" as a second box stacked on the first, so draw the seam
     const split = abs && o.top - z0 > ABS.stdTop + 0.01;
@@ -158,15 +159,16 @@ export function build(p) {
     let out = { drawers: [] };
     for (const [i, g] of segs.entries()) {
       runs.push({ wall: wall.id, u0, u1, wd, fill: (u1 - u0) - wd.reduce((a, b) => a + b, 0), ...o, z0: g.z0, top: g.top, topper: g.topper });
-      const r = add(esRun(wall, { u0, depth: o.depth, z0: g.z0, top: g.top, doors, ...mat, brand: abs ? "ABS" : "East Star",
+      const r = add(esRun(wall, { u0: start, depth: o.depth, z0: g.z0, top: g.top, doors, ...mat, brand: abs ? "ABS" : "East Star",
         bays: wd.map(x => {
-          let lab = o.bayLabel;
+          let lab = o.bayLabel, atag = abs ? "" : null;
           if (abs && !g.topper && !o.noQuote) {
             const q = ABS_Q(x, o.depth, { kind: o.qKind, rod: !!(o.rods || []).length, drawers: !!(o.fronts || []).length, wer: !!o.wer, sink: !!o.sink });
             qRows.push({ where: `${wall.name.split(" \u00b7 ")[0]} ${o.qKind || ""}`.trim(), w: x, d: o.depth, q });
             lab = q ? `${q.tag} ${q.money}` : "Not in the ABS quote";
+            atag = q ? q.tag : "no price";
           }
-          return { w: x, label: lab,
+          return { w: x, label: lab, atag,
           levels: (o.levels || []).filter(z => z > g.z0 && z < g.top),
           fronts: g.topper ? undefined : o.fronts,
           rods: g.topper ? undefined : o.rods };
@@ -183,9 +185,12 @@ export function build(p) {
   const aU0 = Yb - p.leftUpper;                                   // the foyer jamb, start of wall A right
   const sinkU = Yb - (p.leftUpper - p.sinkCenterFromJamb);        // where the plumbing is
   const sinkBay = abs ? 36 : p.sinkBay;        // ABS quoted SB36
-  const sb0 = Math.max(aU0, sinkU - sinkBay / 2), sb1 = sb0 + sinkBay;
+  const aEnd0 = abs ? Yb - bd : Yb;            // where wall A's base run has to stop
+  const sb0 = abs ? aEnd0 - sinkBay            // butt the blind corner, no gap between them
+    : Math.max(aU0, sinkU - sinkBay / 2);
+  const sb1 = sb0 + sinkBay;
   const BLIND = 36;
-  const aEnd = abs ? Yb - bd : Yb;   // ABS: the corner is a blind box on wall D, so wall A stops a depth short
+  const aEnd = aEnd0;
   run(w.L, sb1, aEnd, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3, qKind: "base" });
   run(w.L, sb0, sb1, { widths: [sinkBay], depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5, qKind: "base", sink: true });   // sink base: no shelf, the trap lives there
   modules.push(box(w.L, "counter", aU0, Yb, 0, bd, 0, 0, { label: "Corner closet", sub: `counter at ${frac(cz, 8)}` }));
@@ -199,7 +204,7 @@ export function build(p) {
     run(w.SA, 0, WER, { ...werOpts, prefix: "WERD", seed: 10, noQuote: true, bayLabel: `WER, wall D leg` });
     // one 36" wall cabinet each side of the corner, as laid out - packStock would otherwise
     // split wall A into 24 + 15, which gains 3" of box but is two units nobody has quoted
-    run(w.L, aU0, Yb - WER, { widths: [36], depth: ud, z0: p.upperBottom, top: upTop, levels: lvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
+    run(w.L, aU0, Yb - WER, { widths: [36], flushEnd: true, depth: ud, z0: p.upperBottom, top: upTop, levels: lvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
   } else {
     run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: upTop, levels: lvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
   }
