@@ -251,6 +251,7 @@ export function build(p) {
       `The boxes stop at ${frac(d, 8)} deep because that is East Star's maximum. The ${frac(D - d, 8)} in front is not wasted: a 3-track slider needs about 5" for its tracks.`,
       `Bought boxes show as white oak in the 3D, site-built plywood in the finish you pick.`,
       `The rod starts at ${frac(p.rodZ, 8)} and moves up as she grows.`,
+      `This one goes to East Star, not ABS. ABS do not make an 84" box as standard and quoted custom as very expensive, and 94" does not work here - see below.`,
       `${frac(top, 8)} boxes rather than 94". A 94" box puts its shelf at 94-3/4", right under the ${frac(p.doorH, 8)} header, where you can neither see onto it nor reach across it. At ${frac(top, 8)} the shelf lands at ${frac(aboveZ, 8)} with ${frac(p.aboveZ2 - aboveZ - PLY, 8)} of clear, visible space over it, and the awkward height moves up to the ${frac(p.aboveZ2, 8)} shelf where it belongs.`,
       ...(p.midDiv && p.above2On ? [`The one divider between the upper shelves is there to split a ${frac(W, 8)} run in two so stacks have something to lean on, not to hold the shelf up - that shelf is cleated along its whole back edge and droops about 1/25" at the front whatever its length. It sits on the centre line, which is also the seam between the two boxes, so it bears straight onto two box sides.`] : []),
       `That top shelf is only ${frac(p.aboveDepth2, 8)} deep on purpose: you reach it over the header, so your arm cannot go 24" back.`,

@@ -106,14 +106,14 @@ export function build(p) {
   const t = 4.5;
   const outline = [[0, 0], [X1, 0], [X1, p.pierLen], [X2, p.pierLen], [X2, yWD], [X3, yWD], [X3, Yb], [0, Yb]];
   const walls = [
-    { id: "SA", name: "Sink alcove · back wall", a: [0, 0], b: [X1, 0] },
+    { id: "SA", name: "Wall D left · sink alcove back", a: [0, 0], b: [X1, 0] },
     { id: "PL", name: "Pier", a: [X1, 0], b: [X1, p.pierLen], hidden: true },
     { id: "PB", name: "Pier end", a: [X1, p.pierLen], b: [X2, p.pierLen], hidden: true },
     { id: "PR", name: "Pier", a: [X2, p.pierLen], b: [X2, yWD], hidden: true },
-    { id: "WD", name: "Washer / dryer wall", a: [X2, yWD], b: [X3, yWD] },
-    { id: "R",  name: "Right wall · garage door", a: [X3, yWD], b: [X3, Yb] },
-    { id: "B",  name: "Long wall · coats, shoes, panel", a: [X3, Yb], b: [0, Yb], tagU: 0.5 },
-    { id: "L",  name: "Left wall · sink, foyer door", a: [0, Yb], b: [0, 0] },
+    { id: "WD", name: "Wall D right · washer / dryer", a: [X2, yWD], b: [X3, yWD] },
+    { id: "R",  name: "Wall C · garage door", a: [X3, yWD], b: [X3, Yb] },
+    { id: "B",  name: "Wall B · coats, shoes, panel", a: [X3, Yb], b: [0, Yb], tagU: 0.5 },
+    { id: "L",  name: "Wall A · sink, foyer door", a: [0, Yb], b: [0, 0] },
   ];
   const w = Object.fromEntries(walls.map(x => [x.id, x]));
   const { parts, modules, add } = collector();
@@ -179,7 +179,9 @@ export function build(p) {
   const aU0 = Yb - p.leftUpper;                                   // the foyer jamb, start of wall A right
   const sinkU = Yb - (p.leftUpper - p.sinkCenterFromJamb);        // where the plumbing is
   const sb0 = Math.max(aU0, sinkU - p.sinkBay / 2), sb1 = sb0 + p.sinkBay;
-  run(w.L, sb1, Yb, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3, qKind: "base" });
+  const BLIND = 36;
+  const aEnd = abs ? Yb - bd : Yb;   // ABS: the corner is a blind box on wall D, so wall A stops a depth short
+  run(w.L, sb1, aEnd, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3, qKind: "base" });
   run(w.L, sb0, sb1, { depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5, qKind: "base", sink: true });   // sink base: no shelf, the trap lives there
   modules.push(box(w.L, "counter", aU0, Yb, 0, bd, 0, 0, { label: "Corner closet", sub: `counter at ${frac(cz, 8)}` }));
   // ABS put a Wall Easy Reach unit in the inside corner - an L-shaped wall cabinet with a
@@ -220,7 +222,12 @@ export function build(p) {
 
   // ---------- wall D left: the back leg. Counter to match, tall storage instead, or nothing.
   if (p.backWall === "counter") {
-    run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7, qKind: "base" });
+    if (abs) {
+      run(w.SA, 0, BLIND, { widths: [BLIND], depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "DB", seed: 6, qKind: "base" });
+      run(w.SA, BLIND, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7, qKind: "base" });
+    } else {
+      run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7, qKind: "base" });
+    }
     parts.push(box(w.SA, "counter", bd, X1, 0, bd + 1, cz - 1.25, cz));
     run(w.SA, ud, X1, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "DU", seed: 13, qKind: "upper" });
   } else if (p.backWall === "tall") {
@@ -302,12 +309,10 @@ export function build(p) {
     warnings.push(`A ${frac(faceD, 8)} cabinet opposite the machines stops their doors opening - the doors reach ${frac(dOpen - yWD, 8)} off that wall and the cabinet face is ${frac(Yb - faceD - yWD, 8)}.`);
 
   // East Star's floor-standing boxes are 84" or 94". Anything taller is two boxes stacked.
-  if (abs) {
-    const legA = Yb - sb1;                       // sink leg, sink base to the inside corner
-    if (legA < 36) warnings.push(`ABS quoted a 36" blind corner base, but the sink leg only has ${frac(legA, 8)} between the sink base and the corner. Either the blind box goes on the back-wall leg instead, or the ${frac(p.sinkBay, 8)} sink base narrows.`);
-  }
+  if (abs && aEnd - sb1 > 0.5 && pack(aEnd - sb1).length === 0)
+    warnings.push(`Wall A has ${frac(aEnd - sb1, 8)} between the sink base and the blind corner - too narrow for a box, so it is filler.`);
   if (p.tallTop > 94) warnings.push(abs
-    ? `Wall B at ${frac(p.tallTop, 8)} is drawn as ABS build it: a 94" box with a ${frac(p.tallTop - 94, 8)} box on top. Confirm they make that topper height.`
+    ? `Wall B at ${frac(p.tallTop, 8)} is drawn as ABS build it: a 94" box with a ${frac(p.tallTop - 94, 8)} box on top.`
     : `Wall B at ${frac(p.tallTop, 8)} is taller than East Star's tallest box (94"). Price it as a 94" box with a ${frac(p.tallTop - 94, 8)} box stacked on top, or 84" + ${frac(p.tallTop - 84, 8)}.`);
 
   // ---------- how much storage this actually is. Reach cut-off: 75" is the top shelf you can
