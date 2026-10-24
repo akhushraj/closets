@@ -81,3 +81,17 @@ export function stackTops(top, on, std = ABS.stdTop) {
   if (!on || top <= std + 0.01) return [{ z0: 0, top }];
   return [{ z0: 0, top: std }, { z0: std, top, topper: true }];
 }
+
+/* ---------- Tie a drawn box back to a line on the supplier's quote, so the drawing can be
+   counted against the paper. Unmatched boxes are worth seeing too - they are the ones
+   nobody has priced yet. ---------- */
+export function quoteTagger(items) {
+  const FLAGS = ["kind", "rod", "drawers", "wer", "sink"];
+  return (w, d, extra = {}) => {
+    const hit = items.find(q =>
+      Math.abs(q.w - w) < 0.6 && Math.abs(q.d - d) < 0.6 &&
+      FLAGS.every(k => q[k] === undefined ||
+        (typeof q[k] === "string" ? q[k] === extra[k] : !!q[k] === !!extra[k])));
+    return hit ? { ...hit, tag: `#${hit.n}`, money: `$${hit.price.toLocaleString()}` } : null;
+  };
+}

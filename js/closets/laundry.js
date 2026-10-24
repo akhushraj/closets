@@ -6,7 +6,7 @@
 import { box, esRun, floorItem, collector, packStock, packStock as pack, ES, ES_WIDTHS } from "../model/builders.js";
 import { PLY, FRONT, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
-import { LOOK, SUPPLIER_CTRL, absDepth, ABS } from "./common.js";
+import { LOOK, SUPPLIER_CTRL, absDepth, ABS, quoteTagger } from "./common.js";
 
 export const INFO = { id: "laundry", name: "Laundry / Mudroom", room: "Laundry", stuff: "laundry", concept: "Corner closet + coat run + machines", rev: "" };
 
@@ -80,12 +80,26 @@ export const CONTROLS = [
   LOOK,
 ];
 
+// Aydin Building Supplies, the two handwritten pages. Page 1 is the sink alcove and the
+// machine wall (they headed it "ADU kitchenette" by mistake); page 2 is wall B.
+const ABS_Q = quoteTagger([
+  { n: "2-1", kind: "tall",  w: 18, d: 18, price: 990,  what: "7 shelves, wood door" },
+  { n: "2-2", kind: "tall",  w: 36, d: 24, drawers: false, price: 1450, what: "top shelf, rod, 4 shelves, doors" },
+  { n: "2-3", kind: "tall",  w: 36, d: 24, drawers: true,  price: 1800, what: "top shelf, rod, 6 pull-out trays, no doors" },
+  { n: "1-1", kind: "upper", w: 36, d: 18, price: 1625, what: "wall cabinet, 3 shelves" },
+  { n: "1-2", kind: "upper", w: 24, d: 18, wer: true, price: 1800, what: "WER easy-reach corner" },
+  { n: "1-4", kind: "base",  w: 36, d: 24, sink: true, price: 250, what: "SB36 sink base" },
+  { n: "1-5", kind: "base",  w: 36, d: 24, price: 260, what: "blind corner" },
+  { n: "1-6", kind: "base",  w: 21, d: 24, price: 250, what: "base cabinet" },
+]);
+
 export function build(p) {
   p = { ...p, ...FIELD };
   const abs = p.supplier === "abs";
-  for (const k of ["baseDepth", "facingDepth"]) p[k] = absDepth(Number(p[k]), abs);
-  // ABS's laundry wall cabinets are 18" deep; East Star's shallow box is 15-1/2"
-  p.upperDepth = abs && Math.abs(Number(p.upperDepth) - 15.5) < 0.3 ? 18 : Number(p.upperDepth);
+  // Everything shallow in this room is 18" on ABS - wall cabinets and the tall box on wall B
+  // alike. East Star's shallow box is 15-1/2". (Master's ABS shallow is 15"; different room.)
+  const shallow = x => (abs && Math.abs(Number(x) - 15.5) < 0.3 ? 18 : Number(x));
+  for (const k of ["baseDepth", "upperDepth", "facingDepth"]) p[k] = shallow(p[k]);
   const X1 = p.sinkW, X2 = X1 + p.pierT, X3 = X2 + p.wdW;
   const yWD = p.pierLen - p.pierBelow;
   const Yb = p.leftUpper + p.foyerRO + p.leftLower;
@@ -104,6 +118,7 @@ export function build(p) {
   const w = Object.fromEntries(walls.map(x => [x.id, x]));
   const { parts, modules, add } = collector();
   const warnings = [];
+  const quoted = [], unquoted = [];
 
   // washer (left, by the washer box) and dryer (right, by the vent), with space behind
   const bc = p.backClear, W1 = p.washer, D1 = p.dryer;
@@ -140,10 +155,18 @@ export function build(p) {
     for (const [i, g] of segs.entries()) {
       runs.push({ wall: wall.id, u0, u1, wd, fill: (u1 - u0) - wd.reduce((a, b) => a + b, 0), ...o, z0: g.z0, top: g.top, topper: g.topper });
       const r = add(esRun(wall, { u0, depth: o.depth, z0: g.z0, top: g.top, doors, ...mat, brand: abs ? "ABS" : "East Star",
-        bays: wd.map(x => ({ w: x, label: o.bayLabel,
+        bays: wd.map(x => {
+          let lab = o.bayLabel;
+          if (abs && !g.topper) {
+            const q = ABS_Q(x, o.depth, { kind: o.qKind, rod: !!(o.rods || []).length, drawers: !!(o.fronts || []).length, wer: !!o.wer, sink: !!o.sink });
+            (q ? quoted : unquoted).push(q || { w: x, d: o.depth, kind: o.qKind });
+            lab = q ? `${q.tag} ${q.money}` : "Not in the ABS quote";
+          }
+          return { w: x, label: lab,
           levels: (o.levels || []).filter(z => z > g.z0 && z < g.top),
           fronts: g.topper ? undefined : o.fronts,
-          rods: g.topper ? undefined : o.rods })),
+          rods: g.topper ? undefined : o.rods };
+        }),
         prefix: g.topper ? `${o.prefix}T` : o.prefix, seed: o.seed + i * 2 }));
       if (!g.topper) out = r;
     }
@@ -156,8 +179,8 @@ export function build(p) {
   const aU0 = Yb - p.leftUpper;                                   // the foyer jamb, start of wall A right
   const sinkU = Yb - (p.leftUpper - p.sinkCenterFromJamb);        // where the plumbing is
   const sb0 = Math.max(aU0, sinkU - p.sinkBay / 2), sb1 = sb0 + p.sinkBay;
-  run(w.L, sb1, Yb, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3 });
-  run(w.L, sb0, sb1, { depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5 });   // sink base: no shelf, the trap lives there
+  run(w.L, sb1, Yb, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3, qKind: "base" });
+  run(w.L, sb0, sb1, { depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5, qKind: "base", sink: true });   // sink base: no shelf, the trap lives there
   modules.push(box(w.L, "counter", aU0, Yb, 0, bd, 0, 0, { label: "Corner closet", sub: `counter at ${frac(cz, 8)}` }));
   // ABS put a Wall Easy Reach unit in the inside corner - an L-shaped wall cabinet with a
   // bi-fold door, so the corner has no blind spot and no centre post. East Star have no
@@ -165,10 +188,10 @@ export function build(p) {
   const WER = 24;
   if (abs) {
     run(w.L, Yb - WER, Yb, { widths: [WER], depth: ud, z0: p.upperBottom, top: p.upperTop,
-      levels: lvls(p.upperBottom, p.upperTop), prefix: "WER", seed: 9, bayLabel: `WER ${WER}" easy-reach corner` });
-    run(w.L, aU0, Yb - WER, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11 });
+      levels: lvls(p.upperBottom, p.upperTop), prefix: "WER", seed: 9, qKind: "upper", wer: true, bayLabel: `WER ${WER}" easy-reach corner` });
+    run(w.L, aU0, Yb - WER, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11, qKind: "upper" });
   } else {
-    run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11 });
+    run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11, qKind: "upper" });
   }
 
   // the sink: a standard drop-in, centred on the measured drain, not on the cabinet
@@ -197,15 +220,15 @@ export function build(p) {
 
   // ---------- wall D left: the back leg. Counter to match, tall storage instead, or nothing.
   if (p.backWall === "counter") {
-    run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7 });
+    run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7, qKind: "base" });
     parts.push(box(w.SA, "counter", bd, X1, 0, bd + 1, cz - 1.25, cz));
-    run(w.SA, ud, X1, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "DU", seed: 13 });
+    run(w.SA, ud, X1, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "DU", seed: 13, qKind: "upper" });
   } else if (p.backWall === "tall") {
-    run(w.SA, bd, X1, { depth: bd, top: p.upperTop, levels: lvls(0, p.upperTop, 14), prefix: "D", seed: 7 });
+    run(w.SA, bd, X1, { depth: bd, top: p.upperTop, levels: lvls(0, p.upperTop, 14), prefix: "D", seed: 7, qKind: "base" });
   }
 
   // ---------- wall D right: uppers only, over the machines
-  run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: p.wdUpperTop, levels: lvls(p.wdUpperBottom, p.wdUpperTop), prefix: "W", seed: 17 });
+  run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: p.wdUpperTop, levels: lvls(p.wdUpperBottom, p.wdUpperTop), prefix: "W", seed: 17, qKind: "upper" });
   if (p.wdUpperTop > 80) {
     const easy = Math.max(0, 80 - p.wdUpperBottom), high = p.wdUpperTop - Math.max(80, p.wdUpperBottom);
     if (high > 6 && easy < 12) warnings.push(`Over the machines, ${frac(high, 8)} of the cabinet sits above 80" - reachable with a stool, not day to day. ${easy > 6 ? `Only ${frac(easy, 8)} is at easy height.` : "None of it is at easy height."}`);
@@ -222,7 +245,7 @@ export function build(p) {
   const coatFronts = [...parseFronts(p.coatFronts, [6, 7, 8])].reverse();
   const rodLvls = [p.coatRod + 14, p.coatRod + 28].filter(z => z < p.tallTop - 4);
   const coats = run(w.B, coat0, X3, { depth: 24, top: p.tallTop, doors: p.coatDoors, fronts: coatFronts,
-    rods: [p.coatRod], levels: rodLvls, prefix: "C", seed: 21 });
+    rods: [p.coatRod], levels: rodLvls, prefix: "C", seed: 21, qKind: "tall" });
   if (p.coatRod < coatFronts.reduce((a, b) => a + b, 0) + 40)
     warnings.push(`The coat rod at ${frac(p.coatRod, 8)} leaves ${frac(p.coatRod - coatFronts.reduce((a, b) => a + b, 0), 8)} of hanging over the drawers. A jacket wants about 40".`);
 
@@ -231,7 +254,7 @@ export function build(p) {
   // both wide and deep enough to hang in gets a rod and no doors; the rest get shelves and a door.
   const ents = String(p.bPlan).split(",").map(x => x.trim()).filter(Boolean).map(x => {
     const [wv, dv] = x.split("/");
-    return { w: Number(wv), d: absDepth(dv ? Number(dv) : p.facingDepth, abs) };
+    return { w: Number(wv), d: shallow(dv ? Number(dv) : p.facingDepth) };
   }).filter(e => ES_WIDTHS.includes(e.w) && e.d > 0);
   const bTotal = ents.reduce((a, e) => a + e.w, 0), bFree = coat0 - clearU;
   if (bTotal > bFree)
@@ -242,7 +265,7 @@ export function build(p) {
       const rod = e.w >= 30 && e.d >= 20;
       run(w.B, u, u + e.w, { widths: [e.w], depth: e.d, top: p.tallTop, doors: !rod,
         rods: rod ? [p.coatRod] : [], levels: rod ? [36, ...rodLvls] : lvls(0, p.tallTop, 16),
-        prefix: "B", seed: 25 });
+        prefix: "B", seed: 25, qKind: "tall" });
       u += e.w;
     }
   }
@@ -354,6 +377,8 @@ export function build(p) {
       { k: "Storage volume", v: `${cuft(vol)} cu ft`, s: `inside the boxes${pedH ? `, plus ${cuft(pedVol)} cu ft in the two pedestal drawers` : ""}` },
       { k: "Pedestal trade", v: pedH ? `${frac(reachIn(mTop), 8)} reachable` : `${frac(reachIn(W1.h), 8)} reachable`,
         s: `over the machines, under ${REACH}". Without pedestals it would be ${frac(reachIn(W1.h), 8)}, with them ${frac(reachIn(W1.h + p.pedH), 8)}` },
+      ...(abs ? [{ k: "ABS quote", v: `$${quoted.reduce((a, q) => a + q.price, 0).toLocaleString()}`,
+        s: `${quoted.length} of ${quoted.length + unquoted.length} boxes matched; not on the quote: ${unquoted.map(q => `${q.w}x${q.d} ${q.kind}`).join(", ") || "none"}` }] : []),
       { k: "Filler in total", v: frac(runs.reduce((a, r) => a + r.fill, 0), 8), s: `${runs.length} runs of stock-width boxes` },
     ],
     titleMeta: [

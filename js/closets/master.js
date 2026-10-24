@@ -6,7 +6,7 @@
 import { box, esRun, fixedShelves, pressBoard, collector, hatchClashes } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
-import { shelfSlots, shelfControls, readShelves, resolveShelves, matchControl, spacingWarnings, LOOK, SUPPLIER_CTRL, absDepth } from "./common.js";
+import { shelfSlots, shelfControls, readShelves, resolveShelves, matchControl, spacingWarnings, LOOK, SUPPLIER_CTRL, absDepth, quoteTagger } from "./common.js";
 
 export const INFO = { id: "master", name: "Master Closet", room: "Master bedroom",
   stuff: "folded", concept: "East Star boxes · plywood planks by Amir", rev: "" };
@@ -46,6 +46,14 @@ export const DEFAULTS = {
 };
 
 const BANKS = { l1: 7, l2: 6, l3: 6, r1: 6, r2: 6, r3: 6 };
+
+// Aydin Building Supplies, handwritten quote. Prices are ex-tax, per box.
+const ABS_Q = quoteTagger([
+  { n: 1, w: 30, d: 24, rod: true,  price: 1100, what: "rod + 3 big drawers" },
+  { n: 2, w: 36, d: 24, rod: true,  price: 1350, what: "rod + 3 big drawers" },
+  { n: 3, w: 30, d: 15, rod: false, price: 925,  what: "6 wood shelves, doors" },
+  { n: 4, w: 15, d: 15, rod: false, price: 650,  what: "6 wood shelves, doors" },
+]);
 const cab = (pre, title, near) => {
   const [t, rows] = shelfControls(pre, BANKS[pre], title);
   return [t, [matchControl(pre, near), ...rows], { fold: true }];
@@ -140,14 +148,17 @@ export function build(p) {
 
   // ---- left wall. u runs from the door wall up to the back wall, so cabinet 1 is by the door.
   const lw = parsePlan(p.leftPlan, Lh), lRun = lw.reduce((a, b) => a + b, 0);
+  const quoted = [], unquoted = [];
   const lv = i => resolveShelves(p, ["l1", "l2", "l3"][Math.min(i, 2)], BANKS);
   const rv = i => resolveShelves(p, ["r1", "r2", "r3"][Math.min(i, 2)], BANKS);
   const fr = s => String(s ?? "").split(/[\s,]+/).map(Number).filter(n => n >= 3 && n <= 16).reverse();
   const NAMES = ["Long-term", "Daily 1", "Daily 2"];
   const fit = i => {   // whatever that box has been given: drawers, a rod, shelves, or a mix
     const f = fr(p[`fronts${i + 1}`]), r = +(p[`rod${i + 1}`] || 0);
+    const q = abs ? ABS_Q(lw[i], d, { rod: !!r }) : null;
+    if (abs) (q ? quoted : unquoted).push(q || { w: lw[i], d });
     return { ...(f.length ? { fronts: f } : {}), ...(r ? { rods: [r] } : {}), levels: lv(i),
-      label: NAMES[i] || `Left ${i + 1}` };
+      label: q ? `${q.tag} ${q.money}` : abs ? "Not in the ABS quote" : (NAMES[i] || `Left ${i + 1}`) };
   };
   const inside = lw.map((_, i) => fit(i));
   const rw = parsePlan(p.rightPlan, RT), rRun = rw.reduce((a, b) => a + b, 0);
@@ -160,7 +171,11 @@ export function build(p) {
   const left = add(esRun(w.L, { u0: 0, depth: d, top, doors: lDoors, ...common,
     bays: lw.map((width, i) => ({ w: width, ...inside[i] })), prefix: "L", seed: 5 }));
   const right = add(esRun(w.R, { u0: rGap, depth: rd, top, doors: rDoors, ...common,
-    bays: rw.map((width, i) => ({ w: width, levels: rv(i) })), prefix: "R", seed: 9 }));
+    bays: rw.map((width, i) => {
+      const q = abs ? ABS_Q(width, rd, { rod: false }) : null;
+      if (abs) (q ? quoted : unquoted).push(q || { w: width, d: rd });
+      return { w: width, levels: rv(i), ...(q ? { label: `${q.tag} ${q.money}` } : abs ? { label: "Not in the ABS quote" } : {}) };
+    }), prefix: "R", seed: 9 }));
 
   if (p.fillerOn) {
     if (lFill > 0.5) parts.push(box(w.L, "carcass", lRun, Lh, 0, d, 0, top,
@@ -259,6 +274,8 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Noo
     drawerGroups: [{ name: "East Star drawers", drawers }],
     stats: [
       { k: "Boxes", v: `${lw.length + rw.length}`, s: `${abs ? "Aydin (ABS)" : "East Star"} · ${frac(top, 8)} tall · ${lDoors || rDoors ? "wood doors" : "no doors"}` },
+      ...(abs ? [{ k: "ABS quote", v: `$${quoted.reduce((a, q) => a + q.price, 0).toLocaleString()}`,
+        s: `${quoted.length} of ${quoted.length + unquoted.length} boxes matched${unquoted.length ? `; ${unquoted.map(q => `${q.w}x${q.d}`).join(", ")} not on the quote` : ""} · boxes only, no filler, no tax` }] : []),
       { k: "Filler", v: `${[lFill, rGap].filter(x => x > 0.5).length} pieces`, s: `${[lFill, rGap].filter(x => x > 0.5).map(x => frac(x, 8)).join(" + ")} - left run back corner, right run back corner` },
       { k: "Left wall", v: lw.join(" + ") + '"', s: `${frac(d, 8)} deep${lFill ? ` · ${frac(lFill, 8)} filler at the back corner` : ""}` },
       { k: "Right wall", v: rw.join(" + ") + '"', s: `${frac(rd, 8)} deep · ${frac(rGap, 8)} filler at the back corner, flush to the nook` },
