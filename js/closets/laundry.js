@@ -157,7 +157,7 @@ export function build(p) {
       const r = add(esRun(wall, { u0, depth: o.depth, z0: g.z0, top: g.top, doors, ...mat, brand: abs ? "ABS" : "East Star",
         bays: wd.map(x => {
           let lab = o.bayLabel;
-          if (abs && !g.topper) {
+          if (abs && !g.topper && !o.noQuote) {
             const q = ABS_Q(x, o.depth, { kind: o.qKind, rod: !!(o.rods || []).length, drawers: !!(o.fronts || []).length, wer: !!o.wer, sink: !!o.sink });
             qRows.push({ where: `${wall.name.split(" \u00b7 ")[0]} ${o.qKind || ""}`.trim(), w: x, d: o.depth, q });
             lab = q ? `${q.tag} ${q.money}` : "Not in the ABS quote";
@@ -178,20 +178,24 @@ export function build(p) {
 
   const aU0 = Yb - p.leftUpper;                                   // the foyer jamb, start of wall A right
   const sinkU = Yb - (p.leftUpper - p.sinkCenterFromJamb);        // where the plumbing is
-  const sb0 = Math.max(aU0, sinkU - p.sinkBay / 2), sb1 = sb0 + p.sinkBay;
+  const sinkBay = abs ? 36 : p.sinkBay;        // ABS quoted SB36
+  const sb0 = Math.max(aU0, sinkU - sinkBay / 2), sb1 = sb0 + sinkBay;
   const BLIND = 36;
   const aEnd = abs ? Yb - bd : Yb;   // ABS: the corner is a blind box on wall D, so wall A stops a depth short
   run(w.L, sb1, aEnd, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "A", seed: 3, qKind: "base" });
-  run(w.L, sb0, sb1, { depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5, qKind: "base", sink: true });   // sink base: no shelf, the trap lives there
+  run(w.L, sb0, sb1, { widths: [sinkBay], depth: bd, top: cz - 1.25, levels: [], prefix: "S", seed: 5, qKind: "base", sink: true });   // sink base: no shelf, the trap lives there
   modules.push(box(w.L, "counter", aU0, Yb, 0, bd, 0, 0, { label: "Corner closet", sub: `counter at ${frac(cz, 8)}` }));
   // ABS put a Wall Easy Reach unit in the inside corner - an L-shaped wall cabinet with a
   // bi-fold door, so the corner has no blind spot and no centre post. East Star have no
   // equivalent, so there the A run just carries on into the corner.
   const WER = 24;
   if (abs) {
-    run(w.L, Yb - WER, Yb, { widths: [WER], depth: ud, z0: p.upperBottom, top: p.upperTop,
-      levels: lvls(p.upperBottom, p.upperTop), prefix: "WER", seed: 9, qKind: "upper", wer: true, bayLabel: `WER ${WER}" easy-reach corner` });
-    run(w.L, aU0, Yb - WER, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11, qKind: "upper" });
+    const werOpts = { widths: [WER], depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop) };
+    run(w.L, Yb - WER, Yb, { ...werOpts, prefix: "WER", seed: 9, qKind: "upper", wer: true, bayLabel: `WER ${WER}" corner, 90\u00b0 front` });
+    run(w.SA, 0, WER, { ...werOpts, prefix: "WERD", seed: 10, noQuote: true, bayLabel: `WER, wall D leg` });
+    // one 36" wall cabinet each side of the corner, as laid out - packStock would otherwise
+    // split wall A into 24 + 15, which gains 3" of box but is two units nobody has quoted
+    run(w.L, aU0, Yb - WER, { widths: [36], depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11, qKind: "upper" });
   } else {
     run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "AU", seed: 11, qKind: "upper" });
   }
@@ -229,7 +233,7 @@ export function build(p) {
       run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7, qKind: "base" });
     }
     parts.push(box(w.SA, "counter", bd, X1, 0, bd + 1, cz - 1.25, cz));
-    run(w.SA, ud, X1, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "DU", seed: 13, qKind: "upper" });
+    run(w.SA, abs ? WER : ud, X1, { depth: ud, z0: p.upperBottom, top: p.upperTop, levels: lvls(p.upperBottom, p.upperTop), prefix: "DU", seed: 13, qKind: "upper" });
   } else if (p.backWall === "tall") {
     run(w.SA, bd, X1, { depth: bd, top: p.upperTop, levels: lvls(0, p.upperTop, 14), prefix: "D", seed: 7, qKind: "base" });
   }
