@@ -34,9 +34,11 @@ export const DEFAULTS = {
   ...shelfSlots("ar", [107], [114]),
   pressOn: true, pressW: 15, pressZ: 18, pressDown: false,
   // one shelf bank per cabinet. l3/r2/r3 copy a neighbour until you tell them not to.
-  ...shelfSlots("l1", [14, 28, 42, 56, 70, 84], [98]), l1match: "own",
-  ...shelfSlots("l2", [88], [46, 56, 66, 76, 92]), l2match: "own",
-  ...shelfSlots("l3", [88], [46, 56, 66, 76, 92]), l3match: "l2",
+  // all three left boxes are fitted out the same: 3 deep drawers, a shelf capping them,
+  // the rod, and one shelf above it. Set l1 and the other two follow.
+  ...shelfSlots("l1", [39, 88], [50, 62, 74, 91]), l1match: "own",
+  ...shelfSlots("l2", [39, 88], [50, 62, 74, 91]), l2match: "l1",
+  ...shelfSlots("l3", [39, 88], [50, 62, 74, 91]), l3match: "l2",
   ...shelfSlots("r1", [20, 34, 48, 62, 76], [88]), r1match: "own",
   ...shelfSlots("r2", [20, 34, 48, 62, 76], [88]), r2match: "r1",
   ...shelfSlots("r3", [20, 34, 48, 62, 76], [88]), r3match: "r2",
@@ -45,7 +47,7 @@ export const DEFAULTS = {
   finish: "white", lights: true,
 };
 
-const BANKS = { l1: 7, l2: 6, l3: 6, r1: 6, r2: 6, r3: 6 };
+const BANKS = { l1: 6, l2: 6, l3: 6, r1: 6, r2: 6, r3: 6 };
 
 // Aydin Building Supplies, handwritten quote. Prices are ex-tax, per box.
 const ABS_Q = quoteTagger([
