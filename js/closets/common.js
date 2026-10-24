@@ -86,7 +86,7 @@ export function stackTops(top, on, std = ABS.stdTop) {
    counted against the paper. Unmatched boxes are worth seeing too - they are the ones
    nobody has priced yet. ---------- */
 // For a box nobody has quoted, the useful label is its size: height x width x depth.
-export const dimTag = (h, w, d) => [h, w, d].map(x => Math.round(x)).join(" \u00d7 ") + '"';
+export const dimTag = (h, w, d) => `${Math.round(h)}H ${Math.round(w)}W ${Math.round(d)}D`;
 
 export function quoteTagger(items) {
   const FLAGS = ["kind", "rod", "drawers", "wer", "sink"];
