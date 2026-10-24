@@ -295,7 +295,13 @@ export function esRun(w, o) {
 
     const leaves = doors ? (bay.w > 24 ? 2 : 1) : 0, lw = leaves ? (bay.w - 1 / 8) / leaves : 0;
     for (let k = 0; k < leaves; k++) {
-      const da = a + 1 / 16 + k * lw, pz = Math.min(top - 8, base + 42);
+      // Pulls sit at the edge you reach for: the bottom of a wall cabinet, the top of a base,
+      // and a comfortable height on anything tall.
+      const hung = z0 > 30;
+      const pz = hung ? base + 4
+        : top <= 44 ? top - 4
+        : Math.max(base + 4, Math.min(top - 8, 42));
+      const da = a + 1 / 16 + k * lw;
       if (doorsOpen) {   // swung 90 degrees: a pair opens from the middle out
         const hinge = leaves === 2 ? (k === 0 ? da : da + lw) : da;
         parts.push(diagPanel(w, "cabdoor", P(hinge, depth), P(hinge, depth + lw), FRONT, base + 1 / 16, top - 1 / 16,
