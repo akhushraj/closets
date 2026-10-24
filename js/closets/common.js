@@ -92,6 +92,8 @@ export function quoteTagger(items) {
       Math.abs(q.w - w) < 0.6 && Math.abs(q.d - d) < 0.6 &&
       FLAGS.every(k => q[k] === undefined ||
         (typeof q[k] === "string" ? q[k] === extra[k] : !!q[k] === !!extra[k])));
-    return hit ? { ...hit, tag: `#${hit.n}`, money: `$${hit.price.toLocaleString()}` } : null;
+    if (!hit) return null;
+    const n = String(hit.n);
+    return { ...hit, tag: n.includes("#") ? n : `#${n}`, money: `$${hit.price.toLocaleString()}` };
   };
 }

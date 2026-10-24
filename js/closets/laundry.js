@@ -80,17 +80,19 @@ export const CONTROLS = [
   LOOK,
 ];
 
-// Aydin Building Supplies, the two handwritten pages. Page 1 is the sink alcove and the
-// machine wall (they headed it "ADU kitchenette" by mistake); page 2 is wall B.
+// Aydin Building Supplies, the two handwritten pages.
+//   pg1 = the sheet they headed "ADU kitchenette" by mistake - it is the sink alcove and
+//         the machine wall (walls A and D).
+//   pg2 = the sheet headed "laundry" - wall B.
 const ABS_Q = quoteTagger([
-  { n: "2-1", kind: "tall",  w: 18, d: 18, price: 990,  what: "7 shelves, wood door" },
-  { n: "2-2", kind: "tall",  w: 36, d: 24, drawers: false, price: 1450, what: "top shelf, rod, 4 shelves, doors" },
-  { n: "2-3", kind: "tall",  w: 36, d: 24, drawers: true,  price: 1800, what: "top shelf, rod, 6 pull-out trays, no doors" },
-  { n: "1-1", kind: "upper", w: 36, d: 18, price: 1625, what: "wall cabinet, 3 shelves" },
-  { n: "1-2", kind: "upper", w: 24, d: 18, wer: true, price: 1800, what: "WER easy-reach corner" },
-  { n: "1-4", kind: "base",  w: 36, d: 24, sink: true, price: 250, what: "SB36 sink base" },
-  { n: "1-5", kind: "base",  w: 36, d: 24, price: 260, what: "blind corner" },
-  { n: "1-6", kind: "base",  w: 21, d: 24, price: 250, what: "base cabinet" },
+  { n: "pg2 #1", kind: "tall",  w: 18, d: 18, price: 990,  what: "7 shelves, wood door" },
+  { n: "pg2 #2", kind: "tall",  w: 36, d: 24, drawers: false, price: 1450, what: "top shelf, rod, 4 shelves, doors" },
+  { n: "pg2 #3", kind: "tall",  w: 36, d: 24, drawers: true,  price: 1800, what: "top shelf, rod, 6 pull-out trays, no doors" },
+  { n: "pg1 #1", kind: "upper", w: 36, d: 18, price: 1625, what: "wall cabinet, 3 shelves" },
+  { n: "pg1 #2", kind: "upper", w: 24, d: 18, wer: true, price: 1800, what: "WER easy-reach corner" },
+  { n: "pg1 #4", kind: "base",  w: 36, d: 24, sink: true, price: 250, what: "SB36 sink base" },
+  { n: "pg1 #5", kind: "base",  w: 36, d: 24, price: 260, what: "blind corner" },
+  { n: "pg1 #6", kind: "base",  w: 21, d: 24, price: 250, what: "base cabinet" },
 ]);
 
 export function build(p) {

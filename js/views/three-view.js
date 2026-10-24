@@ -332,6 +332,7 @@ export function createThreeView(host) {
       const el = document.createElement("span");
       el.className = "tag3d" + (m.atag === "no price" ? " warn" : "");
       el.textContent = m.atag || String(m.label).replace(/^(East Star|ABS)\s*/, "").split(" $")[0];
+      el.title = m.label || "";
       tagLayer.appendChild(el);
       // sit the tag at the middle of the box it names, so bases and uppers do not collide
       const z = m.za != null && m.zb != null ? (m.za + m.zb) / 2 : 40;
