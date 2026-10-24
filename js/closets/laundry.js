@@ -23,7 +23,7 @@ export const FIELD = {
 };
 
 export const DEFAULTS = {
-  supplier: "es", absDoors: true,
+  supplier: "abs", absDoors: true,
   backClear: 5, showClear: true, pedestal: false,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   sinkW2: 25, sinkD2: 22, backWall: "counter", wdDoorsOpen: false,
