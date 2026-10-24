@@ -10,7 +10,7 @@ const UPCOMING = [];
 // ?for=abs turns the whole page into the Aydin Building Supplies view: only the closets that
 // use bought boxes, the supplier locked, and East Star's own controls out of the way.
 const FOR_ABS = new URLSearchParams(location.search).get("for") === "abs";
-const ABS_ROOMS = ["master", "maya", "laundry"];
+const ABS_ROOMS = ["master", "laundry"];   // Maya goes to East Star - ABS have no 84" box
 const ROOMS = FOR_ABS ? CLOSETS.filter(c => ABS_ROOMS.includes(c.INFO.id)) : CLOSETS;
 const FMT = { ftin, int: v => v };
 
