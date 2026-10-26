@@ -167,6 +167,19 @@
     border-radius:4px;padding:5px 8px;margin-bottom:10px;font-size:11.5px;color:var(--ink)}
   .editbar button{background:var(--amber);color:#201C14;border:0;border-radius:3px;
     padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .bswrap{overflow-x:auto}
+  svg.bs{display:block;width:100%;max-width:760px;height:auto;margin:6px auto;background:var(--panel);
+    border:1px solid var(--hair);border-radius:4px}
+  svg.bs.el{max-width:620px}
+  svg.bs .room{fill:var(--floorc);stroke:var(--ink);stroke-width:1.6}
+  svg.bs .wallbg{fill:var(--floorc);stroke:var(--hair);stroke-width:1}
+  svg.bs .bx{fill:var(--wood);stroke:var(--ink);stroke-width:1.1}
+  svg.bs text{font-family:"Helvetica Neue",Arial,sans-serif}
+  svg.bs .n{font-weight:700;fill:var(--ink);text-anchor:middle}
+  svg.bs .d{fill:var(--ink-soft);text-anchor:middle}
+  svg.bs .dim{fill:#2A2318;text-anchor:middle;font-weight:600}
+  svg.bs .wl{font-weight:700;fill:var(--blue);text-anchor:middle}
+  h4.bsh{margin:16px 0 2px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
   .ctrl{position:relative}
   .ctrl.edited{border-left:2px solid var(--amber);padding-left:7px;margin-left:-9px}
   .ctrl.edited>label{color:var(--amber)}
@@ -245,6 +258,7 @@
     <button class="tabbtn" data-tab="pSched"><span class="tag">A-3</span>Drawer schedule</button>
     <button class="tabbtn" data-tab="pWiring" hidden><span class="tag">A-4</span>LED wiring</button>
     <button class="tabbtn" data-tab="pPrice" hidden><span class="tag">A-5</span>Pricing</button>
+    <button class="tabbtn" data-tab="pBox"><span class="tag">A-6</span>For quoting</button>
   </div>
 
   <div class="layout">
@@ -261,6 +275,7 @@
       <section class="tabpanel" id="pSched"><div id="sched"></div></section>
       <section class="tabpanel" id="pWiring"><div class="draw"><svg id="wiring" role="img" aria-label="LED wiring diagram"></svg></div></section>
       <section class="tabpanel" id="pPrice"><div id="price"></div></section>
+      <section class="tabpanel" id="pBox"><div id="boxsheet"></div></section>
     </div>
     <aside class="controls" id="controls" aria-label="Design controls"></aside>
   </div>

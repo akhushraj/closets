@@ -4,6 +4,7 @@ import { renderElevations } from "./views/elevation.js";
 import { renderSchedule } from "./views/schedule.js";
 import { renderWiring } from "./views/wiring.js";
 import { renderPricing } from "./views/pricing.js";
+import { renderBoxSheet } from "./views/boxsheet.js";
 import { frac, ftin } from "./lib/units.js";
 
 const UPCOMING = [];
@@ -171,6 +172,12 @@ function render() {
   renderPlan($("plan"), model);
   renderElevations($("elevs"), model);
   renderSchedule($("sched"), model);
+
+  const btab = document.querySelector('[data-tab="pBox"]');
+  const anyBoxes = model.modules.some(x => x.kind === "cabinets");
+  btab.hidden = !anyBoxes;
+  if (anyBoxes) renderBoxSheet($("boxsheet"), model);
+  else if (btab.classList.contains("on")) document.querySelector('[data-tab="pPlan"]').click();
 
   // A-5 only exists for the closets that use bought boxes; it costs the same design both ways
   const ptab = document.querySelector('[data-tab="pPrice"]');

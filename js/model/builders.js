@@ -318,6 +318,7 @@ export function esRun(w, o) {
       za: z0, zb: top,
       ...(bay.atag == null ? {} : { atag: bay.atag }),
       ...(bay.aw ? { aw: true } : {}),
+      ...(bay.leg ? { leg: true } : {}),
       sub: `${frac(bay.w, 8)} × ${frac(top - z0, 8)}${leaves ? `, ${leaves} door${leaves > 1 ? "s" : ""}` : ""}`,
       ...(leaves ? { ghost: { u0: a, u1: b, v0: depth, v1: depth + bay.w / leaves, label: "door swing" } } : {}) }));
   }

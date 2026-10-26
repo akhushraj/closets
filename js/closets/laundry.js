@@ -171,7 +171,7 @@ export function build(p) {
             atag = q ? q.tag : dimTag(g.top - g.z0, x, o.depth);
             aw = !q;
           }
-          return { w: x, label: lab, atag, aw,
+          return { w: x, label: lab, atag, aw, leg: o.leg,
           levels: (o.levels || []).filter(z => z > g.z0 && z < g.top),
           fronts: g.topper ? undefined : o.fronts,
           rods: g.topper ? undefined : o.rods };
@@ -204,7 +204,7 @@ export function build(p) {
   if (abs) {
     const werOpts = { widths: [WER], depth: ud, z0: p.upperBottom, top: upTop, levels: lvls(p.upperBottom, upTop) };
     run(w.L, Yb - WER, Yb, { ...werOpts, prefix: "WER", seed: 9, qKind: "upper", wer: true, bayLabel: `WER ${WER}" corner, 90\u00b0 front` });
-    run(w.SA, 0, WER, { ...werOpts, prefix: "WERD", seed: 10, noQuote: true, bayLabel: `WER, wall D leg` });
+    run(w.SA, 0, WER, { ...werOpts, prefix: "WERD", seed: 10, noQuote: true, leg: true, bayLabel: `WER, wall D leg` });
     // one 36" wall cabinet each side of the corner, as laid out - packStock would otherwise
     // split wall A into 24 + 15, which gains 3" of box but is two units nobody has quoted
     run(w.L, aU0, Yb - WER, { widths: [36], flushEnd: true, depth: ud, z0: p.upperBottom, top: upTop, levels: lvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
