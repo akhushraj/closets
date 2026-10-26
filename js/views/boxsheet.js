@@ -37,8 +37,8 @@ const fit = (model, u) => {
   const n = k => ins.filter(p => p.kind === k).length;
   const bits = [];
   if (n("rod")) bits.push("hanging rod");
-  if (n("front")) bits.push(`${n("front")} drawers`);
-  if (n("shelf")) bits.push(`${n("shelf")} shelves`);
+  if (n("front")) bits.push(`${n("front")} drawer${n("front") > 1 ? "s" : ""}`);
+  if (n("shelf")) bits.push(`${n("shelf")} shelf${n("shelf") > 1 ? "ves" : ""}`);
   if (n("cabdoor")) bits.push(`${n("cabdoor")} door${n("cabdoor") > 1 ? "s" : ""}`);
   return bits.join(", ") || "open box";
 };
