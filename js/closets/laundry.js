@@ -97,6 +97,9 @@ const ABS_Q = quoteTagger([
   { n: "p1 #6", kind: "base",  w: 21, d: 24, price: 250, what: "base cabinet" },
 ]);
 
+// East Star, quoted 2026-10-26. A room total with tax already in, unlike ABS's per-box ex-tax prices.
+export const ES_QUOTE = () => ({ total: 9512.37, taxIn: true, what: "Laundry (no LED)" });
+
 export function build(p) {
   p = { ...p, ...FIELD };
   const abs = p.supplier === "abs";

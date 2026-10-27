@@ -59,6 +59,11 @@ const ABS_Q = quoteTagger([
   { n: 2, w: 30, d: 24, rod: true,  price: 1250, what: "top shelf, rod, 2 small + 2 big drawers" },
 ]);
 
+// East Star, quoted 2026-10-26. They priced both versions of this closet.
+export const ES_QUOTE = p => p.ends === "es"
+  ? { total: 3628.99, taxIn: true, what: "Maya's 4 units (no LED)" }
+  : { total: 2270.27, taxIn: true, what: "Maya's middle 2 units only (no LED)" };
+
 export function build(p) {
   p = { ...p, ...FIELD };
   const abs = p.supplier === "abs";

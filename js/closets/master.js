@@ -129,6 +129,9 @@ export function parsePlan(s, run) {
   return out;
 }
 
+// East Star, quoted 2026-10-26. A room total with tax already in, unlike ABS's per-box ex-tax prices.
+export const ES_QUOTE = () => ({ total: 5334.78, taxIn: true, what: "Master Closet (no LED)" });
+
 export function build(p) {
   p = { ...p, ...FIELD };
   const W = p.W, Lh = p.Lh, RT = p.rightTo, XN = W + p.nookD, t = 4.5;

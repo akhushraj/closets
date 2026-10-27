@@ -183,7 +183,8 @@ function render() {
   const ptab = document.querySelector('[data-tab="pPrice"]');
   if ("supplier" in mod.DEFAULTS) {
     ptab.hidden = false;
-    renderPricing($("price"), mod.build({ ...state, supplier: "abs" }), mod.build({ ...state, supplier: "es" }));
+    renderPricing($("price"), mod.build({ ...state, supplier: "abs" }), mod.build({ ...state, supplier: "es" }),
+      mod.ES_QUOTE ? mod.ES_QUOTE(state) : null);
   } else {
     ptab.hidden = true;
     if (ptab.classList.contains("on")) document.querySelector('[data-tab="pPlan"]').click();
