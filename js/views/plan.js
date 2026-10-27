@@ -51,19 +51,29 @@ export function renderPlan(svg, model) {
   el("path", { d: poly(outer) + " " + poly(c.outline), class: "wallfill", "fill-rule": "evenodd" }, g);
 
   // modules
-  // Base and wall cabinets stack on the same wall, so in plan they land on top of each other.
-  // `planShow` draws one layer on its own. It only applies to walls that genuinely carry both:
-  // a run that stops at counter height and another hung well above it. A tall box with a topper
-  // on it is one cabinet, not two layers, so those walls are left alone.
+  // Base and wall cabinets sit over each other in plan, so `planShow` can draw one layer alone.
+  // A box stacked directly on another is the same unit (a 94" carcass with a topper), so the
+  // whole stack is judged together: base ends at counter height, wall is hung clear above it,
+  // and anything running floor to high is neither and always shows.
   const show = (model.params && model.params.planShow) || "all";
-  const stacked = new Set();
-  if (show !== "all") {
-    const cab = model.modules.filter(m => m.kind === "cabinets" && m.za != null);
-    for (const w of new Set(cab.map(m => m.wall)))
-      if (cab.some(m => m.wall === w && m.zb < 40) && cab.some(m => m.wall === w && m.za > 50)) stacked.add(w);
-  }
-  const hidden = m => stacked.has(m.wall) && m.kind === "cabinets"
-    && (show === "base" ? m.za > 50 : m.zb < 40);
+  const cab = model.modules.filter(m => m.kind === "cabinets" && m.za != null);
+  const sameRun = (a, b) => a.wall === b.wall && Math.abs(a.u0 - b.u0) < 0.1 && Math.abs(a.u1 - b.u1) < 0.1;
+  const walk = (m, pick) => {
+    for (let cur = m, go = true; ; ) {
+      go = false;
+      for (const o of cab) if (o !== cur && sameRun(o, cur) && pick(o, cur)) { cur = o; go = true; break; }
+      if (!go) return cur;
+    }
+  };
+  const layerOf = m => {
+    const bot = walk(m, (o, c) => Math.abs(o.zb - c.za) < 0.1);
+    const top = walk(m, (o, c) => Math.abs(o.za - c.zb) < 0.1);
+    if (top.zb <= 40) return "base";
+    if (bot.za >= 50) return "wall";
+    return "tall";
+  };
+  const hidden = m => show !== "all" && m.kind === "cabinets" && m.za != null
+    && layerOf(m) !== "tall" && layerOf(m) !== show;
   const mods = [...model.modules].filter(m => !hidden(m))
     .sort((a, b) => (ORDER.indexOf(a.kind) + 99) % 99 - (ORDER.indexOf(b.kind) + 99) % 99);
   for (const m of mods) {
@@ -86,7 +96,7 @@ export function renderPlan(svg, model) {
   }
   const placed = [];
   for (const m of mods) {
-    if (m.kind === "band" || !m.label) continue;
+    if (m.kind === "band" || !m.label || m.leg) continue;   // the corner unit's second leg is the same cabinet
     const pw = (m.x1 - m.x0) * S, ph = (m.y1 - m.y0) * S;
     let cx = (m.x0 + m.x1) / 2, cy = (m.y0 + m.y1) / 2;
     // if another label already sits here, step down until it doesn't
