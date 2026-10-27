@@ -169,9 +169,15 @@ export function build(p) {
       const r = add(esRun(wall, { u0: start, depth: o.depth, z0: g.z0, top: g.top, doors, ...mat, brand: abs ? "ABS" : "East Star",
         bays: wd.map(x => {
           let lab = o.bayLabel, atag = abs ? "" : null, aw = false;
+          if (!g.topper && !o.noQuote) {
+            const grp = wall.id === "B" ? "Laundry tall cabinets" : "Laundry sink cabinets";
+            qRows.push({ where: `${wall.name.split(" \u00b7 ")[0]} ${o.qKind || ""}`.trim(),
+              w: x, d: o.depth, h: o.top - (o.z0 || 0), group: grp,   // the whole unit, topper included
+              q: abs ? ABS_Q(x, o.depth, { kind: o.qKind, rod: !!(o.rods || []).length,
+                drawers: !!(o.fronts || []).length, wer: !!o.wer, sink: !!o.sink }) : null });
+          }
           if (abs && !g.topper && !o.noQuote) {
             const q = ABS_Q(x, o.depth, { kind: o.qKind, rod: !!(o.rods || []).length, drawers: !!(o.fronts || []).length, wer: !!o.wer, sink: !!o.sink });
-            qRows.push({ where: `${wall.name.split(" \u00b7 ")[0]} ${o.qKind || ""}`.trim(), w: x, d: o.depth, h: g.top - g.z0, q });
             lab = q ? `${q.tag} ${q.money}` : "Not in the ABS quote";
             atag = q ? q.tag : dimTag(g.top - g.z0, x, o.depth);
             aw = !q;
@@ -361,7 +367,7 @@ export function build(p) {
 
   const lw = X3;
   return {
-    quote: abs ? { supplier: "Aydin Building Supplies", rows: qRows } : null,
+    quote: { supplier: abs ? "Aydin Building Supplies" : "East Star", rows: qRows },
     info: { ...INFO, concept: abs ? "Aydin (ABS) \u00b7 94\" boxes with toppers" : INFO.concept },
     params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },

@@ -15,23 +15,42 @@ function rowsOf(model) {
       h: b.zb != null && b.za != null ? b.zb - b.za : null, q: null }));
 }
 
+const body = rows => rows.map(r => `<tr class="${r.q ? "" : "nq"}">
+  <td>${r.where}</td>
+  <td class="mono">${r.h ? `${Math.round(r.h)}H ` : ""}${Math.round(r.w)}W ${Math.round(r.d)}D</td>
+  <td>${r.q ? `<span class="tag2">${r.q.tag}</span>` : "&mdash;"}</td>
+  <td>${r.q ? r.q.what : "<i>needs a price</i>"}</td>
+  <td class="mono num">${r.q ? money(r.q.price) : "&mdash;"}</td>
+</tr>`).join("");
+
+const sum = rows => rows.reduce((a, r) => a + (r.q ? r.q.price : 0), 0);
+
 const block = (title, model, note) => {
   const rows = rowsOf(model);
   if (!rows.length) return `<h3 class="tblh">${title}</h3><p class="info">Nothing from ${title} in this closet.</p>`;
-  const total = rows.reduce((a, r) => a + (r.q ? r.q.price : 0), 0);
+  const total = sum(rows);
   const priced = rows.filter(r => r.q).length;
+  // some rooms are quoted in parts; keep those parts separate so each can be discussed on its own
+  const groups = [...new Set(rows.map(r => r.group).filter(Boolean))];
+  if (groups.length > 1) return `
+  <h3 class="tblh">${title} &mdash; ${rows.length} boxes</h3>
+  ${groups.map(g => {
+    const gr = rows.filter(r => r.group === g), gp = gr.filter(r => r.q).length;
+    return `<h4 class="bsh">${g} &mdash; ${gr.length} boxes</h4>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Where</th><th>Box</th><th>Quote line</th><th>What they quoted</th><th class="num">Price</th></tr></thead>
+      <tbody>${body(gr)}
+        <tr class="tot"><td colspan="4"><b>${gp} of ${gr.length} priced</b></td>
+          <td class="mono num"><b>${gp ? money(sum(gr)) : "&mdash;"}</b></td></tr>
+      </tbody></table></div>`;
+  }).join("")}
+  <p class="info"><b>${title}, both parts together:</b> ${priced ? money(total) : "&mdash;"} for ${priced} of ${rows.length} boxes. ${note}</p>`;
   return `
   <h3 class="tblh">${title} &mdash; ${rows.length} boxes</h3>
   <div class="tblwrap"><table>
     <thead><tr><th>Where</th><th>Box</th><th>Quote line</th><th>What they quoted</th><th class="num">Price</th></tr></thead>
     <tbody>
-      ${rows.map(r => `<tr class="${r.q ? "" : "nq"}">
-        <td>${r.where}</td>
-        <td class="mono">${r.h ? `${Math.round(r.h)}H ` : ""}${Math.round(r.w)}W ${Math.round(r.d)}D</td>
-        <td>${r.q ? `<span class="tag2">${r.q.tag}</span>` : "&mdash;"}</td>
-        <td>${r.q ? r.q.what : "<i>needs a price</i>"}</td>
-        <td class="mono num">${r.q ? money(r.q.price) : "&mdash;"}</td>
-      </tr>`).join("")}
+      ${body(rows)}
       <tr class="tot"><td colspan="4"><b>${priced} of ${rows.length} boxes priced</b>${priced < rows.length ? ` &mdash; ${rows.length - priced} still to quote` : ""}</td>
         <td class="mono num"><b>${priced ? money(total) : "&mdash;"}</b></td></tr>
     </tbody>
