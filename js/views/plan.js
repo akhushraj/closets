@@ -51,7 +51,21 @@ export function renderPlan(svg, model) {
   el("path", { d: poly(outer) + " " + poly(c.outline), class: "wallfill", "fill-rule": "evenodd" }, g);
 
   // modules
-  const mods = [...model.modules].sort((a, b) => (ORDER.indexOf(a.kind) + 99) % 99 - (ORDER.indexOf(b.kind) + 99) % 99);
+  // Base and wall cabinets stack on the same wall, so in plan they land on top of each other.
+  // `planShow` draws one layer on its own. It only applies to walls that genuinely carry both:
+  // a run that stops at counter height and another hung well above it. A tall box with a topper
+  // on it is one cabinet, not two layers, so those walls are left alone.
+  const show = (model.params && model.params.planShow) || "all";
+  const stacked = new Set();
+  if (show !== "all") {
+    const cab = model.modules.filter(m => m.kind === "cabinets" && m.za != null);
+    for (const w of new Set(cab.map(m => m.wall)))
+      if (cab.some(m => m.wall === w && m.zb < 40) && cab.some(m => m.wall === w && m.za > 50)) stacked.add(w);
+  }
+  const hidden = m => stacked.has(m.wall) && m.kind === "cabinets"
+    && (show === "base" ? m.za > 50 : m.zb < 40);
+  const mods = [...model.modules].filter(m => !hidden(m))
+    .sort((a, b) => (ORDER.indexOf(a.kind) + 99) % 99 - (ORDER.indexOf(b.kind) + 99) % 99);
   for (const m of mods) {
     el("rect", { x: X(m.x0), y: Y(m.y0), width: (m.x1 - m.x0) * S, height: (m.y1 - m.y0) * S,
       class: "m-" + (LEGEND[m.kind] ? m.kind : "other"), rx: m.kind === "hamper" ? 4 : 0 }, g);

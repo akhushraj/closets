@@ -23,7 +23,7 @@ export const FIELD = {
 };
 
 export const DEFAULTS = {
-  supplier: "abs", absDoors: true,
+  supplier: "abs", absDoors: true, planShow: "all",
   backClear: 5, showClear: true, pedestal: false,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   sinkW2: 25, sinkD2: 22, backWall: "counter", wdDoorsOpen: false,
@@ -53,6 +53,8 @@ export const CONTROLS = [
     { key: "upperDepth", label: "Uppers (wall cabinets), depth", type: "select",
       options: [["15.5", "Shallow \u2014 15-1/2\" ES / 18\" ABS"], ["24", "24\" \u2014 both"]] },
     { key: "upperBottom", label: "Uppers, bottom (60\" puts a 60\" ABS box tight to the ceiling)", min: 48, max: 60, step: 1 },
+    { key: "planShow", label: "Plan view shows", type: "select",
+      options: [["all", "Everything"], ["base", "Base cabinets only"], ["wall", "Wall cabinets only"]] },
     { key: "upperTop", label: "Uppers, top (East Star only \u2014 ABS boxes are a fixed 60\" tall)", min: 80, max: 120, step: 1, esOnly: true },
   ]],
   ["Wall D right · over the machines", [
