@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-66 -52 255 261.6" width="1180">
+<style>
+  .room{fill:#F7F5F0;stroke:#1A1A17;stroke-width:1;stroke-linejoin:round}
+  .dim{stroke:#1C5C77;stroke-width:.45;fill:none}
+  .ext{stroke:#B4AFA3;stroke-width:.3}
+  .door{stroke:#fff;stroke-width:1.8}
+  .swing{fill:none;stroke:#C08A2E;stroke-width:.45;stroke-dasharray:2.5 2}
+  .t{font:600 3.2px Helvetica,Arial,sans-serif;fill:#1C5C77;text-anchor:middle}
+  .big{font:700 3.9px Helvetica,Arial,sans-serif;fill:#14506B;text-anchor:middle}
+  .wl{font:700 3.6px Helvetica,Arial,sans-serif;fill:#1A1A17;text-anchor:middle;letter-spacing:.1em}
+  .note{font:400 3.2px Helvetica,Arial,sans-serif;fill:#55514A;text-anchor:start}
+  .ttl{font:700 5.4px Helvetica,Arial,sans-serif;fill:#1A1A17;text-anchor:start}
+  .sub{font:400 3.4px Helvetica,Arial,sans-serif;fill:#6A665C;text-anchor:start}
+  .svc{font:600 2.9px Helvetica,Arial,sans-serif;fill:#8C5A10;text-anchor:middle}
+  .svcm{fill:#F4C87A;stroke:#8C5A10;stroke-width:.4}
+</style>
+<rect x="-66" y="-52" width="255" height="261.6" fill="#FFFFFF"/>
+<text x="-62" y="-41" class="ttl">LAUNDRY / MUDROOM &#8212; existing room, no cabinets</text>
+<text x="-62" y="-32" class="sub">All dimensions in inches, taken on site. Ceiling height 10'-0" (120") throughout.</text>
+<polygon class="room" points="0,0 62.1,0 62.1,43.8 67.4,43.8 67.4,30.4 127,30.4 127,125.6 0,125.6"/>
+<line class="door" x1="0" y1="64.2" x2="0" y2="96.7"/>
+  <path class="swing" d="M0 96.7 L32.5 96.7 A 32.5 32.5 0 0 0 0 64.2"/>
+<line class="door" x1="127" y1="77.6" x2="127" y2="111.89999999999999"/>
+  <path class="swing" d="M127 77.6 L161.3 77.6 A 34.3 34.3 0 0 1 127 111.89999999999999"/>
+<text x="-44" y="62.8" class="wl" transform="rotate(-90 -44 62.8)">WALL A</text>
+<text x="63.5" y="153.6" class="wl">WALL B</text>
+<text x="159" y="78" class="wl" transform="rotate(90 159 78)">WALL C</text>
+<text x="31.05" y="-19" class="wl">WALL D left</text>
+<text x="97.2" y="6.399999999999999" class="wl">WALL D right</text>
+<path d="M0 0 L0 -11" class="ext"/>
+<path d="M62.1 0 L62.1 -11" class="ext"/>
+<path d="M0 -11 h62.1" class="dim"/>
+   <path d="M0 -12.6 v3.2 M62.1 -12.6 v3.2" class="dim"/>
+   <text x="31.05" y="-13.4" class="t">62-1/8"</text>
+<path d="M67.4 30.4 L67.4 19.4" class="ext"/>
+<path d="M127 30.4 L127 19.4" class="ext"/>
+<path d="M67.4 19.4 h59.599999999999994" class="dim"/>
+   <path d="M67.4 17.799999999999997 v3.2 M127 17.799999999999997 v3.2" class="dim"/>
+   <text x="97.2" y="17" class="t">59-5/8"</text>
+<path d="M0 0 L-13 0" class="ext"/>
+<path d="M0 64.2 L-13 64.2" class="ext"/>
+<path d="M0 64.2 L-13 64.2" class="ext"/>
+<path d="M0 96.7 L-13 96.7" class="ext"/>
+<path d="M0 96.7 L-13 96.7" class="ext"/>
+<path d="M0 125.6 L-13 125.6" class="ext"/>
+<path d="M-13 0 v64.2" class="dim"/>
+   <path d="M-14.6 0 h3.2 M-14.6 64.2 h3.2" class="dim"/>
+   <text x="-15.4" y="32.1" class="t" transform="rotate(-90 -15.4 32.1)">64-1/4"</text>
+<path d="M-13 64.2 v32.5" class="dim"/>
+   <path d="M-14.6 64.2 h3.2 M-14.6 96.7 h3.2" class="dim"/>
+   <text x="-15.4" y="80.45" class="t" transform="rotate(-90 -15.4 80.45)">32-1/2" FOYER</text>
+<path d="M-13 96.7 v28.89999999999999" class="dim"/>
+   <path d="M-14.6 96.7 h3.2 M-14.6 125.6 h3.2" class="dim"/>
+   <text x="-15.4" y="111.15" class="t" transform="rotate(-90 -15.4 111.15)">28-7/8"</text>
+<path d="M-30 0 v125.6" class="dim"/>
+   <path d="M-31.6 0 h3.2 M-31.6 125.6 h3.2" class="dim"/>
+   <text x="-32.4" y="62.8" class="big" transform="rotate(-90 -32.4 62.8)">125-5/8" OVERALL</text>
+<path d="M127 30.4 L140 30.4" class="ext"/>
+<path d="M127 77.6 L140 77.6" class="ext"/>
+<path d="M127 77.6 L140 77.6" class="ext"/>
+<path d="M127 111.89999999999999 L140 111.89999999999999" class="ext"/>
+<path d="M127 111.89999999999999 L140 111.89999999999999" class="ext"/>
+<path d="M127 125.6 L140 125.6" class="ext"/>
+<path d="M140 30.4 v47.199999999999996" class="dim"/>
+   <path d="M138.4 30.4 h3.2 M138.4 77.6 h3.2" class="dim"/>
+   <text x="137.6" y="54" class="t" transform="rotate(-90 137.6 54)">47-1/4"</text>
+<path d="M140 77.6 v34.3" class="dim"/>
+   <path d="M138.4 77.6 h3.2 M138.4 111.89999999999999 h3.2" class="dim"/>
+   <text x="137.6" y="94.75" class="t" transform="rotate(-90 137.6 94.75)">34-1/4" GARAGE</text>
+<path d="M140 111.89999999999999 v13.700000000000003" class="dim"/>
+   <path d="M138.4 111.89999999999999 h3.2 M138.4 125.6 h3.2" class="dim"/>
+   <text x="137.6" y="118.75" class="t" transform="rotate(-90 137.6 118.75)">13-3/4"</text>
+<path d="M0 125.6 L0 140.6" class="ext"/>
+<path d="M127 125.6 L127 140.6" class="ext"/>
+<path d="M0 140.6 h127" class="dim"/>
+   <path d="M0 139 v3.2 M127 139 v3.2" class="dim"/>
+   <text x="63.5" y="138.2" class="big">127" OVERALL</text>
+<path d="M62.1 0 L47.1 0" class="ext"/>
+<path d="M62.1 43.8 L47.1 43.8" class="ext"/>
+<path d="M47.1 0 v43.8" class="dim"/>
+   <path d="M45.5 0 h3.2 M45.5 43.8 h3.2" class="dim"/>
+   <text x="44.7" y="21.9" class="t" transform="rotate(-90 44.7 21.9)">pier projects 43-3/4"</text>
+<path d="M62.1 54.8 h5.300000000000004" class="dim"/>
+   <path d="M62.1 53.199999999999996 v3.2 M67.4 53.199999999999996 v3.2" class="dim"/>
+   <text x="64.75" y="52.4" class="t">5-1/4" pier</text>
+<path d="M62.1 43.8 L62.1 54.8" class="ext"/>
+<path d="M67.4 43.8 L67.4 54.8" class="ext"/>
+<rect class="svcm" x="-1.6" y="42.7" width="3.2" height="3.2"/>
+  <text x="34" y="41.300000000000004" class="svc">sink supply + drain, 19-7/8" off the jamb</text>
+<rect class="svcm" x="94.7" y="123.6" width="15" height="4"/>
+  <text x="69.7" y="119.6" class="svc">electrical sub-panel, 17-1/4" off the corner</text>
+<text x="-62" y="167.6" class="note">• The two back walls are not in line: the washer/dryer wall sits 30-3/8" forward of the sink-alcove wall.</text>
+<text x="-62" y="173.6" class="note">• A 5-1/4" pier divides them, projecting 43-3/4" into the room — 13-3/8" past the washer/dryer wall.</text>
+<text x="-62" y="179.6" class="note">• Foyer door swings in. Garage door swings out into the garage, so it never takes room off this side.</text>
+<text x="-62" y="185.6" class="note">⚠ Code keeps 30" wide x 36" deep clear in front of the sub-panel, floor to 6'-6".</text>
+<text x="-62" y="191.6" class="note">• RE-MEASURE BEFORE ORDERING: wall B adds up to 127" from the alcove widths but measured 125-7/8" on site.</text>
+</svg>
