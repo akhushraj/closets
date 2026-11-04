@@ -26,7 +26,7 @@ export const DEFAULTS = {
   doorsOpen: false, drawersOut: false,
   nookDepth: 26.5,
   fronts1: "11, 12, 13", rod1: 84, fronts2: "11, 12, 13", fronts3: "11, 12, 13", rod2: 84, rod3: 84,
-  rightDepth: 15.5, rightPlan: "30, 30, 15",
+  rightDepth: 15.5, rightPlan: "15, 30, 30",
   fillerOn: true,
   aboveLOn: true, aboveROn: true,
   // over each run: a deck resting on the cabinet tops, then adjustable planks above it
