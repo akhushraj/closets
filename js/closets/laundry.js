@@ -27,7 +27,7 @@ export const DEFAULTS = {
   backClear: 5, showClear: true, pedestal: false,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   sinkW2: 25, sinkD2: 22, backWall: "counter", wdDoorsOpen: false,
-  upperDepth: 15.5, upperBottom: 60, upperTop: 114,
+  upperDepth: 15.5, upperBottom: 60, upperTop: 114, wallCab: "40+18",
   wdUpperBottom: 60, wdUpperTop: 114,
   coatW: 36, bPlan: "36, 18/15.5", grade: "shaker", coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 108,
   facingDepth: 24,
@@ -52,14 +52,16 @@ export const CONTROLS = [
       options: [["counter", "Counter, same as the sink leg"], ["tall", "Floor-to-ceiling storage instead"], ["none", "Leave it empty"]] },
     { key: "upperDepth", label: "Uppers (wall cabinets), depth", type: "select",
       options: [["15.5", "Shallow \u2014 15-1/2\" ES / 18\" ABS"], ["24", "24\" \u2014 both"]] },
-    { key: "upperBottom", label: "Uppers, bottom (60\" puts a 60\" ABS box tight to the ceiling)", min: 48, max: 60, step: 1 },
+    { key: "wallCab", label: "Wall cabinet height (ABS only)", type: "select", absOnly: true,
+      options: [["40+18", "40\" box + 18\" topper \u2014 58\" tall"], ["60", "One 60\" box"]] },
+    { key: "upperBottom", label: "Uppers, bottom", min: 48, max: 60, step: 1 },
     { key: "planShow", label: "Plan view shows", type: "select",
       options: [["all", "Everything"], ["base", "Base cabinets only"], ["wall", "Wall cabinets only"]] },
-    { key: "upperTop", label: "Uppers, top (East Star only \u2014 ABS boxes are a fixed 60\" tall)", min: 80, max: 120, step: 1, esOnly: true },
+    { key: "upperTop", label: "Uppers, top (East Star only \u2014 ABS heights are set by the box)", min: 80, max: 120, step: 1, esOnly: true },
   ]],
   ["Wall D right · over the machines", [
     { key: "wdUpperBottom", label: "Bottom", min: 42, max: 84, step: 1 },
-    { key: "wdUpperTop", label: "Top (East Star only \u2014 ABS boxes are a fixed 60\" tall)", min: 80, max: 120, step: 1, esOnly: true },
+    { key: "wdUpperTop", label: "Top (East Star only \u2014 ABS heights are set by the box)", min: 80, max: 120, step: 1, esOnly: true },
   ]],
   ["Boxes", [
     SUPPLIER_CTRL,
@@ -106,7 +108,10 @@ export function build(p) {
   // Everything shallow in this room is 18" on ABS - wall cabinets and the tall box on wall B
   // alike. East Star's shallow box is 15-1/2". (Master's ABS shallow is 15"; different room.)
   const shallow = x => (abs && Math.abs(Number(x) - 15.5) < 0.3 ? 18 : Number(x));
-  const WALLCAB = 60;   // ABS's wall cabinet is 60" tall; their heights are not a free slider
+  // ABS wall cabinets come two ways: one 60" box, or a 40" box with an 18" topper over it.
+  // Either way the height is a product, not a free slider.
+  const WC = p.wallCab === "60" ? { h: 60, seam: 0 } : { h: 58, seam: 40 };
+  const WALLCAB = WC.h;
   for (const k of ["baseDepth", "upperDepth", "facingDepth"]) p[k] = shallow(p[k]);
   const X1 = p.sinkW, X2 = X1 + p.pierT, X3 = X2 + p.wdW;
   const yWD = p.pierLen - p.pierBelow;
@@ -160,9 +165,10 @@ export function build(p) {
     const start = o.flushEnd ? u1 - wd.reduce((a, b) => a + b, 0) : u0;
     const doors = abs ? p.absDoors : o.doors !== false;   // ABS: one With/Without switch for the lot
     // ABS build anything over 94" as a second box stacked on the first, so draw the seam
-    const split = abs && o.top - z0 > ABS.stdTop + 0.01;
-    const segs = split ? [{ z0, top: z0 + ABS.stdTop }, { z0: z0 + ABS.stdTop, top: o.top, topper: true }]
-                       : [{ z0, top: o.top }];
+    const seam = o.seam > z0 + 0.01 && o.seam < o.top - 0.01 ? o.seam
+               : abs && o.top - z0 > ABS.stdTop + 0.01 ? z0 + ABS.stdTop : 0;
+    const segs = seam ? [{ z0, top: seam }, { z0: seam, top: o.top, topper: true }]
+                      : [{ z0, top: o.top }];
     let out = { drawers: [] };
     for (const [i, g] of segs.entries()) {
       runs.push({ wall: wall.id, u0, u1, wd, fill: (u1 - u0) - wd.reduce((a, b) => a + b, 0), ...o, z0: g.z0, top: g.top, topper: g.topper });
@@ -195,6 +201,10 @@ export function build(p) {
 
   // shelves every ~13" through whatever height the box ends up, rather than a fixed two
   const lvls = (z0, top, sp = 13) => { const out = []; for (let z = z0 + sp; z < top - 6; z += sp) out.push(z); return out; };
+  // a wall cabinet built as box + topper restarts its shelves at the seam, so none of them
+  // lands an inch under the joint
+  const wcSeam = z0 => (abs && WC.seam ? z0 + WC.seam : 0);
+  const wcLvls = (z0, top) => { const sm = wcSeam(z0); return sm > z0 && sm < top ? [...lvls(z0, sm), ...lvls(sm, top)] : lvls(z0, top); };
 
   const aU0 = Yb - p.leftUpper;                                   // the foyer jamb, start of wall A right
   const sinkU = Yb - (p.leftUpper - p.sinkCenterFromJamb);        // where the plumbing is
@@ -213,14 +223,14 @@ export function build(p) {
   // equivalent, so there the A run just carries on into the corner.
   const WER = 24;
   if (abs) {
-    const werOpts = { widths: [WER], depth: ud, z0: p.upperBottom, top: upTop, levels: lvls(p.upperBottom, upTop) };
+    const werOpts = { widths: [WER], depth: ud, z0: p.upperBottom, top: upTop, seam: wcSeam(p.upperBottom), levels: wcLvls(p.upperBottom, upTop) };
     run(w.L, Yb - WER, Yb, { ...werOpts, prefix: "WER", seed: 9, qKind: "upper", wer: true, bayLabel: `WER ${WER}" corner, 90\u00b0 front` });
     run(w.SA, 0, WER, { ...werOpts, prefix: "WERD", seed: 10, noQuote: true, leg: true, bayLabel: `WER, wall D leg` });
     // one 36" wall cabinet each side of the corner, as laid out - packStock would otherwise
     // split wall A into 24 + 15, which gains 3" of box but is two units nobody has quoted
-    run(w.L, aU0, Yb - WER, { widths: [36], flushEnd: true, depth: ud, z0: p.upperBottom, top: upTop, levels: lvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
+    run(w.L, aU0, Yb - WER, { widths: [36], flushEnd: true, depth: ud, z0: p.upperBottom, top: upTop, seam: wcSeam(p.upperBottom), levels: wcLvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
   } else {
-    run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: upTop, levels: lvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
+    run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: upTop, seam: wcSeam(p.upperBottom), levels: wcLvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
   }
 
   // the sink: a standard drop-in, centred on the measured drain, not on the cabinet
@@ -256,13 +266,13 @@ export function build(p) {
       run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7, qKind: "base" });
     }
     parts.push(box(w.SA, "counter", bd, X1, 0, bd + 1, cz - 1.25, cz));
-    run(w.SA, abs ? WER : ud, X1, { depth: ud, z0: p.upperBottom, top: upTop, levels: lvls(p.upperBottom, upTop), prefix: "DU", seed: 13, qKind: "upper" });
+    run(w.SA, abs ? WER : ud, X1, { depth: ud, z0: p.upperBottom, top: upTop, seam: wcSeam(p.upperBottom), levels: wcLvls(p.upperBottom, upTop), prefix: "DU", seed: 13, qKind: "upper" });
   } else if (p.backWall === "tall") {
     run(w.SA, bd, X1, { depth: bd, top: upTop, levels: lvls(0, upTop, 14), prefix: "D", seed: 7, qKind: "base" });
   }
 
   // ---------- wall D right: uppers only, over the machines
-  run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: wdTop, levels: lvls(p.wdUpperBottom, wdTop), prefix: "W", seed: 17, qKind: "upper" });
+  run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: wdTop, seam: wcSeam(p.wdUpperBottom), levels: wcLvls(p.wdUpperBottom, wdTop), prefix: "W", seed: 17, qKind: "upper" });
   if (wdTop > 80) {
     const easy = Math.max(0, 80 - p.wdUpperBottom), high = wdTop - Math.max(80, p.wdUpperBottom);
     if (high > 6 && easy < 12) warnings.push(`Over the machines, ${frac(high, 8)} of the cabinet sits above 80" - reachable with a stool, not day to day. ${easy > 6 ? `Only ${frac(easy, 8)} is at easy height.` : "None of it is at easy height."}`);
@@ -402,7 +412,7 @@ export function build(p) {
       { k: "Corner closet", v: `${frac(p.leftUpper, 8)} + ${frac(X1 - bd, 8)}`, s: `${frac(bd, 8)} base + counter at ${frac(cz, 8)}, ${frac(ud, 8)} uppers` },
       { k: "Coat closet", v: `${frac(p.coatW, 8)} × 24" deep`, s: `rod at ${frac(p.coatRod, 8)}, ${coatFronts.length} drawers under it, open` },
       { k: "Everything to", v: `${frac(p.tallTop, 8)} / ${frac(upTop, 8)}`, s: `wall B and the uppers, ${p.tallTop > 94 ? "so the tall runs are two boxes stacked" : "all within a single stock box"}` },
-      ...(abs ? [{ k: "Wall cabinets", v: `${frac(WALLCAB, 8)} tall`, s: `${frac(p.upperBottom, 8)} to ${frac(upTop, 8)} \u00b7 ${frac(p.upperBottom - cz, 8)} over the counter, ${frac(p.ceiling - upTop, 8)} left to the ceiling` }] : []),
+      ...(abs ? [{ k: "Wall cabinets", v: `${frac(WALLCAB, 8)} tall`, s: `${WC.seam ? `${frac(WC.seam, 8)} box + ${frac(WALLCAB - WC.seam, 8)} topper` : "one box"} \u00b7 ${frac(p.upperBottom, 8)} to ${frac(upTop, 8)} \u00b7 ${frac(p.upperBottom - cz, 8)} over the counter, ${frac(p.ceiling - upTop, 8)} left to the ceiling` }] : []),
       { k: "Wall B left", v: ents.length ? ents.map(e => `${frac(e.w, 8)}`).join(" + ") : "open",
         s: ents.map(e => `${frac(e.w, 8)} at ${frac(e.d, 8)} deep${e.w >= 30 && e.d >= 20 ? ", rod, open" : ", shelves + door"}`).join(" · ") },
       { k: "Counter", v: `${frac(p.leftUpper, 8)}${ctrSA ? ` + ${frac(ctrSA, 8)}` : ""}`, s: `${sqft(ctrA)} sq ft clear of the sink; biggest single stretch ${frac(bestStretch, 8)}` },
@@ -423,7 +433,7 @@ export function build(p) {
     ],
     warnings,
     notes: [
-      `Wall A right and wall D left are one L-shaped corner closet: ${frac(bd, 8)} base cabinets under a counter at ${frac(cz, 8)}, with ${frac(ud, 8)} uppers from ${frac(p.upperBottom, 8)} to ${frac(upTop, 8)} over both. The A run owns the inside corner; the D run starts ${frac(bd, 8)} clear of it so the two don't collide.`,
+      `Wall A right and wall D left are one L-shaped corner closet: ${frac(bd, 8)} base cabinets under a counter at ${frac(cz, 8)}, with ${frac(ud, 8)} uppers from ${frac(p.upperBottom, 8)} to ${frac(upTop, 8)} over both${abs ? ` (${WC.seam ? `a ${frac(WC.seam, 8)} box with a ${frac(WALLCAB - WC.seam, 8)} topper over it` : `one ${frac(WALLCAB, 8)} box`})` : ""}. The A run owns the inside corner; the D run starts ${frac(bd, 8)} clear of it so the two don't collide.`,
       `The sink is a standard ${frac(skW, 8)} x ${frac(skD, 8)} drop-in, centred on the measured drain: ${frac(p.sinkCenterFromJamb, 8)} off the foyer jamb, drain at ${frac(p.drainZ, 8)} AFF, supplies at ${frac(p.supplyZ, 8)} AFF and ${frac(p.supplyApart, 8)} apart. It sits over a ${frac(p.sinkBay, 8)} base cabinet with no shelf - the trap needs the room - so that one takes tall bottles standing up.`,
       p.backWall === "counter"
         ? `Counter on both legs: ${frac(p.leftUpper, 8)} on the sink leg and ${frac(ctrSA, 8)} on the back wall, ${sqft(ctrA)} sq ft once the sink is out of it. The biggest clear stretch is ${frac(bestStretch, 8)} - enough to fold on.`

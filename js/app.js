@@ -72,7 +72,7 @@ function buildControls() {
     };
     host.append(bar);
   }
-  const visible = c => !(c.esOnly && state.supplier === "abs");
+  const visible = c => !(c.esOnly && state.supplier === "abs") && !(c.absOnly && state.supplier !== "abs");
   for (const [title, allItems, opt = {}] of mod.CONTROLS) {
     const items = allItems.filter(visible);
     if (!items.length) continue;
@@ -154,10 +154,15 @@ function buildControls() {
 const feedsLocked = key => mod.CONTROLS.some(([, items]) =>
   items.some(c => c.type === "fixedshelf" && (c.deps || []).includes(key)));
 
+// esOnly / absOnly controls come and go with the supplier, so that switch has to rebuild the
+// panel rather than just redraw the model
+const feedsVisible = key => key === "supplier" &&
+  mod.CONTROLS.some(([, items]) => items.some(c => c.esOnly || c.absOnly));
+
 let pending = 0;
 function set(key, value) {
   state[key] = value; lsSet(storeKey(), overrides());
-  if (feedsLocked(key)) { buildControls(); render(); return; }
+  if (feedsLocked(key) || feedsVisible(key)) { buildControls(); render(); return; }
   showGaps();
   cancelAnimationFrame(pending); pending = requestAnimationFrame(render);
 }
