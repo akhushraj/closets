@@ -27,10 +27,8 @@ export function renderElevations(root, model) {
 
 function drawWall(svg, w, len, model) {
   const ceil = model.closet.ceiling;
-  const ox = 46, oy = 12, right = 176;
-  const Wpx = ox + len * S + right, Hpx = oy + ceil * S + 46;
-  svg.setAttribute("viewBox", `0 0 ${Wpx} ${Hpx}`);
-  svg.style.maxWidth = Wpx + "px";
+  const ox = 46, oy = 12;
+  const Hpx = oy + ceil * S + 46;
   const U = u => ox + u * S, Z = z => oy + (ceil - z) * S;
   const g = el("g", {}, svg);
 
@@ -49,8 +47,8 @@ function drawWall(svg, w, len, model) {
     const hU = nearA ? a : b, lU = nearA ? b : a, inward = door.swing === "in";
     el("rect", { x: U(a), y: Z(door.h), width: (b - a) * S, height: door.h * S, class: inward ? "leafin" : "leaf" }, g);
     el("path", { d: `M${U(hU)} ${Z(door.h)} L${U(lU)} ${Z(door.h / 2)} L${U(hU)} ${Z(0)}`, class: "swingel" }, g);
-    el("text", { x: U((a + b) / 2), y: Z(door.h) + 14, class: "lb", "font-size": 10.5, "text-anchor": "middle" }, g, `door · ${door.label || ""}`);
-    el("text", { x: U((a + b) / 2), y: Z(door.h) + 27, class: "lbs", "font-size": 9.5, "text-anchor": "middle" }, g, inward ? "swings in" : "swings out");
+    el("text", { x: U((a + b) / 2), y: Z(door.h) + 14, class: "lb", "font-size": 12, "text-anchor": "middle" }, g, `door · ${door.label || ""}`);
+    el("text", { x: U((a + b) / 2), y: Z(door.h) + 27, class: "lbs", "font-size": 11, "text-anchor": "middle" }, g, inward ? "swings in" : "swings out");
     marks.push({ z: door.roH, label: "Door R.O." });
   }
 
@@ -61,12 +59,12 @@ function drawWall(svg, w, len, model) {
     el("rect", { ...r, class: "p-" + p.kind, rx: p.kind === "hamper" ? 3 : 0 }, g);
     if (p.kind === "front") {   // label left, height right, so the centred pull stays clear
       const ty = r.y + r.height / 2;
-      el("text", { x: r.x + 4, y: ty, class: "lbf", "font-size": 9.5, "dominant-baseline": "middle" }, g, p.label);
-      el("text", { x: r.x + r.width - 4, y: ty, class: "lbf", "font-size": 9.5, "text-anchor": "end",
+      el("text", { x: r.x + 4, y: ty, class: "lbf", "font-size": 11, "dominant-baseline": "middle" }, g, p.label);
+      el("text", { x: r.x + r.width - 4, y: ty, class: "lbf", "font-size": 11, "text-anchor": "end",
         "dominant-baseline": "middle" }, g, frac(p.h - 1 / 8, 8));
     }
     if (p.kind === "hamper")
-      el("text", { x: r.x + r.width / 2, y: r.y + r.height / 2, class: "lbs", "font-size": 9.5,
+      el("text", { x: r.x + r.width / 2, y: r.y + r.height / 2, class: "lbs", "font-size": 11,
         "text-anchor": "middle", "dominant-baseline": "middle" }, g, "hamper");
     if (!p.mark) continue;
     if (p.kind === "rod") marks.push({ z: (p.z0 + p.z1) / 2, label: "Rod" });
@@ -79,7 +77,7 @@ function drawWall(svg, w, len, model) {
   const hz = Math.min(...model.doors.map(d => d.h));
   if (isFinite(hz)) {
     el("line", { x1: U(0), y1: Z(hz), x2: U(len), y2: Z(hz), class: "headerline" }, g);
-    el("text", { x: U(len) - 3, y: Z(hz) - 4, class: "lbs", "font-size": 9.5, "text-anchor": "end" }, g, `door header ${frac(hz, 8)}`);
+    el("text", { x: U(len) - 3, y: Z(hz) - 4, class: "lbs", "font-size": 11, "text-anchor": "end" }, g, `door header ${frac(hz, 8)}`);
   }
   el("line", { x1: U(0) - 8, y1: Z(0), x2: U(len) + 8, y2: Z(0), class: "ob floorline" }, g);
   el("line", { x1: U(0) - 8, y1: Z(ceil), x2: U(len) + 8, y2: Z(ceil), class: "ob" }, g);
@@ -95,15 +93,22 @@ function drawWall(svg, w, len, model) {
   let prevY = -Infinity;
   const x0 = U(len) + 5;
   for (const mk of merged) {
-    const y = Z(mk.z), ty = Math.max(y, prevY + 11.5);
+    const y = Z(mk.z), ty = Math.max(y, prevY + 13.5);
     prevY = ty;
     el("line", { x1: U(len), y1: y, x2: x0 + 6, y2: y, class: "ext" }, g);
     el("path", { d: `M${x0 + 6} ${y} L${x0 + 12} ${ty}`, class: "ext" }, g);
-    el("text", { x: x0 + 15, y: ty, class: "dt", "font-size": 9.5, "dominant-baseline": "middle" }, g, frac(mk.z, 8));
-    if (mk.label) el("text", { x: x0 + 63, y: ty, class: "lbs", "font-size": 9.5, "dominant-baseline": "middle" }, g,
+    el("text", { x: x0 + 15, y: ty, class: "dt", "font-size": 11, "dominant-baseline": "middle" }, g, frac(mk.z, 8));
+    if (mk.label) el("text", { x: x0 + 70, y: ty, class: "lbs", "font-size": 11, "dominant-baseline": "middle" }, g,
       mk.label + (mk.d > 0.1 ? ` \u00b7 ${frac(mk.d, 8)} deep` : ""));
   }
 
   dim(g, U(0), Z(0), U(0), Z(ceil), ftin(ceil), -22);
   dim(g, U(0), Z(0), U(len), Z(0), frac(len, 8), 18);
+
+  const widest = Math.max(0, ...merged.map(m => (m.label || "").length +
+    (m.d > 0.1 ? frac(m.d, 8).length + 8 : 0)));
+  const right = Math.max(196, 88 + widest * 6);
+  const Wpx = ox + len * S + right;
+  svg.setAttribute("viewBox", `0 0 ${Wpx} ${Hpx}`);
+  svg.style.maxWidth = Wpx + "px";
 }

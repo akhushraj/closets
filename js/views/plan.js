@@ -40,12 +40,13 @@ export function renderPlan(svg, model) {
   svg.style.maxWidth = Math.max(560, Wpx) + "px";
   const g = el("g", {}, svg);
   const poly = ps => "M" + ps.map(p => `${X(p[0])} ${Y(p[1])}`).join(" L") + " Z";
-  const txt = (x, y, s, cls = "lb", fs = 11, rot = false) => el("text", { x: X(x), y: Y(y), class: cls, "font-size": fs,
-    "text-anchor": "middle", "dominant-baseline": "middle", transform: rot ? `rotate(-90 ${X(x)} ${Y(y)})` : null }, g, s);
+  const txtPx = (px, py, s, cls = "lb", fs = 13, rot = false) => el("text", { x: px, y: py, class: cls, "font-size": fs,
+    "text-anchor": "middle", "dominant-baseline": "middle", transform: rot ? `rotate(-90 ${px} ${py})` : null }, g, s);
+  const txt = (x, y, s, cls = "lb", fs = 13, rot = false) => txtPx(X(x), Y(y), s, cls, fs, rot);
 
   for (const r of c.nbr || []) {
     el("rect", { x: X(r.x0), y: Y(r.y0), width: (r.x1 - r.x0) * S, height: (r.y1 - r.y0) * S, class: "nbr" }, g);
-    if (r.label) txt((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2, r.label, "lbs", 9.5);
+    if (r.label) txt((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2, r.label, "lbs", 11);
   }
   el("path", { d: poly(c.outline), class: "floor" }, g);
   el("path", { d: poly(outer) + " " + poly(c.outline), class: "wallfill", "fill-rule": "evenodd" }, g);
@@ -92,30 +93,48 @@ export function renderPlan(svg, model) {
     el("rect", { x: X(x0), y: Y(y0), width: (x1 - x0) * S, height: (y1 - y0) * S, class: "ghost" }, g);
     const [lx, ly] = P(w, (m.ghost.u0 + m.ghost.u1) / 2, m.ghost.v1 - 2.2);
     const f = frame(w);
-    txt(lx, ly, m.ghost.label || "", "lbs", 9.5, Math.abs(f.dx) > 0.5 ? false : false);
+    txt(lx, ly, m.ghost.label || "", "lbs", 11, Math.abs(f.dx) > 0.5 ? false : false);
   }
-  const placed = [];
+  // Labels have to dodge each other AND the dimension text, which is drawn later but is already
+  // spoken for. Everything below is in pixels and carries its own half-width / half-height.
+  const FSL = 13, FSS = 11;
+  const dimBox = d => {
+    const x1 = X(d.a[0]), y1 = Y(d.a[1]), x2 = X(d.b[0]), y2 = Y(d.b[1]), off = d.off * S;
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1;
+    const nx = -dy / L, ny = dx / L, k = off + (Math.sign(off) || 1) * 8;
+    const half = String(d.label).length * 3.5, flat = Math.abs(dx) >= Math.abs(dy);
+    return { px: (x1 + x2) / 2 + nx * k, py: (y1 + y2) / 2 + ny * k,
+      hw: flat ? half : 8, hh: flat ? 8 : half };
+  };
+  const placed = (model.planDims || []).map(dimBox);
+  const clash = b => placed.some(q => Math.abs(q.px - b.px) < q.hw + b.hw + 3 && Math.abs(q.py - b.py) < q.hh + b.hh + 3);
+
   for (const m of mods) {
     if (m.kind === "band" || !m.label || m.leg) continue;   // the corner unit's second leg is the same cabinet
     const pw = (m.x1 - m.x0) * S, ph = (m.y1 - m.y0) * S;
-    let cx = (m.x0 + m.x1) / 2, cy = (m.y0 + m.y1) / 2;
-    // if another label already sits here, step down until it doesn't
-    for (let guard = 0; guard < 8; guard++) {
-      const hit = placed.some(q => Math.abs(X(q.x) - X(cx)) < 90 && Math.abs(Y(q.y) - Y(cy)) < 17);
-      if (!hit) break;
-      cy += 17 / S;
-    }
-    if (Y(cy) > Y(m.y1) - 6) cy = (m.y0 + m.y1) / 2;
-    placed.push({ x: cx, y: cy });
-    const need = Math.max(m.label.length * 6.6, (m.sub || "").length * 5.4);
+    const need = Math.max(m.label.length * FSL * 0.6, (m.sub || "").length * FSS * 0.57);
     const rot = need > pw - 6 && ph > pw;
     const room = rot ? ph : pw;
-    const showSub = m.sub && (m.sub.length * 5.4 < room - 4) && (rot ? pw : ph) > 30;
+    const showSub = m.sub && (m.sub.length * FSS * 0.57 < room - 4) && (rot ? pw : ph) > 36;
+    const hw = rot ? (showSub ? 16 : 9) : need / 2;
+    const hh = rot ? need / 2 : (showSub ? 16 : 9);
+    const cx = (m.x0 + m.x1) / 2, cy = (m.y0 + m.y1) / 2;
+    const step = (rot ? 2 * hw : 2 * hh) + 6;
+    const lo = Math.min(X(m.x0), X(m.x1)) - 2, hi = Math.max(X(m.x0), X(m.x1)) + 2;
+    const top = Math.min(Y(m.y0), Y(m.y1)) - 2, bot = Math.max(Y(m.y0), Y(m.y1)) + 2;
+    let box = null;
+    for (const k of [0, 1, -1, 2, -2, 3, -3]) {    // centre first, then either way along the run
+      const b = { px: X(cx) + (rot ? k * step : 0), py: Y(cy) + (rot ? 0 : k * step), hw, hh };
+      if (b.px - hw < lo || b.px + hw > hi || b.py - hh < top || b.py + hh > bot) continue;
+      if (!clash(b)) { box = b; break; }
+    }
+    if (!box) box = { px: X(cx), py: Y(cy), hw, hh };   // nowhere clean - the centre is still the best read
+    placed.push(box);
     if (showSub) {
-      const off = 6.5 / S;
-      txt(rot ? cx - off : cx, rot ? cy : cy - off, m.label, "lb b", 11, rot);
-      txt(rot ? cx + off : cx, rot ? cy : cy + off, m.sub, "lbs", 9.5, rot);
-    } else txt(cx, cy, m.label, "lb b", m.label.length * 6.6 < room - 4 ? 11 : 9.5, rot);
+      const off = 7.5;
+      txtPx(box.px - (rot ? off : 0), box.py - (rot ? 0 : off), m.label, "lb b", FSL, rot);
+      txtPx(box.px + (rot ? off : 0), box.py + (rot ? 0 : off), m.sub, "lbs", FSS, rot);
+    } else txtPx(box.px, box.py, m.label, "lb b", need < room - 4 ? FSL : FSS, rot);
   }
 
   // panels that run on the diagonal in plan
@@ -127,7 +146,7 @@ export function renderPlan(svg, model) {
   // hatches
   for (const h of model.hatches || []) {
     el("rect", { x: X(h.x0), y: Y(h.y0), width: (h.x1 - h.x0) * S, height: (h.y1 - h.y0) * S, class: "hatch" }, g);
-    txt((h.x0 + h.x1) / 2, h.y1 - 1.8, h.label || "hatch", "lbs", 9.5);
+    txt((h.x0 + h.x1) / 2, h.y1 - 1.8, h.label || "hatch", "lbs", 11);
   }
 
   // doors
@@ -141,7 +160,7 @@ export function renderPlan(svg, model) {
         el("line", { x1: X(x1), y1: Y(y1), x2: X(x2), y2: Y(y2), class: "leafp" }, g);
       }
       const [lx, ly] = P(w, (d.u0 + d.u1) / 2, -t - 3);
-      txt(lx, ly, d.label || "sliding doors", "lbs", 9.5);
+      txt(lx, ly, d.label || "sliding doors", "lbs", 11);
       continue;
     }
     const other = d.hingeU < (d.u0 + d.u1) / 2 ? d.hingeU + d.slab : d.hingeU - d.slab;
@@ -151,8 +170,8 @@ export function renderPlan(svg, model) {
     el("path", { d: `M${X(hx)} ${Y(hy)} L${X(ox)} ${Y(oy)}`, class: "leafp" }, g);
     el("path", { d: `M${X(cx)} ${Y(cy)} A${R} ${R} 0 0 ${sweep} ${X(ox)} ${Y(oy)}`, class: "swing" }, g);
     const lx = hx + (cx - hx) * 0.42 + (ox - hx) * 0.42, ly = hy + (cy - hy) * 0.42 + (oy - hy) * 0.42;
-    txt(lx, ly - 1, d.label || "door", "lb", 10.5);
-    txt(lx, ly + 1.1, `swings ${out ? "out" : "in"}`, "lbs", 9);
+    txt(lx, ly - 1, d.label || "door", "lb", 12);
+    txt(lx, ly + 1.1, `swings ${out ? "out" : "in"}`, "lbs", 11);
   }
 
   // wall tags (elevation keys)
@@ -160,10 +179,10 @@ export function renderPlan(svg, model) {
     if (w.hidden) continue;
     const f = frame(w), [mx, my] = P(w, f.len * (w.tagU ?? 0.25), -(t + 4.5));
     el("circle", { cx: X(mx), cy: Y(my), r: 9, class: "etag" }, g);
-    el("text", { x: X(mx), y: Y(my), class: "etagt", "font-size": 9, "text-anchor": "middle", "dominant-baseline": "central" }, g, w.id);
+    el("text", { x: X(mx), y: Y(my), class: "etagt", "font-size": 10.5, "text-anchor": "middle", "dominant-baseline": "central" }, g, w.id);
   }
 
-  for (const d of model.planDims) dim(g, X(d.a[0]), Y(d.a[1]), X(d.b[0]), Y(d.b[1]), d.label, d.off * S);
+  for (const d of model.planDims) dim(g, X(d.a[0]), Y(d.a[1]), X(d.b[0]), Y(d.b[1]), d.label, d.off * S, 11.5);
 
   // legend
   const kinds = new Set(model.modules.map(m => m.kind));
@@ -203,9 +222,9 @@ export function renderPlan(svg, model) {
   const ly = Hpx - 22; let lx = 16;
   for (const [cls, label] of items) {
     el("rect", { x: lx, y: ly - 6, width: 16, height: 12, class: cls }, g);
-    el("text", { x: lx + 21, y: ly, class: "lbs", "font-size": 10.5, "dominant-baseline": "middle" }, g, label);
+    el("text", { x: lx + 21, y: ly, class: "lbs", "font-size": 11.5, "dominant-baseline": "middle" }, g, label);
     lx += 30 + label.length * 5.6;
   }
-  el("text", { x: Wpx - 16, y: ly, class: "lbs", "font-size": 10, "text-anchor": "end",
+  el("text", { x: Wpx - 16, y: ly, class: "lbs", "font-size": 11, "text-anchor": "end",
     "dominant-baseline": "middle", opacity: .75 }, g, "Click two points to measure between them");
 }
