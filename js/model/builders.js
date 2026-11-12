@@ -311,7 +311,8 @@ export function esRun(w, o) {
       parts.push(box(w, "cabdoor", da, da + lw, cD, depth, base + 1 / 16, top - 1 / 16,
         oak({ mark: n === 1, label: "Door" })));
       const pu = leaves === 2 ? (k === 0 ? da + lw - 1.5 : da + 1.5) : da + lw - 1.5;
-      parts.push(box(w, "pull", pu - 0.4, pu + 0.4, depth, depth + 1.1, pz - 2.5, pz + 2.5));
+      // a bi-fold corner front is one assembly across both leaves, so it takes one handle
+      if (!(bay.onePull && k)) parts.push(box(w, "pull", pu - 0.4, pu + 0.4, depth, depth + 1.1, pz - 2.5, pz + 2.5));
     }
 
     modules.push(module(w, "cabinets", a, b, 0, depth, { label: bay.label || `${brand} ${frac(bay.w, 8)}`,

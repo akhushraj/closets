@@ -192,7 +192,7 @@ export function build(p) {
             atag = q ? q.tag : dimTag(g.top - g.z0, x, o.depth);
             aw = !q;
           }
-          return { w: x, label: lab, atag, aw, leg: o.leg,
+          return { w: x, label: lab, atag, aw, leg: o.leg, onePull: !!(o.wer || o.leg),
           levels: (o.levels || []).filter(z => z > g.z0 && z < g.top),
           fronts: g.topper ? undefined : o.fronts,
           rods: g.topper ? undefined : o.rods };
