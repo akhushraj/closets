@@ -12,7 +12,7 @@ export const DEFAULTS = {
   rodZ: 72, lowOn: false, lowZ: 35, lowDepth: 21, upDepth: 21, dresser: true, centre: "bracket",
   dresserW: 31.5, dresserD: 19, dresserH: 32,
   topOn: true, topZ: 94, topDepth: 12, nosingOn: false, plyOnly: false,
-  ...shelfSlots("u", [75], [60, 84, 94]),
+  ...shelfSlots("u", [76], [60, 84, 94]),
   finish: "white", oneFinish: false,
 };
 
