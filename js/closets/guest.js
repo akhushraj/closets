@@ -9,10 +9,10 @@ export const INFO = { id: "guest", name: "Guest Closet", room: "Guest room", stu
 export const FIELD = { W: 54.1, D: 22.3, ceiling: 120, stubL: 2.1, opening: 50.1, stubR: 1.8, doorH: 96 };
 
 export const DEFAULTS = {
-  rodZ: 71, lowOn: false, lowZ: 35, lowDepth: 21, upDepth: 21, dresser: true, centre: "bracket",
+  rodZ: 72, lowOn: false, lowZ: 35, lowDepth: 21, upDepth: 21, dresser: true, centre: "bracket",
   dresserW: 31.5, dresserD: 19, dresserH: 32,
-  topOn: true, topZ: 88, topDepth: 12, nosingOn: false, plyOnly: false,
-  ...shelfSlots("u", [73], [60, 84, 94]),
+  topOn: true, topZ: 94, topDepth: 12, nosingOn: false, plyOnly: false,
+  ...shelfSlots("u", [75], [60, 84, 94]),
   finish: "white", oneFinish: false,
 };
 
@@ -115,6 +115,10 @@ export function build(p) {
 
   if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, nosing: NOSE, levels: [p.topZ], label: "Top shelf", led: false }));
 
+  // same rule as Rohan: a hanger needs about 2" of hook plus room to lift it clear
+  const firstUp = up.length ? up[0] : (p.topOn ? p.topZ : null);
+  if (firstUp !== null && firstUp - p.rodZ < 4)
+    warnings.push(`The first shelf is ${frac(firstUp - p.rodZ, 8)} over the rod, leaving ${frac(firstUp - PLY - p.rodZ, 8)} under it. A hanger hook stands about 2" proud and needs as much again to lift off. Raise the shelf to ${frac(p.rodZ + 4, 8)} or drop the rod.`);
   const clothesBottom = p.rodZ - 1.2 - 34;
   if (p.lowOn && p.lowZ > clothesBottom) warnings.push(`Jackets hang down to about ${frac(clothesBottom, 8)}, so the low shelf at ${frac(p.lowZ, 8)} is in their way.`);
   if (p.lowOn && p.dresser && p.lowZ - PLY - 1.5 < DR.h + 0.5) warnings.push(`The dresser (${DR.h}") doesn't fit under the low shelf's cleats (${frac(p.lowZ - PLY - 1.5, 8)}).`);
