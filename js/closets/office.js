@@ -14,7 +14,7 @@ export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9
 const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
 
 export const DEFAULTS = {
-  gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
+  gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: false, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
   shelfDepth: 22, dresser: true, topOn: true, topZ: 94, topDepth: 12, nosingOn: false, plyOnly: false,
   ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
@@ -80,8 +80,8 @@ export function build(p) {
   parts.push(box(w.L, "outlet", bx(p.topOutletBack) - 1.2, bx(p.topOutletBack) + 1.2, 0, 0.8, p.topOutletZ, p.topOutletZ + 4.5, { mark: true, label: "Outlet" }));
   parts.push(box(w.L, "outlet", 3, 5.4, 0, 0.8, p.upsOutletZ, p.upsOutletZ + 4.5, { mark: true, label: "UPS outlet" }));
 
-  // gear zone on the back wall, left end: backboard, rack, devices below it, UPS on the floor
-  parts.push(box(w.T, "backboard", 0.25, G - 0.25, 0, 0.75, 24, p.boardTop, { mark: true, label: "Backboard top" }));
+  // gear zone on the back wall, left end: backboard, rack, devices below it, UPS on the floor.
+  // The board itself is built further down, once the gear-side shelf heights are known.
   const rackPad = (G - p.rackW) / 2;
   parts.push(box(w.T, "rack", rackPad, G - rackPad, 0.75, 0.75 + p.rackDepth, p.rackZ, p.rackZ + rackH, { mark: true, label: `${p.rackU}U rack` }));
   const base = (readShelves(p, "s", 6)[0] ?? 33) + 2;   // devices start just above the bottom shelf
@@ -99,10 +99,9 @@ export function build(p) {
   const divBottom = Math.max(0, (lv[0] ?? 35) - PLY - 3);   // hangs on the wall; floor stays open for the hatch
   const stepAt = lv.length ? lv[lv.length - 1] : divTop;   // divider steps back to the top shelf's depth
   parts.push(box(w.T, "carcass", G, G + PLY, 0, sd, divBottom, stepAt));
-  if (p.topOn && p.topZ > stepAt) parts.push(box(w.T, "carcass", G, G + PLY, 0, p.topDepth, stepAt, p.topZ));
   // the pair of wall cleats the divider slots between
   for (const [a, b] of [[G - 1.5, G], [G + PLY, G + PLY + 1.5]])
-    parts.push(box(w.T, "cleat", a, b, 0, PLY, divBottom, p.topOn ? p.topZ : stepAt));
+    parts.push(box(w.T, "cleat", a, b, 0, PLY, divBottom, stepAt));
   add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, nosing: NOSE, levels: lv, label: "Shelves", led: false }));
   // the same shelves continue over the gear zone wherever the devices and rack leave room
   const rackTop = p.rackZ + rackH;
@@ -110,6 +109,21 @@ export function build(p) {
   const leftLv = [...lv.filter(z => (z < base - 1 || z > rackTop + 3) && clearOfRack(z)),
     ...(p.gearShelfOn && clearOfRack(p.gearShelfZ) ? [p.gearShelfZ] : [])].sort((a, b) => a - b);
   if (leftLv.length) add(fixedShelves(w.T, { u0: 0, u1: G, depth: sd, nosing: NOSE, levels: leftLv, label: "Gear-side shelves", led: false }));
+
+  // The board sits in the bay between two shelves rather than running behind them, so no shelf
+  // has to be notched round it and nothing holds a shelf proud of the wall. A gear-side shelf
+  // inside the span splits it into separate panels.
+  const boardBot = leftLv.length ? leftLv[0] : 24;
+  const overRack = leftLv.filter(z => z > rackTop);
+  const boardTop = overRack.length ? overRack[0] - PLY : p.boardTop;
+  const cuts = leftLv.filter(z => z > boardBot + 0.01 && z < boardTop - 0.01);
+  let bz = boardBot;
+  [...cuts, null].forEach((c, i) => {
+    const top = c === null ? boardTop : c - PLY;
+    if (top - bz > 2) parts.push(box(w.T, "backboard", 0.25, G - 0.25, 0, PLY, bz, top,
+      { mark: true, label: `Backboard, ${frac(G - 0.5, 8)} x ${frac(top - bz, 8)}` }));
+    if (c !== null) bz = c;
+  });
   if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, nosing: NOSE, levels: [p.topZ], label: "Top shelf", led: false }));
   if (p.dresser && !bare) {   // MALM 3-drawer under the bottom shelf
     const a = G + PLY + 1, b = a + MALM.w, v1 = 0.5 + MALM.d, fh = (MALM.h - 2.5) / 3;
