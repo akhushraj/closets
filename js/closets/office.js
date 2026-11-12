@@ -14,7 +14,7 @@ export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9
 const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
 
 export const DEFAULTS = {
-  gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: false, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
+  gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
   shelfDepth: 22, dresser: true, topOn: true, topZ: 94, topDepth: 12, nosingOn: false, plyOnly: false,
   ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
