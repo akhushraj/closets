@@ -18,8 +18,9 @@ export const DEFAULTS = {
   esPlan: "30, 30", esAlign: "centre", esTop: 84, depth: 24, fronts: "10, 11, 12", rodZ: 68,
   ...shelfSlots("e", [40, 74], [54, 64, 84]),
   ends: "ply", gableOn: false,
-  ...shelfSlots("s", [30, 46, 62, 78], [16, 86]),
+  ...shelfSlots("s", [24, 36, 48, 60, 72], [12]),
   aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, midDiv: true, drawersOut: false,
+  nosingOn: false, plyOnly: false,
   finish: "white", oneFinish: false, lights: true,
 };
 
@@ -43,6 +44,10 @@ export const CONTROLS = [
     { key: "gableOn", label: "Plywood gable at each join (plywood ends only)", type: "check" },
   ]],
   shelfControls("s", 6, "Shelves at the two ends"),
+  ["Drawing", [
+    { key: "nosingOn", label: "Solid nosing on the shelf fronts", type: "check" },
+    { key: "plyOnly", label: "Show only what Amir builds", type: "check" },
+  ]],
   ["Plywood over the boxes", [
     { key: "aboveOn", label: "Shelf right across, sitting on the box tops", type: "check" },
     { key: "above2On", label: "A second one higher up", type: "check" },
@@ -68,6 +73,8 @@ export function build(p) {
   p = { ...p, ...FIELD };
   const abs = p.supplier === "abs";
   const W = p.W, D = p.D, t = 4.5, d = p.depth, ew = +p.esW;
+  const NOSE = p.nosingOn ? 1.5 : 0;   // no nosing: the plank itself runs the full depth
+  const bare = p.plyOnly;              // drawing for Amir - leave out the East Star boxes' contents
   const top = abs ? 94 : +p.esTop;        // ABS do not make 84" as a standard box
   const doors = abs && p.absDoors;
   const outline = [[0, 0], [W, 0], [W, D], [0, D]];
@@ -119,7 +126,7 @@ export function build(p) {
   const g = p.gableOn ? PLY : 0;
   if (onThirds) {
     const gap0 = boxAt[0] + esW[0], gap1 = boxAt[1];
-    if (gap1 - gap0 > 10) add(fixedShelves(w.T, { u0: gap0 + g, u1: gap1 - g, depth: d, levels: lv, label: "Shelves · middle" }));
+    if (gap1 - gap0 > 10) add(fixedShelves(w.T, { u0: gap0 + g, u1: gap1 - g, depth: d, nosing: NOSE, levels: lv, label: "Shelves · middle" }));
   }
   const gTop = p.aboveOn ? p.aboveZ - PLY : (lv[lv.length - 1] || top);
   const endFill = [];
@@ -146,8 +153,8 @@ export function build(p) {
   } else {
     if (p.gableOn) for (const u of [m0, m1 + PLY])
       parts.push(box(w.T, "carcass", u - PLY, u, 0, d, 0, gTop, { mark: u === m0, label: "Gable, plywood meets East Star" }));
-    add(fixedShelves(w.T, { u0: 0, u1: m0 - g, depth: d, levels: lv, label: "Shelves · left end" }));
-    add(fixedShelves(w.T, { u0: m1 + g, u1: W, depth: d, levels: lv, label: "Shelves · right end" }));
+    add(fixedShelves(w.T, { u0: 0, u1: m0 - g, depth: d, nosing: NOSE, levels: lv, label: "Shelves · left end" }));
+    add(fixedShelves(w.T, { u0: m1 + g, u1: W, depth: d, nosing: NOSE, levels: lv, label: "Shelves · right end" }));
   }
   const basket = lv.length ? lv[0] - PLY - 1.5 : top;
 
@@ -155,11 +162,11 @@ export function build(p) {
   // middle 6 ft of it and the end walls carry the rest, so it needs nothing hanging from above.
   const aboveZ = top + PLY;
   if (p.aboveOn) {
-    add(fixedShelves(w.T, { u0: 0, u1: W, depth: d, levels: [aboveZ], label: "Shelf on the box tops" }));
+    add(fixedShelves(w.T, { u0: 0, u1: W, depth: d, nosing: NOSE, levels: [aboveZ], label: "Shelf on the box tops" }));
     // No posts under the top shelf. It is cleated along its whole back edge into the studs,
     // so every slice of it cantilevers over its 18" depth rather than spanning the room: about
     // 1/25" of droop at the front. Posts would only be needed if it rested on its two ends.
-    if (p.above2On) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.aboveDepth2, levels: [p.aboveZ2], label: "Top shelf" }));
+    if (p.above2On) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.aboveDepth2, nosing: NOSE, levels: [p.aboveZ2], label: "Top shelf" }));
     // One divider on the centre line, which is also the seam between the two boxes, so it lands
     // straight over two box sides. It splits the long open band in two - it is not holding
     // anything up, the top shelf is cleated along its back edge.
@@ -206,7 +213,7 @@ export function build(p) {
     params: p,
     quote: abs ? { supplier: "Aydin Building Supplies", rows: qRows } : null,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
-    parts, modules, doors: [door], hatches: [],
+    parts: bare ? parts.filter(q => q.kind !== "garment") : parts, modules, doors: [door], hatches: [],
     elevations: ["T", "L", "R"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
