@@ -27,7 +27,7 @@ export const DEFAULTS = {
   nookDepth: 26.5,
   fronts1: "11, 12, 13", rod1: 84, fronts2: "11, 12, 13", fronts3: "11, 12, 13", rod2: 84, rod3: 84,
   rightDepth: 15.5, rightPlan: "15, 30, 30",
-  fillerOn: true,
+  fillerOn: true, nosingOn: false, plyOnly: false,
   aboveLOn: true, aboveROn: true,
   // over each run: a deck resting on the cabinet tops, then adjustable planks above it
   ...shelfSlots("al", [107], [114]),
@@ -114,6 +114,10 @@ export const CONTROLS = [
     { key: "pressZ", label: "Cabinet bottom", min: 12, max: 30, step: 1 },
     { key: "pressDown", label: "Show it folded down", type: "check" },
   ], { fold: true }],
+  ["Drawing", [
+    { key: "nosingOn", label: "Solid nosing on the nook shelf fronts", type: "check" },
+    { key: "plyOnly", label: "Show only what Amir builds", type: "check" },
+  ]],
   [...LOOK, { fold: true }],
 ];
 
@@ -138,14 +142,17 @@ export function build(p) {
   const abs = p.supplier === "abs";
   const top = +p.esTop, d = absDepth(+p.leftDepth, abs), rd = absDepth(+p.rightDepth, abs);
   const lDoors = abs ? p.absDoors : p.leftDoors, rDoors = abs ? p.absDoors : p.rightDoors;
+  const NOSE = p.nosingOn ? 1.5 : 0;   // no nosing: the plank itself runs the full depth
+  const bare = p.plyOnly;              // drawing for Amir - the factory boxes are not his
+  const brand = abs ? "Aydin (ABS)" : "East Star";
   const outline = [[0, 0], [W, 0], [W, RT], [XN, RT], [XN, Lh], [0, Lh]];
   const walls = [
     { id: "T",  name: "Back wall",                  a: [0, 0],   b: [W, 0] },
-    { id: "R",  name: "Right wall · East Star",     a: [W, 0],   b: [W, RT] },
+    { id: "R",  name: `Right wall · ${brand}`,          a: [W, 0],   b: [W, RT] },
     { id: "NT", name: "Nook top",                   a: [W, RT],  b: [XN, RT], hidden: true },
     { id: "NR", name: "Nook · plywood shelves",     a: [XN, RT], b: [XN, Lh] },
     { id: "B",  name: "Door wall",                  a: [XN, Lh], b: [0, Lh], hidden: true },
-    { id: "L",  name: "Left wall · East Star",      a: [0, Lh],  b: [0, 0], tagU: 0.5 },
+    { id: "L",  name: `Left wall · ${brand}`,           a: [0, Lh],  b: [0, 0], tagU: 0.5 },
   ];
   const w = Object.fromEntries(walls.map(x => [x.id, x]));
   const { parts, modules, add } = collector();
@@ -174,9 +181,11 @@ export function build(p) {
   const rGap = Math.max(0, RT - rRun);                          // the leftover, at the back corner
   const mat = p.grade === "chip" ? "melamine" : null;   // chipboard reads flatter in the 3D
   const common = { doorsOpen: p.doorsOpen, drawersOut: p.drawersOut, brand: abs ? "ABS" : "East Star", ...(mat ? { mat } : {}) };
-  const left = add(esRun(w.L, { u0: 0, depth: d, top, doors: lDoors, ...common,
+  // factory boxes and their fillers come as one order; none of it is Amir's
+  const addBox = o => { for (const q of o.parts || []) q.bought = true; return add(o); };
+  const left = addBox(esRun(w.L, { u0: 0, depth: d, top, doors: lDoors, ...common,
     bays: lw.map((width, i) => ({ w: width, ...inside[i] })), prefix: "L", seed: 5 }));
-  const right = add(esRun(w.R, { u0: rGap, depth: rd, top, doors: rDoors, ...common,
+  const right = addBox(esRun(w.R, { u0: rGap, depth: rd, top, doors: rDoors, ...common,
     bays: rw.map((width, i) => {
       const q = abs ? ABS_Q(width, rd, { rod: false }) : null;
       if (abs) qRows.push({ where: `Right ${i + 1}`, w: width, d: rd, h: top, q });
@@ -186,9 +195,9 @@ export function build(p) {
 
   if (p.fillerOn) {
     if (lFill > 0.5) parts.push(box(w.L, "carcass", lRun, Lh, 0, d, 0, top,
-      { ...(mat ? { mat } : { mat: "oak" }), mark: true, label: `Filler, ${frac(lFill, 8)}, back corner` }));
+      { ...(mat ? { mat } : { mat: "oak" }), mark: true, bought: true, label: `Filler, ${frac(lFill, 8)}, back corner` }));
     if (rGap > 0.5) parts.push(box(w.R, "carcass", 0, rGap, 0, rd, 0, top,
-      { ...(mat ? { mat } : { mat: "oak" }), mark: true, label: `Filler, ${frac(rGap, 8)}, back corner` }));
+      { ...(mat ? { mat } : { mat: "oak" }), mark: true, bought: true, label: `Filler, ${frac(rGap, 8)}, back corner` }));
   }
 
   const aisle = W - d - rd;
@@ -239,7 +248,7 @@ export function build(p) {
   // is a fold-down press board, 5" deep closed, centred in the gap between the two runs.
   const bw0 = d, bw1 = W - rd, bwFree = bw1 - bw0;
   if (p.pressOn && bwFree > p.pressW + 4)
-    add(pressBoard(w.T, { u0: bw0 + (bwFree - p.pressW) / 2, width: p.pressW, z0: p.pressZ, down: p.pressDown }));
+    addBox(pressBoard(w.T, { u0: bw0 + (bwFree - p.pressW) / 2, width: p.pressW, z0: p.pressZ, down: p.pressDown }));
   if (p.pressOn && bwFree <= p.pressW + 4)
     warnings.push(`Only ${frac(bwFree, 8)} of back wall between the two runs - not enough for a ${frac(p.pressW, 8)} press cabinet.`);
 
@@ -252,7 +261,7 @@ export function build(p) {
   const nd = Math.min(p.nookDepth, nookCap);
   // The plank that carries the open end of the nook shelves stands in the right wall's leftover
   // rather than in the nook, so the nook keeps its full length. It runs to the upper shelf.
-add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Nook shelves" }));
+add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, nosing: NOSE, levels: nLv, label: "Nook shelves" }));
   if (nLv.length && p.ceiling - nLv[nLv.length - 1] > 20)
     warnings.push(`The nook's top shelf is at ${frac(nLv[nLv.length - 1], 8)}, leaving ${frac(p.ceiling - nLv[nLv.length - 1], 8)} of bare wall to the ceiling. Turn another one on.`);
   const nose = XN - nd;
@@ -276,7 +285,7 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Noo
     params: p,
     quote: abs ? { supplier: "Aydin Building Supplies", rows: qRows } : null,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
-    parts, modules, doors: [door], hatches,
+    parts: bare ? parts.filter(q => !q.bought && q.kind !== "garment") : parts, modules, doors: [door], hatches,
     elevations: ["L", "R", "NR", "T"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
@@ -286,7 +295,7 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, levels: nLv, label: "Noo
       { a: [p.doorAt, Lh], b: [p.doorAt + p.doorRO, Lh], label: frac(p.doorRO, 8) + " R.O.", off: t + 2.3 },
       { a: [d, 40], b: [W - rd, 40], label: `aisle ${frac(aisle, 8)}`, off: 0 },
     ],
-    drawerGroups: [{ name: "East Star drawers", drawers }],
+    drawerGroups: [{ name: `${brand} drawers`, drawers }],
     stats: [
       { k: "Boxes", v: `${lw.length + rw.length}`, s: `${abs ? "Aydin (ABS)" : "East Star"} · ${frac(top, 8)} tall · ${lDoors || rDoors ? "wood doors" : "no doors"}` },
       ...(abs ? [{ k: "ABS quote", v: `$${qRows.reduce((a, r) => a + (r.q ? r.q.price : 0), 0).toLocaleString()}`,
