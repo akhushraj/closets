@@ -76,7 +76,11 @@ export const LOOK = ["Look", [
   { key: "lights", label: "LED strips on", type: "check" },
 ]];
 
-export const PLYWOOD_NOTE = "Fixed shelves: 3/4\" Baltic birch or birch cabinet plywood resting on 3/4\" × 1-1/2\" cleats screwed into the studs on three sides, with a 3/4\" × 1-1/2\" front strip nailed on. The shelves lift out.";
+export const plywoodNote = nosing =>
+  `Fixed shelves: 3/4" Baltic birch or birch cabinet plywood resting on 3/4" × 1-1/2" cleats screwed into the studs on three sides${nosing
+    ? `, with a 3/4" × 1-1/2" front strip nailed on`
+    : `, each cut to its full depth with no front strip`}. The shelves lift out.`;
+export const PLYWOOD_NOTE = plywoodNote(true);
 
 /* ---------- Suppliers. East Star and Aydin (ABS) make nearly the same catalogue; the
    differences that show up on a drawing are the shallow depth, whether doors are quoted,

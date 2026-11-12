@@ -3,7 +3,7 @@
 // rest; the lowest shelf clears a space heater. No clothes rod, no desk. Louvered double doors swing out.
 import { box, fixedShelves, floorItem, collector, hatchClashes } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
-import { shelfSlots, shelfControls, readShelves, spacingWarnings, PLYWOOD_NOTE } from "./common.js";
+import { shelfSlots, shelfControls, readShelves, spacingWarnings, plywoodNote } from "./common.js";
 
 export const INFO = { id: "office", name: "Office Closet", room: "Office", stuff: "bins", concept: "Network gear + plywood shelves", rev: "" };
 
@@ -15,7 +15,7 @@ const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
 
 export const DEFAULTS = {
   gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
-  shelfDepth: 22, dresser: true, topOn: false, topZ: 92, topDepth: 12, nosingOn: false, plyOnly: false,
+  shelfDepth: 22, dresser: true, topOn: true, topZ: 94, topDepth: 12, nosingOn: false, plyOnly: false,
   ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
   finish: "white", oneFinish: false, lights: true,
@@ -188,7 +188,7 @@ export function build(p) {
       `The cables arrive in two boxes on the left end wall at ${p.boxZ}", right beside the top of the rack. That's a short, tidy run.`,
       "Heat: the NVR, switch and UPS run all the time. Louvered doors, or a door undercut plus a small thermostat fan, keep the closet from cooking them.",
       "Store the space heater here, but don't run it inside the closet.",
-      PLYWOOD_NOTE,
+      plywoodNote(p.nosingOn),
     ],
   };
 }
