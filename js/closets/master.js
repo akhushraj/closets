@@ -219,7 +219,7 @@ export function build(p) {
     if (!aOn[wall.id] || u1 - u0 < 12) return;
     const seams = widths.slice(0, -1).map((_, i) => runFrom + widths.slice(0, i + 1).reduce((a, b) => a + b, 0));
     parts.push(box(wall, "shelf", u0, u1, 0, depth, deckZ, deck, { mark: true,
-      label: `Deck, on angles off the studs, ${frac(p.deckGap, 8)} over the ${frac(top, 8)} box tops` }));
+      label: `Deck · support OPEN, see note` }));
     const posts = [u0 + PLY / 2, ...seams, u1 - PLY / 2];
     for (const s2 of posts)
       parts.push(box(wall, "carcass", s2 - PLY / 2, s2 + PLY / 2, 0, depth, deck, p.ceiling,
@@ -293,6 +293,11 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, nosing: NOSE, levels: nL
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
     parts: bare ? parts.filter(q => !q.bought && q.kind !== "garment") : parts, modules, doors: [door], hatches,
     elevDims,
+    elevNotes: (aOn.L ? ["L"] : []).concat(aOn.R ? ["R"] : []).map(id => ({ wall: id, lines: [
+      `OPEN FOR AMIR - how is the deck at ${frac(deck, 8)} carried?`,
+      `Cabinets are ${frac(top, 8)} tall, backs to this wall, so nothing can run under the deck along the wall.`,
+      `Plywood goes up before the cabinets, so their tops cannot be the support either.`,
+    ] })),
     elevations: ["L", "R", "NR", "T"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
@@ -349,7 +354,7 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, nosing: NOSE, levels: nL
       `East Star does the two walls - anything with a drawer, a door or a carcass. Amir does the flat plywood: the nook shelves and the deck${aLv.L.length || aLv.R.length ? " and shelves" : ""} above the cabinets, cut and painted, sitting on 1x2 cleats.`,
       `Stock widths are ${ES_WIDTHS.join(", ")}", so every run adds up to a multiple of 3. ${frac(Lh, 8)} and ${frac(RT, 8)} land on ${lRun}" and ${rRun}". Both leftovers go to the back corner as filler: ${frac(lFill, 8)} on the left, ${frac(rGap, 8)} on the right.`,
       `The dividers above the cabinets run from the deck all the way to the ceiling${aLv.L.length || aLv.R.length ? ", so any plank between them is braced top and bottom rather than sitting on short posts" : ", bracing the deck and splitting the bay above it into reachable widths"}.`,
-      `The deck has no cleat under it. A 1x2 there would sit ${frac(1.5 - +p.deckGap, 8)} inside the cabinet, so the plywood could only go up after the boxes. It rides on steel angles screwed through the drywall into the studs instead, set from above and landing ${frac(p.deckGap, 8)} clear of the ${frac(top, 8)} box tops. That way the plywood can go first and the boxes slide under; once they are in they carry it anyway and the angles are just insurance.`,
+      `OPEN - how the deck is carried. It sits at ${frac(deck, 8)}, underside ${frac(deckZ, 8)}. The cabinets are ${frac(top, 8)} tall with their backs to this wall, so a cleat along the wall under the deck would be inside the cabinet. The plywood goes up before the boxes arrive, so the deck cannot rely on their tops either. Amir to say how he carries it and what that needs from the dividers.`,
       `Nook shelves start at ${frac(nLv[0] || 24, 8)} and then step about 12" - and the one at eye level is deliberately left out, so 48" to 72" is a single ${frac(23.25, 8)} opening for the puja. It runs its own shelves, floor to ${frac(nLv[nLv.length - 1] || 0, 8)} - the plywood over the cabinets stops at the right wall and does not carry into it.`,
       `Nothing holds the open corner of the nook shelves up. The near end of each one lands ${frac(p.nookD, 8)} on the nook wall and the remaining ${frac(W - (XN - nd), 8)} on the end panel of the last right-wall cabinet - ${frac(p.nookD + W - (XN - nd), 8)} of support across a ${frac(nd, 8)} shelf, which is all of it. Back edge and far end are on wall cleats. So no plank and no post.`,
       `The nook is planks rather than a box on purpose: the recess is only ${frac(p.nookD, 8)} and East Star's shallowest is 15-1/2", which would stand proud and lap the crawl hatch. Planks fit it exactly.`,

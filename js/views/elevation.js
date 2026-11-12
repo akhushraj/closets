@@ -28,7 +28,9 @@ export function renderElevations(root, model) {
 function drawWall(svg, w, len, model) {
   const ceil = model.closet.ceiling;
   const ox = 46, oy = 12;
-  const Hpx = oy + ceil * S + 46;
+  // open questions for the builder, printed under the drawing so they travel with it
+  const notes = (model.elevNotes || []).filter(n => n.wall === w.id).flatMap(n => n.lines);
+  const Hpx = oy + ceil * S + 46 + (notes.length ? notes.length * 14 + 10 : 0);
   const U = u => ox + u * S, Z = z => oy + (ceil - z) * S;
   const g = el("g", {}, svg);
 
@@ -123,6 +125,9 @@ function drawWall(svg, w, len, model) {
 
   dim(g, U(0), Z(0), U(0), Z(ceil), ftin(ceil), -22);
   dim(g, U(0), Z(0), U(len), Z(0), frac(len, 8), 18);
+
+  notes.forEach((t, i) => el("text", { x: U(0) - 8, y: Z(0) + 46 + i * 14, class: "elevnote",
+    "font-size": 11.5 }, g, t));
 
   // dimensions the model asks for on this wall - bay widths, a divider's distance off a wall
   for (const dm of (model.elevDims || []).filter(x => x.wall === w.id))

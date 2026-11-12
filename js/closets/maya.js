@@ -217,6 +217,11 @@ export function build(p) {
     quote: abs ? { supplier: "Aydin Building Supplies", rows: qRows } : null,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
     parts: bare ? parts.filter(q => !q.bought && q.kind !== "garment") : parts, modules, doors: [door], hatches: [],
+    elevNotes: p.aboveOn ? [{ wall: "T", lines: [
+      `OPEN FOR AMIR - how is the deck at ${frac(aboveZ, 8)} carried across the middle ${frac(esRun0, 8)}?`,
+      `East Star boxes are ${frac(top, 8)} tall, backs to this wall, so nothing can run under the deck along the wall.`,
+      `Plywood goes up before the boxes, so their tops cannot be the support either.`,
+    ] }] : [],
     elevations: ["T", "L", "R"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
@@ -271,7 +276,7 @@ export function build(p) {
       `${frac(top, 8)} boxes rather than 94". A 94" box puts its shelf at 94-3/4", right under the ${frac(p.doorH, 8)} header, where you can neither see onto it nor reach across it. At ${frac(top, 8)} the shelf lands at ${frac(aboveZ, 8)} with ${frac(p.aboveZ2 - aboveZ - PLY, 8)} of clear, visible space over it, and the awkward height moves up to the ${frac(p.aboveZ2, 8)} shelf where it belongs.`,
       ...(p.midDiv && p.above2On ? [`The one divider between the upper shelves is there to split a ${frac(W, 8)} run in two so stacks have something to lean on, not to hold the shelf up - that shelf is cleated along its whole back edge and droops about 1/25" at the front whatever its length. It sits on the centre line, which is also the seam between the two boxes, so it bears straight onto two box sides.`] : []),
       `That top shelf is only ${frac(p.aboveDepth2, 8)} deep on purpose: you reach it over the header, so your arm cannot go 24" back.`,
-      `The deck across the top has no cleat under it: a 1x2 there would land ${frac(1.5 - +p.deckGap, 8)} inside the ${frac(top, 8)} box. It goes on steel angles screwed through the drywall into the studs, ${frac(p.deckGap, 8)} clear of the box tops, so the plywood can go up before the boxes arrive. Once they are in the boxes carry the middle ${frac(esRun0, 8)} of it continuously and the angles hold the ${frac(endW - g, 8)} at each end. That leaves ${frac(p.ceiling - aboveZ, 8)} open above it.`,
+      `OPEN - how the deck is carried. It sits at ${frac(aboveZ, 8)}, underside ${frac(aboveZ - PLY, 8)}. The East Star boxes are ${frac(top, 8)} tall with their backs to this wall, so a cleat along the wall under the deck would be inside the box. The plywood goes up before the boxes arrive, so their tops cannot be the support either. The ${frac(endW - g, 8)} at each end lands on the plywood sides, but the middle ${frac(esRun0, 8)} is the question. Amir to say how he carries it. That leaves ${frac(p.ceiling - aboveZ, 8)} open above it.`,
       ...(esEnds ? [] : [`The end shelves sit on the back wall, the side wall, and a third cleat screwed into the side of the East Star box${p.gableOn ? "" : " - no gable, so none of that 20-odd inches is given up to a slab of plywood"}. On the shaker grade that side is plywood; on the chipboard grade use coarse cabinet screws.`]),
       `The opening is ${frac(p.doorH, 8)} tall in a ${ftin(p.ceiling)} room, so ${frac(p.ceiling - p.doorH, 8)} of wall sits above it. The ${frac(top, 8)} boxes and the deck on their tops at ${frac(aboveZ, 8)} stay under the header, where you can see what you are doing.${p.above2On ? ` The ${frac(p.aboveZ2, 8)} shelf is the exception: it sits ${frac(p.aboveZ2 - p.doorH, 8)} above the header, so it is reached blind, over the top of the opening. That is why it is ${frac(p.aboveDepth2, 8)} deep and not ${frac(d, 8)} - its front edge stands ${frac(D - p.aboveDepth2, 8)} back from the doors, and that gap is the room your forearm needs to get up and over.` : ""}`,
     ],
