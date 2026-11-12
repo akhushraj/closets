@@ -20,7 +20,7 @@ export const FIELD = { W: 72.3, Lh: 104.5, rightTo: 76.8, nookD: 12.4, ceiling: 
 export const ES_WIDTHS = [15, 18, 21, 24, 30, 36];
 
 export const DEFAULTS = {
-  supplier: "abs", absDoors: true,
+  supplier: "abs", absDoors: false,
   grade: "shaker", esTop: 94,
   leftDepth: 24, leftPlan: "30, 36, 36", leftDoors: false, rightDoors: false,
   doorsOpen: false, drawersOut: false,
@@ -224,9 +224,6 @@ export function build(p) {
     for (const s2 of posts)
       parts.push(box(wall, "carcass", s2 - PLY / 2, s2 + PLY / 2, 0, depth, deck, p.ceiling,
         { mark: s2 === u0 + PLY / 2, label: "Divider, deck to ceiling" }));
-    // dimension every bay but the last; that one is whatever is left over
-    for (let i = 0; i + 2 < posts.length; i++)
-      elevDims.push({ wall: wall.id, u0: posts[i], u1: posts[i + 1], z: deck, off: -15 });
     for (const z of levels) {
       parts.push(box(wall, "cleat", u0, u1, 0, PLY, z - 1.5, z));
       parts.push(box(wall, "shelf", u0, u1, 0, depth, z, z + PLY, { mark: z === levels[0], label: "Plank over the deck" }));
@@ -236,6 +233,14 @@ export function build(p) {
   };
   over(w.L, 0, Lh, lw, d, 0);
   over(w.R, 0, RT, rw, rd, rGap);
+  // Widths of the boxes under the deck. The dividers land on these seams, so the same run of
+  // numbers tells Amir where his planks break.
+  const cabDims = (wall, runFrom, widths) => {
+    let u = runFrom;
+    for (const wd of widths) { elevDims.push({ wall: wall.id, u0: u, u1: u + wd, z: deck, off: -15 }); u += wd; }
+  };
+  cabDims(w.L, 0, lw);
+  cabDims(w.R, rGap, rw);
   const loops = matchLoops(p, BANKS);
   if (loops.length) {
     const names = { l1: "Left 1", l2: "Left 2", l3: "Left 3", r1: "Right 1", r2: "Right 2", r3: "Right 3" };

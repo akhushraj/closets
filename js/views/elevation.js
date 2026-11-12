@@ -18,7 +18,7 @@ export function renderElevations(root, model) {
       .map(p => Math.round((p.v1 - p.v0) * 8) / 8))].filter(d => d > 1.25);
     const depth = ds.length === 1 ? ` \u00b7 ${frac(ds[0], 8)} deep` : "";
     cap.innerHTML = `<span class="tag2">${id}</span> ${w.name} <span class="mono dimtxt">${frac(len, 8)} wide${depth}</span>`;
-    const svg = el("svg", { role: "img", "aria-label": `Elevation of ${w.name}` });
+    const svg = el("svg", { role: "img", class: "ev", "aria-label": `Elevation of ${w.name}` });
     drawWall(svg, w, len, model);
     fig.append(cap, svg);
     root.append(fig);
@@ -70,14 +70,14 @@ function drawWall(svg, w, len, model) {
     const a0 = Math.max(0, Math.min(...us)), a1 = Math.min(len, Math.max(...us));
     if (a1 - a0 < 1) continue;
     el("rect", { x: U(a0), y: Z(p.z1), width: (a1 - a0) * S,
-      height: Math.max(0.6, (p.z1 - p.z0) * S), class: "p-return" }, g);
+      height: Math.max(0.6, (p.z1 - p.z0) * S), class: "p-return" + (p.bought ? " bought" : "") }, g);
   }
 
   const parts = model.parts.filter(p => p.wall === w.id).sort((a, b) => a.v1 - b.v1);
   for (const p of parts) {
     const r = { x: U(p.u0), y: Z(p.z1), width: Math.max(0.6, (p.u1 - p.u0) * S), height: Math.max(0.6, (p.z1 - p.z0) * S) };
     if (p.kind === "garment") { el("rect", { ...r, rx: 1.2, class: `p-garment g${p.tone}` }, g); continue; }
-    el("rect", { ...r, class: "p-" + p.kind, rx: p.kind === "hamper" ? 3 : 0 }, g);
+    el("rect", { ...r, class: "p-" + p.kind + (p.bought ? " bought" : ""), rx: p.kind === "hamper" ? 3 : 0 }, g);
     if (p.kind === "front") {   // label left, height right, so the centred pull stays clear
       const ty = r.y + r.height / 2;
       el("text", { x: r.x + 4, y: ty, class: "lbf", "font-size": 11, "dominant-baseline": "middle" }, g, p.label);

@@ -323,6 +323,8 @@ export function esRun(w, o) {
       sub: `${frac(bay.w, 8)} × ${frac(top - z0, 8)}${leaves ? `, ${leaves} door${leaves > 1 ? "s" : ""}` : ""}`,
       ...(leaves ? { ghost: { u0: a, u1: b, v0: depth, v1: depth + bay.w / leaves, label: "door swing" } } : {}) }));
   }
+  // every piece of a factory run is bought, not built on site; the drawings grey them out
+  for (const q of parts) q.bought = true;
   return { parts, modules, drawers, end: u, slide };
 }
 
