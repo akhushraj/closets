@@ -24,6 +24,7 @@ export const DEFAULTS = {
   s1: 16, s1on: false, s2: 24, s2on: true, s3: 36, s3on: true, s4: 48, s4on: true,
   s5: 60, s5on: true, s6: 72, s6on: true, s7: 84, s7on: true, s8: 96, s8on: true,
   casingW: 2.25, hamperW: 16, hamperD: 16, hamperH: 20,
+  nosingOn: false, plyOnly: false,
   finish: "oak", oneFinish: false, lights: true,
 };
 
@@ -58,6 +59,8 @@ export const CONTROLS = [
   ["Look", [
     { key: "finish", label: "Finish", type: "select", options: [["oak", "White oak"], ["white", "Painted white"], ["walnut", "Walnut"]] },
     { key: "lights", label: "LED strips on", type: "check" },
+    { key: "nosingOn", label: "Solid nosing on the shelf fronts", type: "check" },
+    { key: "plyOnly", label: "Show only what Amir builds", type: "check" },
   ]],
 ];
 
@@ -85,6 +88,8 @@ export function build(p) {
   // The rod wall owns the inside corner and runs its full length; the other starts clear of it.
   // The shelves above the rod run round both as one L either way.
   const onC = p.layout === "rodC", bd = p.bDepth, cd = p.cDepth;
+  const NOSE = p.nosingOn ? 1.5 : 0;   // no nosing: the plank itself runs the full depth
+  const bare = p.plyOnly;              // drawing for Amir - leave out everything he does not build
   const rodW = onC ? w.T : w.L, othW = onC ? w.L : w.T;
   const rodLen = onC ? W : M, rodDepth = onC ? cd : bd;
   const othU0 = onC ? 0 : bd, othU1 = onC ? M - cd : W, othDepth = onC ? bd : cd;
@@ -97,9 +102,9 @@ export function build(p) {
 
   // the rod, its wall, and the shelf right across under it
   add(hangRun(rodW, { u0: 0, u1: rodLen, depth: rodDepth, rodZ: p.rodZ, coatsTo: 0.1, hat: false }));
-  if (p.lowOn) add(fixedShelves(rodW, { u0: 0, u1: rodLen, depth: rodDepth, levels: [lowZ], label: "Shelf under the clothes" }));
+  if (p.lowOn) add(fixedShelves(rodW, { u0: 0, u1: rodLen, depth: rodDepth, nosing: NOSE, levels: [lowZ], label: "Shelf under the clothes" }));
   const DR = { w: p.dressW, d: p.dressD, h: p.dressH };
-  if (p.dresser) {   // the chest, standing under the clothes
+  if (p.dresser && !bare) {   // the chest, standing under the clothes
     const a = 1.5, b = a + DR.w, v1 = 0.5 + DR.d, fh = (DR.h - 3) / 3;
     parts.push(box(rodW, "dresser", a, b, 0.5, v1 - 0.6, 0, DR.h - 0.75, { label: "Chest of drawers" }));
     parts.push(box(rodW, "dresser", a, b, 0.5, v1, DR.h - 0.75, DR.h, { mark: true, label: "Chest top" }));
@@ -110,12 +115,12 @@ export function build(p) {
     modules.push(box(rodW, "dresser", a, b, 0.5, v1, 0, 0, { label: "Chest of drawers", sub: `${frac(DR.w, 8)} × ${frac(DR.d, 8)} × ${frac(DR.h, 8)}` }));
   }
 
-  add(fixedShelves(rodW, { u0: 0, u1: rodLen, depth: rodDepth, levels: lLv, label: "The L" }));
-  if (othRun > 8) add(fixedShelves(othW, { u0: othU0, u1: othU1, depth: othDepth, levels: lLv, label: "The L, round the corner" }));
+  add(fixedShelves(rodW, { u0: 0, u1: rodLen, depth: rodDepth, nosing: NOSE, levels: lLv, label: "The L" }));
+  if (othRun > 8) add(fixedShelves(othW, { u0: othU0, u1: othU1, depth: othDepth, nosing: NOSE, levels: lLv, label: "The L, round the corner" }));
 
   // a narrow tall chest in the corner of the wall without the rod, at the end AWAY from the rod
   // wall, so it is not up against the dresser or the shelves on that side
-  if (p.chestOn && othRun > p.chestW + 2) {
+  if (p.chestOn && !bare && othRun > p.chestW + 2) {
     const c0 = onC ? othU0 + 1 : othU1 - p.chestW - 1, c1 = c0 + p.chestW, fh = (p.chestH - 3) / 4;
     parts.push(box(othW, "dresser", c0, c1, 0.5, 0.5 + p.chestD - 0.6, 0, p.chestH - 0.75, { label: "Narrow chest" }));
     parts.push(box(othW, "dresser", c0, c1, 0.5, 0.5 + p.chestD, p.chestH - 0.75, p.chestH, { mark: true, label: "Chest top" }));
@@ -130,8 +135,8 @@ export function build(p) {
   const belowDoor = L - (p.doorAt + p.doorRO);
   const alcDepth = Math.floor((belowDoor - p.casingW - 0.25) * 8) / 8;
   const alcLevels = [1, 2, 3, 4, 5, 6, 7, 8].filter(i => p[`s${i}on`]).map(i => +p[`s${i}`]).sort((a, b) => a - b);
-  add(fixedShelves(w.E, { u0: 0, u1: A, depth: alcDepth, levels: alcLevels, label: "Wall A shelves" }));
-  add(floorItem(w.E, "hamper", { u0: (A - p.hamperW) / 2, u1: (A + p.hamperW) / 2, v0: 1, v1: 1 + p.hamperD, h: p.hamperH, label: "Hamper" }));
+  add(fixedShelves(w.E, { u0: 0, u1: A, depth: alcDepth, nosing: NOSE, levels: alcLevels, label: "Wall A shelves" }));
+  if (!bare) add(floorItem(w.E, "hamper", { u0: (A - p.hamperW) / 2, u1: (A + p.hamperW) / 2, v0: 1, v1: 1 + p.hamperD, h: p.hamperH, label: "Hamper" }));
 
   const door = { wall: "D", u0: p.doorAt, u1: p.doorAt + p.doorRO, slab: p.doorSlab, h: p.doorH, roH: p.doorH + 2.5,
     swing: "out", hingeU: p.hinge === "near" ? p.doorAt + 1 : p.doorAt + p.doorRO - 1,
@@ -184,7 +189,7 @@ export function build(p) {
     info: INFO, params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t,
       nbr: [{ x0: 0, y0: M + t, x1: nx - t, y1: L + t, label: "notch" }] },
-    parts, modules, doors: [door], hatches: [],
+    parts: bare ? parts.filter(q => q.kind !== "garment") : parts, modules, doors: [door], hatches: [],
     elevations: ["T", "L", "D", "E", "N2"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
@@ -226,8 +231,10 @@ export function build(p) {
       ...(p.chestOn ? [`  A narrow chest ${p.chestW} x ${p.chestD} x ${p.chestH}" stands in the ${onC ? "notch" : "wall D"} corner of ${othName}, under the ${frac(overRod, 8)} shelf, clear of ${rodName}.`] : []),
       ``,
       `WALL A alcove: ${alcLevels.length} shelves at ${alcLevels.join('", ')}", ${frac(alcDepth, 8)} deep (the entry door casing caps it), wall to wall at ${frac(A, 8)}.`,
-      `Front edge on every shelf: 3/4" x 1-1/2" solid nosing - it hides the LED channel.`,
-      `LED: single-colour 24V strip in an aluminium channel under every shelf, behind the nosing. One driver, one trunk down the back corner, a WAGO pair per shelf. See the A-4 tab.`,
+      p.nosingOn
+        ? `Front edge on every shelf: 3/4" x 1-1/2" solid nosing - it hides the LED channel.`
+        : `No nosing. Every shelf is a plain 3/4" plank cut to its full depth, edge sanded and painted.`,
+      `LED: single-colour 24V strip in an aluminium channel under every shelf${p.nosingOn ? ", behind the nosing" : ", let into a groove in the underside about 1-1/2\" back from the front edge"}. One driver, one trunk down the back corner, a WAGO pair per shelf. See the A-4 tab.`,
     ].join("\n"),
     warnings,
     notes: [

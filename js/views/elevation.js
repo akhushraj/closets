@@ -14,7 +14,10 @@ export function renderElevations(root, model) {
     const fig = document.createElement("figure");
     fig.className = "elev";
     const cap = document.createElement("figcaption");
-    cap.innerHTML = `<span class="tag2">${id}</span> ${w.name} <span class="mono dimtxt">${frac(len, 8)} wide</span>`;
+    const ds = [...new Set(model.parts.filter(p => p.wall === id && p.kind === "shelf" && p.mark)
+      .map(p => Math.round((p.v1 - p.v0) * 8) / 8))];
+    const depth = ds.length === 1 ? ` \u00b7 ${frac(ds[0], 8)} deep` : "";
+    cap.innerHTML = `<span class="tag2">${id}</span> ${w.name} <span class="mono dimtxt">${frac(len, 8)} wide${depth}</span>`;
     const svg = el("svg", { role: "img", "aria-label": `Elevation of ${w.name}` });
     drawWall(svg, w, len, model);
     fig.append(cap, svg);
@@ -24,7 +27,7 @@ export function renderElevations(root, model) {
 
 function drawWall(svg, w, len, model) {
   const ceil = model.closet.ceiling;
-  const ox = 46, oy = 12, right = 128;
+  const ox = 46, oy = 12, right = 176;
   const Wpx = ox + len * S + right, Hpx = oy + ceil * S + 46;
   svg.setAttribute("viewBox", `0 0 ${Wpx} ${Hpx}`);
   svg.style.maxWidth = Wpx + "px";
@@ -69,7 +72,8 @@ function drawWall(svg, w, len, model) {
     if (p.kind === "rod") marks.push({ z: (p.z0 + p.z1) / 2, label: "Rod" });
     else if (p.kind === "front") marks.push({ z: p.z0 - 1 / 16, label: "" });
     else if (p.kind === "kick") marks.push({ z: p.z1, label: "Toe kick" });
-    else marks.push({ z: p.z1, label: p.label || "" });
+    // depth belongs on things you store on, not on trim
+    else marks.push({ z: p.z1, label: p.label || "", d: p.kind === "casing" ? 0 : p.v1 - p.v0 });
   }
 
   const hz = Math.min(...model.doors.map(d => d.h));
@@ -85,7 +89,7 @@ function drawWall(svg, w, len, model) {
   const merged = [];
   for (const mk of marks) {
     const last = merged[merged.length - 1];
-    if (last && Math.abs(last.z - mk.z) < 0.6) { if (!last.label) last.label = mk.label; continue; }
+    if (last && Math.abs(last.z - mk.z) < 0.6) { if (!last.label) { last.label = mk.label; last.d = mk.d; } continue; }
     merged.push({ ...mk });
   }
   let prevY = -Infinity;
@@ -96,7 +100,8 @@ function drawWall(svg, w, len, model) {
     el("line", { x1: U(len), y1: y, x2: x0 + 6, y2: y, class: "ext" }, g);
     el("path", { d: `M${x0 + 6} ${y} L${x0 + 12} ${ty}`, class: "ext" }, g);
     el("text", { x: x0 + 15, y: ty, class: "dt", "font-size": 9.5, "dominant-baseline": "middle" }, g, frac(mk.z, 8));
-    if (mk.label) el("text", { x: x0 + 63, y: ty, class: "lbs", "font-size": 9.5, "dominant-baseline": "middle" }, g, mk.label);
+    if (mk.label) el("text", { x: x0 + 63, y: ty, class: "lbs", "font-size": 9.5, "dominant-baseline": "middle" }, g,
+      mk.label + (mk.d > 0.1 ? ` \u00b7 ${frac(mk.d, 8)} deep` : ""));
   }
 
   dim(g, U(0), Z(0), U(0), Z(ceil), ftin(ceil), -22);
