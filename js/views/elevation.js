@@ -52,6 +52,23 @@ function drawWall(svg, w, len, model) {
     marks.push({ z: door.roH, label: "Door R.O." });
   }
 
+  // Runs on the other walls that die into this one, in outline. Without them a corner reads as
+  // a wall that stops for no reason - the pantry's left wall came out blank although the whole
+  // back counter and every shelf lands on it.
+  const ux = (w.b[0] - w.a[0]) / len, uy = (w.b[1] - w.a[1]) / len;
+  const uOf = (x, y) => (x - w.a[0]) * ux + (y - w.a[1]) * uy;
+  const vOf = (x, y) => (x - w.a[0]) * -uy + (y - w.a[1]) * ux;
+  for (const p of model.parts) {
+    if (p.wall === w.id || !["shelf", "counter", "carcass"].includes(p.kind)) continue;
+    const cs = [[p.x0, p.y0], [p.x1, p.y0], [p.x1, p.y1], [p.x0, p.y1]];
+    if (Math.min(...cs.map(c => vOf(...c))) > 0.6) continue;   // never reaches this wall
+    const us = cs.map(c => uOf(...c));
+    const a0 = Math.max(0, Math.min(...us)), a1 = Math.min(len, Math.max(...us));
+    if (a1 - a0 < 1) continue;
+    el("rect", { x: U(a0), y: Z(p.z1), width: (a1 - a0) * S,
+      height: Math.max(0.6, (p.z1 - p.z0) * S), class: "p-return" }, g);
+  }
+
   const parts = model.parts.filter(p => p.wall === w.id).sort((a, b) => a.v1 - b.v1);
   for (const p of parts) {
     const r = { x: U(p.u0), y: Z(p.z1), width: Math.max(0.6, (p.u1 - p.u0) * S), height: Math.max(0.6, (p.z1 - p.z0) * S) };
