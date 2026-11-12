@@ -15,7 +15,7 @@ const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
 
 export const DEFAULTS = {
   gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
-  shelfDepth: 22, dresser: true, topOn: false, topZ: 92, topDepth: 12,
+  shelfDepth: 22, dresser: true, topOn: false, topZ: 92, topDepth: 12, nosingOn: false, plyOnly: false,
   ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
   finish: "white", oneFinish: false, lights: true,
@@ -47,6 +47,10 @@ export const CONTROLS = [
     { key: "hatchW", label: "Width", min: 18, max: 32, step: 0.5 },
     { key: "hatchD", label: "Depth", min: 14, max: 24, step: 0.5 },
   ]],
+  ["Drawing", [
+    { key: "nosingOn", label: "Solid nosing on the shelf fronts", type: "check" },
+    { key: "plyOnly", label: "Show only what Amir builds", type: "check" },
+  ]],
   ["Look", [
     { key: "finish", label: "Finish", type: "select", options: [["white", "Painted white"], ["oak", "White oak"], ["walnut", "Walnut"]] },
     { key: "lights", label: "LED strips on", type: "check" },
@@ -56,6 +60,8 @@ export const CONTROLS = [
 export function build(p) {
   p = { ...p, ...FIELD };
   const W = p.W, D = p.D, t = 4.5, G = p.gearW, sd = p.shelfDepth;
+  const NOSE = p.nosingOn ? 1.5 : 0;   // no nosing: the plank itself runs the full depth
+  const bare = p.plyOnly;              // drawing for Amir - leave out everything he does not build
   const outline = [[0, 0], [W, 0], [W, D], [0, D]];
   const walls = [
     { id: "T", name: "Back wall", a: [0, 0], b: [W, 0] },
@@ -97,15 +103,15 @@ export function build(p) {
   // the pair of wall cleats the divider slots between
   for (const [a, b] of [[G - 1.5, G], [G + PLY, G + PLY + 1.5]])
     parts.push(box(w.T, "cleat", a, b, 0, PLY, divBottom, p.topOn ? p.topZ : stepAt));
-  add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, levels: lv, label: "Shelves", led: false }));
+  add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, nosing: NOSE, levels: lv, label: "Shelves", led: false }));
   // the same shelves continue over the gear zone wherever the devices and rack leave room
   const rackTop = p.rackZ + rackH;
   const clearOfRack = z => z + 1.5 <= p.rackZ || z >= rackTop + 2;
   const leftLv = [...lv.filter(z => (z < base - 1 || z > rackTop + 3) && clearOfRack(z)),
     ...(p.gearShelfOn && clearOfRack(p.gearShelfZ) ? [p.gearShelfZ] : [])].sort((a, b) => a - b);
-  if (leftLv.length) add(fixedShelves(w.T, { u0: 0, u1: G, depth: sd, levels: leftLv, label: "Gear-side shelves", led: false }));
-  if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, levels: [p.topZ], label: "Top shelf", led: false }));
-  if (p.dresser) {   // MALM 3-drawer under the bottom shelf
+  if (leftLv.length) add(fixedShelves(w.T, { u0: 0, u1: G, depth: sd, nosing: NOSE, levels: leftLv, label: "Gear-side shelves", led: false }));
+  if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, nosing: NOSE, levels: [p.topZ], label: "Top shelf", led: false }));
+  if (p.dresser && !bare) {   // MALM 3-drawer under the bottom shelf
     const a = G + PLY + 1, b = a + MALM.w, v1 = 0.5 + MALM.d, fh = (MALM.h - 2.5) / 3;
     parts.push(box(w.T, "dresser", a, b, 0.5, v1 - 0.6, 0, MALM.h - 0.75, { label: "Dresser" }));
     parts.push(box(w.T, "dresser", a, b, 0.5, v1, MALM.h - 0.75, MALM.h, { mark: true, label: "Dresser top" }));
@@ -142,7 +148,9 @@ export function build(p) {
   return {
     info: INFO, params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
-    parts, modules, doors, hatches,
+    // the backboard is Amir's; the gear that hangs on it is not
+    parts: bare ? parts.filter(q => !["garment", "device", "rack", "ups"].includes(q.kind)) : parts,
+    modules, doors, hatches,
     elevations: ["T", "L", "R"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },

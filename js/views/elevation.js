@@ -15,7 +15,7 @@ export function renderElevations(root, model) {
     fig.className = "elev";
     const cap = document.createElement("figcaption");
     const ds = [...new Set(model.parts.filter(p => p.wall === id && p.kind === "shelf" && p.mark)
-      .map(p => Math.round((p.v1 - p.v0) * 8) / 8))];
+      .map(p => Math.round((p.v1 - p.v0) * 8) / 8))].filter(d => d > 1.25);
     const depth = ds.length === 1 ? ` \u00b7 ${frac(ds[0], 8)} deep` : "";
     cap.innerHTML = `<span class="tag2">${id}</span> ${w.name} <span class="mono dimtxt">${frac(len, 8)} wide${depth}</span>`;
     const svg = el("svg", { role: "img", "aria-label": `Elevation of ${w.name}` });
@@ -70,8 +70,7 @@ function drawWall(svg, w, len, model) {
     if (p.kind === "rod") marks.push({ z: (p.z0 + p.z1) / 2, label: "Rod" });
     else if (p.kind === "front") marks.push({ z: p.z0 - 1 / 16, label: "" });
     else if (p.kind === "kick") marks.push({ z: p.z1, label: "Toe kick" });
-    // depth belongs on things you store on, not on trim
-    else marks.push({ z: p.z1, label: p.label || "", d: p.kind === "casing" ? 0 : p.v1 - p.v0 });
+    else marks.push({ z: p.z1, label: p.label || "", d: p.v1 - p.v0 });
   }
 
   const hz = Math.min(...model.doors.map(d => d.h));
@@ -99,14 +98,15 @@ function drawWall(svg, w, len, model) {
     el("path", { d: `M${x0 + 6} ${y} L${x0 + 12} ${ty}`, class: "ext" }, g);
     el("text", { x: x0 + 15, y: ty, class: "dt", "font-size": 11, "dominant-baseline": "middle" }, g, frac(mk.z, 8));
     if (mk.label) el("text", { x: x0 + 70, y: ty, class: "lbs", "font-size": 11, "dominant-baseline": "middle" }, g,
-      mk.label + (mk.d > 0.1 ? ` \u00b7 ${frac(mk.d, 8)} deep` : ""));
+      // under about an inch it is trim or a face plate, and the number is its thickness
+      mk.label + (mk.d > 1.25 ? ` \u00b7 ${frac(mk.d, 8)} deep` : ""));
   }
 
   dim(g, U(0), Z(0), U(0), Z(ceil), ftin(ceil), -22);
   dim(g, U(0), Z(0), U(len), Z(0), frac(len, 8), 18);
 
   const widest = Math.max(0, ...merged.map(m => (m.label || "").length +
-    (m.d > 0.1 ? frac(m.d, 8).length + 8 : 0)));
+    (m.d > 1.25 ? frac(m.d, 8).length + 8 : 0)));
   const right = Math.max(196, 88 + widest * 6);
   const Wpx = ox + len * S + right;
   svg.setAttribute("viewBox", `0 0 ${Wpx} ${Hpx}`);
