@@ -76,7 +76,8 @@ export function build(p) {
   // what's already on the left end wall (u runs front -> back corner)
   const bx = back => D - back;
   for (const [back, label] of [[p.boxBack1, "Cable box · fiber, cameras, ethernet"], [p.boxBack2, "Cable box · blinds"]])
-    parts.push(box(w.L, "device", bx(back) - 2, bx(back) + 2, 0, 1.2, p.boxZ, p.boxZ + 4, { tone: "light", mark: true, label }));
+    parts.push(box(w.L, "device", bx(back) - 2, bx(back) + 2, 0, 1.2, p.boxZ, p.boxZ + 4,
+      { tone: "light", mark: true, existing: true, label }));
   parts.push(box(w.L, "outlet", bx(p.topOutletBack) - 1.2, bx(p.topOutletBack) + 1.2, 0, 0.8, p.topOutletZ, p.topOutletZ + 4.5, { mark: true, label: "Outlet" }));
   parts.push(box(w.L, "outlet", 3, 5.4, 0, 0.8, p.upsOutletZ, p.upsOutletZ + 4.5, { mark: true, label: "UPS outlet" }));
 
@@ -162,8 +163,9 @@ export function build(p) {
   return {
     info: INFO, params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
-    // the backboard is Amir's; the gear that hangs on it is not
-    parts: bare ? parts.filter(q => !["garment", "device", "rack", "ups"].includes(q.kind)) : parts,
+    // the backboard is Amir's; the gear that hangs on it is not. What is already on the wall
+    // stays either way - he has to build around it.
+    parts: bare ? parts.filter(q => q.existing || !["garment", "device", "rack", "ups"].includes(q.kind)) : parts,
     modules, doors, hatches,
     elevations: ["T", "L", "R"],
     planDims: [
