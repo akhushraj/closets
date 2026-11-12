@@ -59,7 +59,9 @@ function drawWall(svg, w, len, model) {
   const uOf = (x, y) => (x - w.a[0]) * ux + (y - w.a[1]) * uy;
   const vOf = (x, y) => (x - w.a[0]) * -uy + (y - w.a[1]) * ux;
   for (const p of model.parts) {
-    if (p.wall === w.id || !["shelf", "counter", "carcass"].includes(p.kind)) continue;
+    // a diagonal or a cut panel is nothing like its bounding box, so leave those out
+    if (p.wall === w.id || p.poly || p.diag) continue;
+    if (!["shelf", "counter", "carcass"].includes(p.kind)) continue;
     const cs = [[p.x0, p.y0], [p.x1, p.y0], [p.x1, p.y1], [p.x0, p.y1]];
     if (Math.min(...cs.map(c => vOf(...c))) > 0.6) continue;   // never reaches this wall
     const us = cs.map(c => uOf(...c));

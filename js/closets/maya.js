@@ -106,6 +106,8 @@ export function build(p) {
   const fronts = [...parseFronts(p.fronts, [7, 8, 9])].reverse();
   const eLv = readShelves(p, "e", 5);
   const es = { drawers: [], parts: [], modules: [] };
+  // factory boxes, so the plywood-only drawing leaves them out
+  const addBox = o => { for (const q of o.parts || []) q.bought = true; return add(o); };
   const qRows = [];
   const tag = (width, rod, where) => {
     if (!abs) return {};
@@ -114,7 +116,7 @@ export function build(p) {
     return { label: q ? `${q.tag} ${q.money}` : "Not in the ABS quote", atag: q ? q.tag : dimTag(top, width, d), aw: !q };
   };
   esW.forEach((width, i) => {
-    const r = add(esRun(w.T, { u0: boxAt[i], depth: d, top, doors, drawersOut: p.drawersOut, brand: abs ? "ABS" : "East Star",
+    const r = addBox(esRun(w.T, { u0: boxAt[i], depth: d, top, doors, drawersOut: p.drawersOut, brand: abs ? "ABS" : "East Star",
       prefix: `M${i + 1}`, seed: 5 + i * 4,
       bays: [{ w: width, fronts, rods: [p.rodZ], levels: eLv, garment: "pants", ...tag(width, true, `Middle ${i + 1}`) }] }));
     es.drawers.push(...r.drawers);
@@ -139,7 +141,7 @@ export function build(p) {
       if (!used) return;
       // boxes butt the middle run; the filler lands against the side wall
       const start = outerIsLeft ? u0 + fill : u0;
-      add(esRun(w.T, { u0: start, depth: d, top, doors, brand: abs ? "ABS" : "East Star",
+      addBox(esRun(w.T, { u0: start, depth: d, top, doors, brand: abs ? "ABS" : "East Star",
         bays: widths.map(x => ({ w: x, levels: lv, ...tag(x, false, outerIsLeft ? "Left end" : "Right end") })), prefix: outerIsLeft ? "EL" : "ER", seed }));
       if (fill > 0.5) {
         const f0 = outerIsLeft ? u0 : u1 - fill;
@@ -213,7 +215,7 @@ export function build(p) {
     params: p,
     quote: abs ? { supplier: "Aydin Building Supplies", rows: qRows } : null,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
-    parts: bare ? parts.filter(q => q.kind !== "garment") : parts, modules, doors: [door], hatches: [],
+    parts: bare ? parts.filter(q => !q.bought && q.kind !== "garment") : parts, modules, doors: [door], hatches: [],
     elevations: ["T", "L", "R"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },

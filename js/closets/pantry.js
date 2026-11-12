@@ -84,7 +84,8 @@ export function build(p) {
   parts.push(box(w.T, "shelf", 0, W, 0, cd, tz, sub));
   parts.push(box(w.R, "shelf", cd, D, 0, cd, tz, sub));
   parts.push(box(w.T, "counter", 0, W, 0, cd + 1, sub, cz, { mark: true, label: p.top === "quartz" ? "Quartz top" : "Porcelain top" }));
-  parts.push(box(w.R, "counter", cd + 1, D, 0, cd + 1, sub, cz));
+  parts.push(box(w.R, "counter", cd + 1, D, 0, cd + 1, sub, cz,
+    { mark: true, label: p.top === "quartz" ? "Quartz top" : "Porcelain top" }));
 
   if (p.diagCorner) parts.push(diagPanel(w.T, "carcass", [corner, cd], [W, 0], PLY, 0, tz, { mark: true, label: "Diagonal" }));
   else parts.push(box(w.T, "carcass", corner - PLY, corner, 0, uD, 0, tz, { mark: true, label: "Upright" }));
@@ -92,7 +93,7 @@ export function build(p) {
   for (const g of rightG) parts.push(box(w.R, "carcass", g - PLY / 2, g + PLY / 2, 0, uD, 0, tz));
   const rh = +p.railH;
   parts.push(box(w.T, "cleat", 0, corner, uD, cd, tz - rh, tz, { mark: true, label: `1x${rh + 0.5} on edge` }));
-  parts.push(box(w.R, "cleat", cd, D, uD, cd, tz - rh, tz));
+  parts.push(box(w.R, "cleat", cd, D, uD, cd, tz - rh, tz, { mark: true, label: `1x${rh + 0.5} on edge` }));
   parts.push(box(w.T, "cleat", 0, W, 0, PLY, tz - 1.5, tz));      // back wall
   parts.push(box(w.R, "cleat", 0, D, 0, PLY, tz - 1.5, tz));      // right wall
   parts.push(box(w.L, "cleat", D - cd, D, 0, PLY, tz - 1.5, tz));  // left wall
