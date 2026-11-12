@@ -272,7 +272,7 @@ export function build(p) {
       `That top shelf is only ${frac(p.aboveDepth2, 8)} deep on purpose: you reach it over the header, so your arm cannot go 24" back.`,
       `The shelf across needs nothing hanging from the ceiling. Sitting straight on the ${frac(top, 8)} box tops, the boxes carry the middle ${frac(esRun0, 8)} of it continuously and the end walls carry the ${frac(endW - g, 8)} at each side. That leaves ${frac(p.ceiling - aboveZ, 8)} open above it.`,
       ...(esEnds ? [] : [`The end shelves sit on the back wall, the side wall, and a third cleat screwed into the side of the East Star box${p.gableOn ? "" : " - no gable, so none of that 20-odd inches is given up to a slab of plywood"}. On the shaker grade that side is plywood; on the chipboard grade use coarse cabinet screws.`]),
-      `The opening is ${frac(p.doorH, 8)} tall in a ${ftin(p.ceiling)} room, so ${frac(p.ceiling - p.doorH, 8)} of wall sits above it and nothing above that header can be reached. ${frac(top, 8)} boxes plus the shelf at ${frac(p.aboveZ, 8)} stay under it.`,
+      `The opening is ${frac(p.doorH, 8)} tall in a ${ftin(p.ceiling)} room, so ${frac(p.ceiling - p.doorH, 8)} of wall sits above it. The ${frac(top, 8)} boxes and the deck on their tops at ${frac(aboveZ, 8)} stay under the header, where you can see what you are doing.${p.above2On ? ` The ${frac(p.aboveZ2, 8)} shelf is the exception: it sits ${frac(p.aboveZ2 - p.doorH, 8)} above the header, so it is reached blind, over the top of the opening. That is why it is ${frac(p.aboveDepth2, 8)} deep and not ${frac(d, 8)} - its front edge stands ${frac(D - p.aboveDepth2, 8)} back from the doors, and that gap is the room your forearm needs to get up and over.` : ""}`,
     ],
   };
 }
