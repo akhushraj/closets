@@ -11,7 +11,7 @@ export const FIELD = { W: 54.1, D: 22.3, ceiling: 120, stubL: 2.1, opening: 50.1
 export const DEFAULTS = {
   rodZ: 71, lowOn: false, lowZ: 35, lowDepth: 21, upDepth: 21, dresser: true, centre: "bracket",
   dresserW: 31.5, dresserD: 19, dresserH: 32,
-  topOn: true, topZ: 88, topDepth: 12,
+  topOn: true, topZ: 88, topDepth: 12, nosingOn: false, plyOnly: false,
   ...shelfSlots("u", [73], [60, 84, 94]),
   finish: "white", oneFinish: false,
 };
@@ -39,6 +39,10 @@ export const CONTROLS = [
     { key: "topZ", label: "Its height (top)", min: 80, max: 95, step: 1, gapFrom: "u", onKey: "topOn" },
     { key: "topDepth", label: "Its depth", min: 8, max: 22, step: 0.5 },
   ]],
+  ["Drawing", [
+    { key: "nosingOn", label: "Solid nosing on the shelf fronts", type: "check" },
+    { key: "plyOnly", label: "Show only what Amir builds", type: "check" },
+  ]],
   LOOK,
 ];
 
@@ -48,6 +52,8 @@ export const CONTROLS = [
 export function build(p) {
   p = { ...p, ...FIELD, lights: false };   // no outlet in this closet
   const W = p.W, D = p.D, t = 4.5;
+  const NOSE = p.nosingOn ? 1.5 : 0;   // no nosing: the plank itself runs the full depth
+  const bare = p.plyOnly;              // drawing for Amir - leave out everything he does not build
   const outline = [[0, 0], [W, 0], [W, D], [0, D]];
   const walls = [
     { id: "T", name: "Back wall", a: [0, 0], b: [W, 0] },
@@ -90,10 +96,10 @@ export function build(p) {
     parts.push(box(w.T, "cleat", cx - PLY / 2 - 1.5, cx - PLY / 2, 0, PLY, base, dTop));
     parts.push(box(w.T, "cleat", cx + PLY / 2, cx + PLY / 2 + 1.5, 0, PLY, base, dTop));
   }
-  add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.upDepth, levels: up, label: "Upper shelves", led: false }));
-  if (p.lowOn) parts.push(...fixedShelves(w.T, { u0: 0, u1: W, depth: p.lowDepth, levels: [p.lowZ], label: "Low shelf", led: false }).parts);
+  add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.upDepth, nosing: NOSE, levels: up, label: "Upper shelves", led: false }));
+  if (p.lowOn) parts.push(...fixedShelves(w.T, { u0: 0, u1: W, depth: p.lowDepth, nosing: NOSE, levels: [p.lowZ], label: "Low shelf", led: false }).parts);
   const clearL = W - p.stubL - p.opening, clearR = W - p.stubL;   // the opening, in wall T's u
-  if (p.dresser) {
+  if (p.dresser && !bare) {
     const a = Math.max(1, clearL + 0.5), b = a + DR.w, v1 = 0.5 + DR.d, fh = (DR.h - 2.5) / 3;
     parts.push(box(w.T, "dresser", a, b, 0.5, v1 - 0.6, 0, DR.h - 0.75, { label: "Dresser" }));
     parts.push(box(w.T, "dresser", a, b, 0.5, v1, DR.h - 0.75, DR.h, { mark: true, label: "Dresser top" }));
@@ -107,7 +113,7 @@ export function build(p) {
     if (DR.d > D - 2) warnings.push(`A ${frac(DR.d, 8)} chest leaves only ${frac(D - DR.d, 8)} to the doors. Keep it under ${frac(D - 2, 8)}.`);
   }
 
-  if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, levels: [p.topZ], label: "Top shelf", led: false }));
+  if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, nosing: NOSE, levels: [p.topZ], label: "Top shelf", led: false }));
 
   const clothesBottom = p.rodZ - 1.2 - 34;
   if (p.lowOn && p.lowZ > clothesBottom) warnings.push(`Jackets hang down to about ${frac(clothesBottom, 8)}, so the low shelf at ${frac(p.lowZ, 8)} is in their way.`);
@@ -126,7 +132,7 @@ export function build(p) {
   return {
     info: INFO, params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
-    parts, modules, doors, hatches: [],
+    parts: bare ? parts.filter(q => q.kind !== "garment") : parts, modules, doors, hatches: [],
     elevations: ["T", "L", "R"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
@@ -151,7 +157,9 @@ export function build(p) {
       `Rod at ${frac(p.rodZ, 8)}${dv ? `, in two sections either side of a 3/4" ply divider (${frac(p.upDepth, 8)} deep, ${frac(p.lowZ, 8)} up to ${frac(p.topZ, 8)})` : `, one piece wall to wall${p.centre === "bracket" ? `. Centre support: a 3/4" ply plate ${frac(rodV + 1.5, 8)} deep, screwed up into the ${frac(up[0] || p.topZ, 8)} shelf, notched from below to take the rod.` : ""}`}`,
       ...(p.lowOn ? [`Shelf at ${frac(p.lowZ, 8)} under it, ${frac(p.lowDepth, 8)} deep - a ${frac(DR.h, 8)} chest fits below.`] : [`No shelf under the clothes - the floor is left open for a chest up to ${frac(clothesBottom - 1, 8)} tall.`]),
       `Above the rod: ${up.map(z => frac(z, 8)).join(", ")} at ${frac(p.upDepth, 8)} deep${p.topOn ? `, then ${frac(p.topZ, 8)} at ${frac(p.topDepth, 8)} deep` : ""}.`,
-      `1x2 cleats into studs on all 3 walls; shelves sit loose. 1/4" x 3/4" poplar front edge.`,
+      `1x2 cleats into studs on all 3 walls; shelves sit loose. ${p.nosingOn
+        ? `Front edge: 3/4" x 1-1/2" solid nosing.`
+        : `No nosing - every shelf is a plain 3/4" plank cut to its full depth, front edge banded to match.`}`,
       `Paint room colour, all sides. No lights.`,
     ].join("\n"),
     warnings,
