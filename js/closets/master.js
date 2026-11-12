@@ -43,7 +43,7 @@ export const DEFAULTS = {
   ...shelfSlots("r2", [20, 34, 48, 62, 76], [88]), r2match: "r1",
   ...shelfSlots("r3", [20, 34, 48, 62, 76], [88]), r3match: "r2",
   // Nook: first at 24", then every 12". 60" is left off so 48-72" is one tall opening for the puja.
-  ...shelfSlots("n", [24, 36, 48, 72, 84, 96, 108], [60]),
+  ...shelfSlots("n", [24, 36, 48, 72, 84, 96], [60, 108]),
   finish: "white", oneFinish: false, lights: true,
 };
 
@@ -262,8 +262,8 @@ export function build(p) {
   // The plank that carries the open end of the nook shelves stands in the right wall's leftover
   // rather than in the nook, so the nook keeps its full length. It runs to the upper shelf.
 add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, nosing: NOSE, levels: nLv, label: "Nook shelves" }));
-  if (nLv.length && p.ceiling - nLv[nLv.length - 1] > 20)
-    warnings.push(`The nook's top shelf is at ${frac(nLv[nLv.length - 1], 8)}, leaving ${frac(p.ceiling - nLv[nLv.length - 1], 8)} of bare wall to the ceiling. Turn another one on.`);
+  if (nLv.length && p.ceiling - nLv[nLv.length - 1] > 26)
+    warnings.push(`The nook's top shelf is at ${frac(nLv[nLv.length - 1], 8)}, leaving ${frac(p.ceiling - nLv[nLv.length - 1], 8)} of wall above it. Another shelf would use it.`);
   const nose = XN - nd;
   if (p.nookDepth > nookCap + 0.01) warnings.push(`The nook can only come forward to ${frac(nookCap, 8)} deep - past that it runs into ${capDoor < capCab ? "the entry door's near jamb" : "the face of the right cabinets"}.`);
   if (nose < p.hatchX1) warnings.push(`At ${frac(nd, 8)} the nook shelves overhang the crawl hatch by ${frac(p.hatchX1 - nose, 8)}, in the air. The gable and the floor stay clear, but you will be tilting the hatch lid out from under them.`);
@@ -342,7 +342,7 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, nosing: NOSE, levels: nL
       `East Star does the two walls - anything with a drawer, a door or a carcass. Amir does the flat plywood: the nook shelves and the deck${aLv.L.length || aLv.R.length ? " and shelves" : ""} above the cabinets, cut and painted, sitting on 1x2 cleats.`,
       `Stock widths are ${ES_WIDTHS.join(", ")}", so every run adds up to a multiple of 3. ${frac(Lh, 8)} and ${frac(RT, 8)} land on ${lRun}" and ${rRun}". Both leftovers go to the back corner as filler: ${frac(lFill, 8)} on the left, ${frac(rGap, 8)} on the right.`,
       `The dividers above the cabinets run from the deck all the way to the ceiling${aLv.L.length || aLv.R.length ? ", so any plank between them is braced top and bottom rather than sitting on short posts" : ", bracing the deck and splitting the bay above it into reachable widths"}.`,
-      `Nook shelves start at ${frac(nLv[0] || 24, 8)} and then step about 12" - and the one at eye level is deliberately left out, so 48" to 72" is a single ${frac(23.25, 8)} opening for the puja. It runs its own shelves floor to ceiling - the deck and upper shelf over the cabinets stop at the right wall and do not carry into it.`,
+      `Nook shelves start at ${frac(nLv[0] || 24, 8)} and then step about 12" - and the one at eye level is deliberately left out, so 48" to 72" is a single ${frac(23.25, 8)} opening for the puja. It runs its own shelves, floor to ${frac(nLv[nLv.length - 1] || 0, 8)} - the plywood over the cabinets stops at the right wall and does not carry into it.`,
       `Nothing holds the open corner of the nook shelves up. The near end of each one lands ${frac(p.nookD, 8)} on the nook wall and the remaining ${frac(W - (XN - nd), 8)} on the end panel of the last right-wall cabinet - ${frac(p.nookD + W - (XN - nd), 8)} of support across a ${frac(nd, 8)} shelf, which is all of it. Back edge and far end are on wall cleats. So no plank and no post.`,
       `The nook is planks rather than a box on purpose: the recess is only ${frac(p.nookD, 8)} and East Star's shallowest is 15-1/2", which would stand proud and lap the crawl hatch. Planks fit it exactly.`,
       `The ${lw[0]}" box by the door sits behind the entry door. Opened fully the door stands about ${frac(p.doorAt + 1 - 1.4 - d, 8)} in front of it, so shut the entry door before opening that one.`,
