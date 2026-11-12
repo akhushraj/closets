@@ -356,9 +356,11 @@ export function fixedShelves(w, o) {
     const z0 = top - PLY;
     parts.push(box(w, "shelf", u0, u1, 0, depth - (nosing > 0 ? nosingT : 0), z0, top, { mark: true, label: "Shelf" }));
     if (nosing > 0) parts.push(box(w, "nosing", u0, u1, depth - nosingT, depth, top - nosing, top));
-    parts.push(box(w, "cleat", u0, u1, 0, PLY, z0 - cleat, z0));
-    parts.push(box(w, "cleat", u0, u0 + PLY, PLY, depth - 2.5, z0 - cleat, z0));
-    parts.push(box(w, "cleat", u1 - PLY, u1, PLY, depth - 2.5, z0 - cleat, z0));
+    if (cleat > 0) {   // cleat: 0 for a shelf carried from above, where a cleat would foul a box
+      parts.push(box(w, "cleat", u0, u1, 0, PLY, z0 - cleat, z0));
+      parts.push(box(w, "cleat", u0, u0 + PLY, PLY, depth - 2.5, z0 - cleat, z0));
+      parts.push(box(w, "cleat", u1 - PLY, u1, PLY, depth - 2.5, z0 - cleat, z0));
+    }
     if (led) parts.push(box(w, "led", u0 + 1, u1 - 1, depth - nosingT - 1.2, depth - nosingT - 0.4, z0 - 0.35, z0));
   }
   return { parts, shelfZs: zs, module: module(w, "shelves", u0, u1, 0, depth,
