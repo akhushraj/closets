@@ -124,6 +124,10 @@ function drawWall(svg, w, len, model) {
   dim(g, U(0), Z(0), U(0), Z(ceil), ftin(ceil), -22);
   dim(g, U(0), Z(0), U(len), Z(0), frac(len, 8), 18);
 
+  // dimensions the model asks for on this wall - bay widths, a divider's distance off a wall
+  for (const dm of (model.elevDims || []).filter(x => x.wall === w.id))
+    dim(g, U(dm.u0), Z(dm.z), U(dm.u1), Z(dm.z), dm.label || frac(dm.u1 - dm.u0, 8), dm.off ?? -14, 11.5);
+
   const widest = Math.max(0, ...merged.map(m => (m.label || "").length +
     (m.d > 1.25 ? frac(m.d, 8).length + 8 : 0)));
   const right = Math.max(196, 88 + widest * 6);

@@ -24,10 +24,10 @@ export const DEFAULTS = {
   grade: "shaker", esTop: 94,
   leftDepth: 24, leftPlan: "30, 36, 36", leftDoors: false, rightDoors: false,
   doorsOpen: false, drawersOut: false,
-  nookDepth: 26.5,
+  nookDepth: 24,
   fronts1: "11, 12, 13", rod1: 84, fronts2: "11, 12, 13", fronts3: "11, 12, 13", rod2: 84, rod3: 84,
   rightDepth: 15.5, rightPlan: "15, 30, 30",
-  fillerOn: true, nosingOn: false, plyOnly: false,
+  fillerOn: true, nosingOn: false, plyOnly: false, deckGap: 0.25,
   aboveLOn: true, aboveROn: true,
   // over each run: a deck resting on the cabinet tops, then adjustable planks above it
   ...shelfSlots("al", [], [107, 114]),
@@ -72,6 +72,7 @@ export const CONTROLS = [
     { key: "rightPlan", label: "Right wall widths, from the back", type: "text" },
     { key: "rightDepth", label: "Right wall depth (15-1/2\" reads 15\" on ABS)", min: 15.5, max: 24, step: 8.5 },
     { key: "fillerOn", label: "Filler panel in the leftover, at the back corner", type: "check" },
+    { key: "deckGap", label: "Gap over the cabinet tops, so a tall box still fits", min: 0, max: 1, step: 0.125 },
   ]],
   ...["l", "r"].map(side => {
     const pre = "a" + side, name = side === "l" ? "left" : "right";
@@ -156,6 +157,7 @@ export function build(p) {
   ];
   const w = Object.fromEntries(walls.map(x => [x.id, x]));
   const { parts, modules, add } = collector();
+  const elevDims = [];
   const warnings = [];
 
   // ---- left wall. u runs from the door wall up to the back wall, so cabinet 1 is by the door.
@@ -208,7 +210,7 @@ export function build(p) {
 
   // ---- plywood over the cabinets: a deck on their tops, dividers at the seams screwed to the
   // top studs, and one shelf. Nothing hangs off the cabinets; the cleats carry the back edge.
-  const deck = top + PLY;
+  const deckZ = top + +p.deckGap, deck = deckZ + PLY;   // underside, then top
   const aLv = { L: readShelves(p, "al", 2), R: readShelves(p, "ar", 2) };
   const aOn = { L: p.aboveLOn, R: p.aboveROn };
   // the dividers run deck to ceiling, so every plank between them is braced top and bottom
@@ -216,11 +218,16 @@ export function build(p) {
     const levels = aLv[wall.id];
     if (!aOn[wall.id] || u1 - u0 < 12) return;
     const seams = widths.slice(0, -1).map((_, i) => runFrom + widths.slice(0, i + 1).reduce((a, b) => a + b, 0));
-    parts.push(box(wall, "cleat", u0, u1, 0, PLY, top - 1.5, top));
-    parts.push(box(wall, "shelf", u0, u1, 0, depth, top, deck, { mark: true, label: "Deck, straight on the cabinet tops" }));
-    for (const s2 of [u0 + PLY / 2, ...seams, u1 - PLY / 2])
+    parts.push(box(wall, "cleat", u0, u1, 0, PLY, deckZ - 1.5, deckZ));
+    parts.push(box(wall, "shelf", u0, u1, 0, depth, deckZ, deck, { mark: true,
+      label: +p.deckGap ? `Deck, ${frac(p.deckGap, 8)} over the ${frac(top, 8)} box tops` : "Deck, straight on the cabinet tops" }));
+    const posts = [u0 + PLY / 2, ...seams, u1 - PLY / 2];
+    for (const s2 of posts)
       parts.push(box(wall, "carcass", s2 - PLY / 2, s2 + PLY / 2, 0, depth, deck, p.ceiling,
         { mark: s2 === u0 + PLY / 2, label: "Divider, deck to ceiling" }));
+    // dimension every bay but the last; that one is whatever is left over
+    for (let i = 0; i + 2 < posts.length; i++)
+      elevDims.push({ wall: wall.id, u0: posts[i], u1: posts[i + 1], z: deck, off: -15 });
     for (const z of levels) {
       parts.push(box(wall, "cleat", u0, u1, 0, PLY, z - 1.5, z));
       parts.push(box(wall, "shelf", u0, u1, 0, depth, z, z + PLY, { mark: z === levels[0], label: "Plank over the deck" }));
@@ -286,6 +293,7 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, nosing: NOSE, levels: nL
     quote: abs ? { supplier: "Aydin Building Supplies", rows: qRows } : null,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
     parts: bare ? parts.filter(q => !q.bought && q.kind !== "garment") : parts, modules, doors: [door], hatches,
+    elevDims,
     elevations: ["L", "R", "NR", "T"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },

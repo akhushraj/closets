@@ -20,7 +20,7 @@ export const DEFAULTS = {
   ends: "ply", gableOn: false,
   ...shelfSlots("s", [24, 36, 48, 60, 72], [12]),
   aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, midDiv: true, drawersOut: false,
-  nosingOn: false, plyOnly: false,
+  nosingOn: false, plyOnly: false, deckGap: 0.25,
   finish: "white", oneFinish: false, lights: true,
 };
 
@@ -50,6 +50,7 @@ export const CONTROLS = [
   ]],
   ["Plywood over the boxes", [
     { key: "aboveOn", label: "Shelf right across, sitting on the box tops", type: "check" },
+    { key: "deckGap", label: "Gap over the box tops, so a tall box still fits", min: 0, max: 1, step: 0.125 },
     { key: "above2On", label: "A second one higher up", type: "check" },
     { key: "aboveZ2", label: "Its height", min: 94, max: 112, step: 1 },
     { key: "aboveDepth2", label: "Its depth (shallower, you reach it over the header)", min: 12, max: 24, step: 1.5 },
@@ -162,7 +163,7 @@ export function build(p) {
 
   // One plywood shelf right across, sitting straight on the box tops. The boxes carry the
   // middle 6 ft of it and the end walls carry the rest, so it needs nothing hanging from above.
-  const aboveZ = top + PLY;
+  const aboveZ = top + +p.deckGap + PLY;   // 1/4" of slack over a nominal box
   if (p.aboveOn) {
     add(fixedShelves(w.T, { u0: 0, u1: W, depth: d, nosing: NOSE, levels: [aboveZ], label: "Shelf on the box tops" }));
     // No posts under the top shelf. It is cleated along its whole back edge into the studs,

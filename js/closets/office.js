@@ -11,7 +11,9 @@ export const INFO = { id: "office", name: "Office Closet", room: "Office", stuff
 export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9, doorH: 96, jambD: 4.9,   // wall thickness at the door, not a return into the closet
   boxZ: 75.2, boxBack1: 5.9, boxBack2: 12.9, topOutletZ: 98, topOutletBack: 14.6, upsOutletZ: 15.6 };
 
-const MALM = { w: 31.5, d: 18.875, h: 30.75 };   // IKEA MALM 3-drawer chest
+// IKEA STORKLINTA 3-drawer, 70 x 50 x 75 cm. MALM is discontinued; this is the replacement
+// that still clears the bottom shelf. Check the US page before buying - sizes vary by market.
+const CHEST = { w: 27.5, d: 19.75, h: 29.5 };
 
 export const DEFAULTS = {
   gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
@@ -34,7 +36,7 @@ export const CONTROLS = [
   ]],
   shelfControls("s", 6, "Shelves · right of the divider", [
     { key: "shelfDepth", label: "Shelf depth", min: 12, max: 23, step: 0.5 },
-    { key: "dresser", label: "Dresser under the bottom shelf (MALM 3-drawer)", type: "check" },
+    { key: "dresser", label: "Dresser under the bottom shelf (STORKLINTA 3-drawer)", type: "check" },
   ]),
   ["Top shelf · full width", [
     { key: "topOn", label: "Shelf just under the header", type: "check" },
@@ -71,6 +73,7 @@ export function build(p) {
   ];
   const w = Object.fromEntries(walls.map(x => [x.id, x]));
   const { parts, modules, add } = collector();
+  const elevDims = [];
   const warnings = [], rackH = p.rackU * 1.75 + 2;
 
   // what's already on the left end wall (u runs front -> back corner)
@@ -97,7 +100,8 @@ export function build(p) {
   // plywood divider, shelves to the right of it, one full-width shelf under the header
   const lv = readShelves(p, "s", 6);
   const divTop = p.topOn ? p.topZ : (lv[lv.length - 1] || 88);
-  const divBottom = Math.max(0, (lv[0] ?? 35) - PLY - 3);   // hangs on the wall; floor stays open for the hatch
+  const divBottom = Math.max(0, (lv[0] ?? 35) - PLY);   // stops at the bottom shelf - below that is dresser space
+  elevDims.push({ wall: "T", u0: 0, u1: G, z: divBottom, off: 22 });   // gear bay width, off the left wall
   const stepAt = lv.length ? lv[lv.length - 1] : divTop;   // divider steps back to the top shelf's depth
   parts.push(box(w.T, "carcass", G, G + PLY, 0, sd, divBottom, stepAt));
   // the pair of wall cleats the divider slots between
@@ -126,15 +130,15 @@ export function build(p) {
     if (c !== null) bz = c;
   });
   if (p.topOn) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.topDepth, nosing: NOSE, levels: [p.topZ], label: "Top shelf", led: false }));
-  if (p.dresser && !bare) {   // MALM 3-drawer under the bottom shelf
-    const a = G + PLY + 1, b = a + MALM.w, v1 = 0.5 + MALM.d, fh = (MALM.h - 2.5) / 3;
-    parts.push(box(w.T, "dresser", a, b, 0.5, v1 - 0.6, 0, MALM.h - 0.75, { label: "Dresser" }));
-    parts.push(box(w.T, "dresser", a, b, 0.5, v1, MALM.h - 0.75, MALM.h, { mark: true, label: "Dresser top" }));
+  if (p.dresser && !bare) {   // STORKLINTA 3-drawer under the bottom shelf
+    const a = G + PLY + 1, b = a + CHEST.w, v1 = 0.5 + CHEST.d, fh = (CHEST.h - 2.5) / 3;
+    parts.push(box(w.T, "dresser", a, b, 0.5, v1 - 0.6, 0, CHEST.h - 0.75, { label: "Dresser" }));
+    parts.push(box(w.T, "dresser", a, b, 0.5, v1, CHEST.h - 0.75, CHEST.h, { mark: true, label: "Dresser top" }));
     for (let i = 0; i < 3; i++) {
       const z0 = 1 + i * (fh + 0.4);
       parts.push(box(w.T, "dresserfront", a + 0.4, b - 0.4, v1 - 0.6, v1, z0, z0 + fh));
     }
-    modules.push(box(w.T, "dresser", a, b, 0.5, v1, 0, 0, { label: "Dresser", sub: `MALM 3-drawer · ${MALM.w} × ${MALM.d}` }));
+    modules.push(box(w.T, "dresser", a, b, 0.5, v1, 0, 0, { label: "Dresser", sub: `STORKLINTA 3-drawer · ${CHEST.w} × ${CHEST.d}` }));
   }
 
   // louvered double doors, swinging out
@@ -153,8 +157,8 @@ export function build(p) {
   if (rackPad < 1.5) warnings.push(`Only ${frac(Math.max(0, rackPad), 8)} beside the rack for cables. Widen the gear zone to about ${frac(p.rackW + 4, 8)}.`);
   const blocked = [...lv, ...(p.topOn ? [p.topZ] : [])].filter(z => z > p.doorH - 1.5);
   if (blocked.length) warnings.push(`Shelves at ${blocked.join(", ")}" sit above the door header (${p.doorH}"), so you can't reach them.`);
-  if (p.dresser && lv.length && lv[0] - PLY - 1.5 < MALM.h + 0.5)
-    warnings.push(`The dresser (${MALM.h}") doesn't fit under the bottom shelf's cleats (${frac(lv[0] - PLY - 1.5, 8)}).`);
+  if (p.dresser && lv.length && lv[0] - PLY - 1.5 < CHEST.h + 0.5)
+    warnings.push(`The dresser (${CHEST.h}") doesn't fit under the bottom shelf's cleats (${frac(lv[0] - PLY - 1.5, 8)}).`);
 
   if (p.gearTopOn && p.gearTop < p.rackZ + rackH + 12) warnings.push("The shelf above the gear sits close to the rack. Leave room for heat and cables.");
   warnings.push(...spacingWarnings(lv, "Shelves"));
@@ -167,6 +171,7 @@ export function build(p) {
     // stays either way - he has to build around it.
     parts: bare ? parts.filter(q => q.existing || !["garment", "device", "rack", "ups"].includes(q.kind)) : parts,
     modules, doors, hatches,
+    elevDims,
     elevations: ["T", "L", "R"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
@@ -194,7 +199,7 @@ export function build(p) {
       `Left ${frac(G, 8)} is network gear: 3/4" ply backboard screwed to studs, ${p.rackU}U wall rack at ${frac(p.rackZ, 8)} (${frac(rackPad, 8)} clear each side), UPS on the floor.`,
       `3/4" ply divider at ${frac(G, 8)} from the left, ${frac(divBottom, 8)} up to ${frac(stepAt, 8)}, slotted between two vertical 1x2 cleats into the studs.`,
       `Shelves right of it: ${lv.map(z => frac(z, 8)).join(", ")}. Gear side: ${leftLv.map(z => frac(z, 8)).join(", ") || "none"}.`,
-      ...(p.dresser ? [`IKEA MALM 3-drawer under the bottom shelf.`] : []),
+      ...(p.dresser ? [`IKEA STORKLINTA 3-drawer (70 x 50 x 75 cm = ${CHEST.w} x ${CHEST.d} x ${CHEST.h}") under the bottom shelf. MALM is discontinued.`] : []),
       `1x2 cleats into studs; shelves sit loose. Louvered doors for airflow.`,
     ].join("\n"),
     warnings,
