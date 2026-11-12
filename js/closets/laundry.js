@@ -164,8 +164,10 @@ export function build(p) {
     const z0 = o.z0 || 0, mat = p.grade === "chip" && !abs ? { mat: "melamine" } : {};
     const start = o.flushEnd ? u1 - wd.reduce((a, b) => a + b, 0) : u0;
     const doors = abs ? p.absDoors : o.doors !== false;   // ABS: one With/Without switch for the lot
-    // ABS build anything over 94" as a second box stacked on the first, so draw the seam
-    const seam = o.seam > z0 + 0.01 && o.seam < o.top - 0.01 ? o.seam
+    // two reasons a run splits in two: a wall cabinet is a box plus a topper, and ABS build
+    // anything over 94" as a second box stacked on the first. Only the first takes a stock topper.
+    const wcTop = o.seam > z0 + 0.01 && o.seam < o.top - 0.01;
+    const seam = wcTop ? o.seam
                : abs && o.top - z0 > ABS.stdTop + 0.01 ? z0 + ABS.stdTop : 0;
     const segs = seam ? [{ z0, top: seam }, { z0: seam, top: o.top, topper: true }]
                       : [{ z0, top: o.top }];
@@ -175,6 +177,8 @@ export function build(p) {
       const r = add(esRun(wall, { u0: start, depth: o.depth, z0: g.z0, top: g.top, doors, ...mat, brand: abs ? "ABS" : "East Star",
         bays: wd.map(x => {
           let lab = o.bayLabel, atag = abs ? "" : null, aw = false;
+          // a stock-width box takes a stock topper; an odd width or the L-shaped corner does not
+          if (g.topper && wcTop) lab = o.wer || o.leg || !ABS.widths.includes(x) ? "Custom top, made to size" : "Standard top";
           if (!g.topper && !o.noQuote) {
             const grp = wall.id === "B" ? "Laundry tall cabinets" : "Laundry sink cabinets";
             qRows.push({ where: `${wall.name.split(" \u00b7 ")[0]} ${o.qKind || ""}`.trim(),
@@ -184,7 +188,7 @@ export function build(p) {
           }
           if (abs && !g.topper && !o.noQuote) {
             const q = ABS_Q(x, o.depth, { kind: o.qKind, rod: !!(o.rods || []).length, drawers: !!(o.fronts || []).length, wer: !!o.wer, sink: !!o.sink });
-            lab = q ? `${q.tag} ${q.money}` : "Not in the ABS quote";
+            lab = q ? `${q.tag} ${q.money}` : o.bayLabel ? `${o.bayLabel} \u00b7 not in the ABS quote` : "Not in the ABS quote";
             atag = q ? q.tag : dimTag(g.top - g.z0, x, o.depth);
             aw = !q;
           }
@@ -221,14 +225,14 @@ export function build(p) {
   // ABS put a Wall Easy Reach unit in the inside corner - an L-shaped wall cabinet with a
   // bi-fold door, so the corner has no blind spot and no centre post. East Star have no
   // equivalent, so there the A run just carries on into the corner.
-  const WER = 24;
+  const WER = 30;   // 30 x 30 corner, per the 2026-11-11 top-view layout
   if (abs) {
     const werOpts = { widths: [WER], depth: ud, z0: p.upperBottom, top: upTop, seam: wcSeam(p.upperBottom), levels: wcLvls(p.upperBottom, upTop) };
     run(w.L, Yb - WER, Yb, { ...werOpts, prefix: "WER", seed: 9, qKind: "upper", wer: true, bayLabel: `WER ${WER}" corner, 90\u00b0 front` });
     run(w.SA, 0, WER, { ...werOpts, prefix: "WERD", seed: 10, noQuote: true, leg: true, bayLabel: `WER, wall D leg` });
-    // one 36" wall cabinet each side of the corner, as laid out - packStock would otherwise
-    // split wall A into 24 + 15, which gains 3" of box but is two units nobody has quoted
-    run(w.L, aU0, Yb - WER, { widths: [36], flushEnd: true, depth: ud, z0: p.upperBottom, top: upTop, seam: wcSeam(p.upperBottom), levels: wcLvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
+    // widths come from the top-view layout, not packStock: 30 + corner on wall A, corner + 30
+    // on wall D left, 30 + 27 over the machines
+    run(w.L, aU0, Yb - WER, { widths: [30], flushEnd: true, depth: ud, z0: p.upperBottom, top: upTop, seam: wcSeam(p.upperBottom), levels: wcLvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
   } else {
     run(w.L, aU0, Yb, { depth: ud, z0: p.upperBottom, top: upTop, seam: wcSeam(p.upperBottom), levels: wcLvls(p.upperBottom, upTop), prefix: "AU", seed: 11, qKind: "upper" });
   }
@@ -266,13 +270,13 @@ export function build(p) {
       run(w.SA, bd, X1, { depth: bd, top: cz - 1.25, levels: [cz / 2], prefix: "D", seed: 7, qKind: "base" });
     }
     parts.push(box(w.SA, "counter", bd, X1, 0, bd + 1, cz - 1.25, cz));
-    run(w.SA, abs ? WER : ud, X1, { depth: ud, z0: p.upperBottom, top: upTop, seam: wcSeam(p.upperBottom), levels: wcLvls(p.upperBottom, upTop), prefix: "DU", seed: 13, qKind: "upper" });
+    run(w.SA, abs ? WER : ud, X1, { ...(abs ? { widths: [30] } : {}), depth: ud, z0: p.upperBottom, top: upTop, seam: wcSeam(p.upperBottom), levels: wcLvls(p.upperBottom, upTop), prefix: "DU", seed: 13, qKind: "upper" });
   } else if (p.backWall === "tall") {
     run(w.SA, bd, X1, { depth: bd, top: upTop, levels: lvls(0, upTop, 14), prefix: "D", seed: 7, qKind: "base" });
   }
 
   // ---------- wall D right: uppers only, over the machines
-  run(w.WD, 0, p.wdW, { depth: ud, z0: p.wdUpperBottom, top: wdTop, seam: wcSeam(p.wdUpperBottom), levels: wcLvls(p.wdUpperBottom, wdTop), prefix: "W", seed: 17, qKind: "upper" });
+  run(w.WD, 0, p.wdW, { ...(abs ? { widths: [30, 27] } : {}), depth: ud, z0: p.wdUpperBottom, top: wdTop, seam: wcSeam(p.wdUpperBottom), levels: wcLvls(p.wdUpperBottom, wdTop), prefix: "W", seed: 17, qKind: "upper" });
   if (wdTop > 80) {
     const easy = Math.max(0, 80 - p.wdUpperBottom), high = wdTop - Math.max(80, p.wdUpperBottom);
     if (high > 6 && easy < 12) warnings.push(`Over the machines, ${frac(high, 8)} of the cabinet sits above 80" - reachable with a stool, not day to day. ${easy > 6 ? `Only ${frac(easy, 8)} is at easy height.` : "None of it is at easy height."}`);
