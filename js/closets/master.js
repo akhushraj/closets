@@ -30,8 +30,8 @@ export const DEFAULTS = {
   fillerOn: true, nosingOn: false, plyOnly: false,
   aboveLOn: true, aboveROn: true,
   // over each run: a deck resting on the cabinet tops, then adjustable planks above it
-  ...shelfSlots("al", [107], [114]),
-  ...shelfSlots("ar", [107], [114]),
+  ...shelfSlots("al", [], [107, 114]),
+  ...shelfSlots("ar", [], [107, 114]),
   pressOn: true, pressW: 15, pressZ: 18, pressDown: false,
   // one shelf bank per cabinet. l3/r2/r3 copy a neighbour until you tell them not to.
   // all three left boxes are fitted out the same: 3 deep drawers, a shelf capping them,
@@ -241,7 +241,7 @@ export function build(p) {
     const lv2 = [deck, ...aLv[id]];
     warnings.push(...spacingWarnings(lv2, `${name} wall, above the cabinets`));
     const topZ = lv2[lv2.length - 1];
-    if (p.ceiling - topZ > 20) warnings.push(`${name} wall: the top plank is at ${frac(topZ, 8)}, leaving ${frac(p.ceiling - topZ, 8)} of bare wall to the ceiling.`);
+    if (p.ceiling - topZ > 26) warnings.push(`${name} wall: ${frac(p.ceiling - topZ, 8)} from the top plank at ${frac(topZ, 8)} to the ceiling. The dividers brace it, but that is a tall bay to reach into.`);
   }
 
   // ---- back wall stays clear so you can reach the back end of both runs; the only thing on it
@@ -339,14 +339,14 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, nosing: NOSE, levels: nL
     ].join("\n"),
     warnings,
     notes: [
-      `East Star does the two walls - anything with a drawer, a door or a carcass. Amir does the flat plywood: the nook shelves and the deck and shelf above the cabinets, cut and painted, sitting on 1x2 cleats.`,
+      `East Star does the two walls - anything with a drawer, a door or a carcass. Amir does the flat plywood: the nook shelves and the deck${aLv.L.length || aLv.R.length ? " and shelves" : ""} above the cabinets, cut and painted, sitting on 1x2 cleats.`,
       `Stock widths are ${ES_WIDTHS.join(", ")}", so every run adds up to a multiple of 3. ${frac(Lh, 8)} and ${frac(RT, 8)} land on ${lRun}" and ${rRun}". Both leftovers go to the back corner as filler: ${frac(lFill, 8)} on the left, ${frac(rGap, 8)} on the right.`,
-      `The dividers above the cabinets run from the deck all the way to the ceiling, so the upper shelf is braced top and bottom rather than sitting on short posts.`,
+      `The dividers above the cabinets run from the deck all the way to the ceiling${aLv.L.length || aLv.R.length ? ", so any plank between them is braced top and bottom rather than sitting on short posts" : ", bracing the deck and splitting the bay above it into reachable widths"}.`,
       `Nook shelves start at ${frac(nLv[0] || 24, 8)} and then step about 12" - and the one at eye level is deliberately left out, so 48" to 72" is a single ${frac(23.25, 8)} opening for the puja. It runs its own shelves floor to ceiling - the deck and upper shelf over the cabinets stop at the right wall and do not carry into it.`,
       `Nothing holds the open corner of the nook shelves up. The near end of each one lands ${frac(p.nookD, 8)} on the nook wall and the remaining ${frac(W - (XN - nd), 8)} on the end panel of the last right-wall cabinet - ${frac(p.nookD + W - (XN - nd), 8)} of support across a ${frac(nd, 8)} shelf, which is all of it. Back edge and far end are on wall cleats. So no plank and no post.`,
       `The nook is planks rather than a box on purpose: the recess is only ${frac(p.nookD, 8)} and East Star's shallowest is 15-1/2", which would stand proud and lap the crawl hatch. Planks fit it exactly.`,
       `The ${lw[0]}" box by the door sits behind the entry door. Opened fully the door stands about ${frac(p.doorAt + 1 - 1.4 - d, 8)} in front of it, so shut the entry door before opening that one.`,
-      `A ${frac(top, 8)} box under a ${ftin(p.ceiling)} ceiling leaves ${frac(p.ceiling - top, 8)} above it. This is a walk-in, so a step ladder reaches it. Planks on the cabinet tops turn it into two more shelves.`,
+      `A ${frac(top, 8)} box under a ${ftin(p.ceiling)} ceiling leaves ${frac(p.ceiling - top, 8)} above it. This is a walk-in, so a step ladder reaches it. The deck on the cabinet tops turns it into ${aLv.L.length || aLv.R.length ? "more shelves" : `one ${frac(p.ceiling - deck, 8)} bay, deep enough for suitcases`}.`,
       `The back wall stays clear on purpose. A cabinet there would sit right where you stand to open the doors on the back end of both runs. A 5"-deep press board takes almost nothing from the aisle closed, and folds down to a ${frac(42, 8)} board when you want it.`,
       `The crawl hatch runs ${frac(p.hatchX0, 8)}-${frac(p.hatchX1, 8)} from the left wall. Everything on the left and right walls clears it; only the nook box laps it.`,
     ],
