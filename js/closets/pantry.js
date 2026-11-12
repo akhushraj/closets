@@ -3,7 +3,7 @@
 // open plywood shelves under it (first shelf raised off the floor) and 12"-deep open shelves above.
 import { box, diagPanel, polyPart, fixedShelves, collector } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
-import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, PLYWOOD_NOTE } from "./common.js";
+import { shelfSlots, shelfControls, readShelves, spacingWarnings, LOOK, plywoodNote } from "./common.js";
 
 export const INFO = { id: "pantry", name: "Pantry", room: "Kitchen", stuff: "pantry", concept: "L counter + open shelves", rev: "" };
 
@@ -17,6 +17,7 @@ export const DEFAULTS = {
   counterDepth: 24, counterZ: 36, top: "quartz", underOn: true, underZ: 18, underDepth: 24,
   upDepth: 18, upDepth2: 24, upShallow: 2, maxBay: 20, sideUprights: false, railH: 3.5, diagCorner: true,
   ...shelfSlots("u", [56, 71, 86, 101], [116]),
+  nosingOn: false, plyOnly: false,
   finish: "white", oneFinish: false, lights: true,
 };
 
@@ -39,12 +40,17 @@ export const CONTROLS = [
     { key: "upDepth", label: "Depth of those", min: 10, max: 24, step: 0.5 },
     { key: "upDepth2", label: "Depth of the rest", min: 10, max: 24, step: 0.5 },
   ]),
+  ["Drawing", [
+    { key: "nosingOn", label: "Poplar edge on the shelf fronts", type: "check" },
+    { key: "plyOnly", label: "Show only what Amir builds", type: "check" },
+  ]],
   LOOK,
 ];
 
 export function build(p) {
   p = { ...p, ...FIELD };
   const W = p.W, D = p.D, t = 4.5, cd = p.counterDepth, cz = p.counterZ;
+  const bare = p.plyOnly;   // drawing for Amir - the stone is somebody else's trade
   const outline = [[0, 0], [W, 0], [W, D], [0, D]];
   const walls = [
     { id: "T", name: "Back wall", a: [0, 0], b: [W, 0] },
@@ -97,7 +103,7 @@ export function build(p) {
   if (p.underOn) {   // one shelf per bay, so nothing spans past an upright
     const sd = Math.min(p.underDepth, cd - 1), z0 = p.underZ - PLY;
     const shelf = (wall, u0, u1) => add(fixedShelves(wall, { u0, u1, depth: sd, levels: [p.underZ],
-      label: "Under-counter shelf", nosing: 0.75, nosingT: 0.25, led: false }));
+      label: "Under-counter shelf", nosing: p.nosingOn ? 0.75 : 0, nosingT: 0.25, led: false }));
     const be = [0, ...backG.flatMap(g => [g - PLY / 2, g + PLY / 2]), corner - PLY];
     const re = [cd, ...rightG.flatMap(g => [g - PLY / 2, g + PLY / 2]), D];
     if (p.diagCorner) {
@@ -119,7 +125,9 @@ export function build(p) {
     }
   }
   const up = readShelves(p, "u", 5);
-  const edge = { nosing: 1.25, nosingT: 0.25 };   // 1/4" x 1-1/4" poplar: just deep enough to hide the LED channel
+  // 1/4" x 1-1/4" poplar, just deep enough to hide the LED channel. Without it the shelf runs
+  // its full depth and the channel has to be let into the underside.
+  const edge = p.nosingOn ? { nosing: 1.25, nosingT: 0.25 } : { nosing: 0 };
   // The lowest few are set back so you are not working under them at the counter; above head
   // height they go full depth, where reaching over is no longer the thing that limits them.
   const dOf = i => i < p.upShallow ? p.upDepth : p.upDepth2;
@@ -150,7 +158,7 @@ export function build(p) {
   return {
     info: INFO, params: p,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
-    parts, modules, doors: [door], hatches: [],
+    parts: bare ? parts.filter(q => q.kind !== "counter") : parts, modules, doors: [door], hatches: [],
     elevations: ["T", "R", "L"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
@@ -181,7 +189,7 @@ export function build(p) {
       `Counter: L-shaped, ${frac(cd, 8)} deep, top at ${frac(cz, 8)}. 3/4" ply sub-top on 1x2 wall cleats, with a 1x${rh + 0.5} on edge across the front of both runs.`,
       `${backG.length + rightG.length + 1} upright${backG.length + rightG.length ? "s" : ""}, ${frac(uD, 8)} deep, floor to ${frac(tz, 8)}${p.diagCorner ? `: one on the diagonal at the corner, wall corner to inside corner, both ends cut at 45` : ""}${backG.length || rightG.length ? `, plus ${[...backG.map(g => frac(g, 8) + " from the left"), ...rightG.map(g => frac(g, 8) + " from the back")].join(" and ")}` : ""}.`,
       ...(p.underOn ? [`Shelf under the counter at ${frac(p.underZ, 8)}. The two at the corner are cut to the diagonal - one 45 edge each.`] : []),
-      `Open shelves above: ${up.map(z => frac(z, 8)).join(", ")} - ${frac(p.upDepth, 8)} deep, on 1x2 cleats into the studs. 1/4" x 1-1/4" poplar on each front edge.`,
+      `Open shelves above: ${up.map(z => frac(z, 8)).join(", ")} - ${frac(p.upDepth, 8)} deep, on 1x2 cleats into the studs. ${p.nosingOn ? `1/4" x 1-1/4" poplar on each front edge.` : `No front edge - each shelf is a plain plank cut to its full depth.`}`,
       `Paint: kitchen colour, all sides.`,
     ].join("\n"),
     warnings,
@@ -192,9 +200,11 @@ export function build(p) {
       ...(p.diagCorner ? [`The corner upright runs on the diagonal, from the inside corner of the counter to the corner of the two walls. That splits the ${frac(cd, 8)} square corner between the two runs, so each run ends in a wedge it can reach into instead of one deep blind box.`,
         `The shelf in each of those two bays is one piece cut to the diagonal, not a rectangle: a four-sided panel with one 45-degree edge. It sits on wall cleats and on a 1x2 run along the face of the diagonal panel.`] : []),
       "The 1x2 must be on edge (1-1/2\" tall), not laid flat. Flat it sags about 1/16\" and the stone cracks.",
-      "Open-shelf front edge: 1/4\" x 1-1/4\" poplar, glued and pinned flush with the shelf top. It drops 1/2\" below the shelf, which hides the LED channel tucked up behind it.",
+      p.nosingOn
+        ? "Open-shelf front edge: 1/4\" x 1-1/4\" poplar, glued and pinned flush with the shelf top. It drops 1/2\" below the shelf, which hides the LED channel tucked up behind it."
+        : "No front edge, so nothing hides the LED channel. Let it into a groove in the underside, about 1-1/2\" back from the front, sized to the channel you buy.",
       "Quartz is usually cheapest as a remnant for a small L. A thin porcelain slab needs the full plywood sub-top under it.",
-      PLYWOOD_NOTE,
+      plywoodNote(p.nosingOn),
     ],
   };
 }
