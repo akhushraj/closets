@@ -2,7 +2,7 @@
 import { el, clear, dim } from "../lib/svg.js";
 import { frac, ftin } from "../lib/units.js";
 
-const S = 3.6;   // px per inch
+const S = 4.8;   // px per inch
 
 export function renderElevations(root, model) {
   clear(root);
@@ -110,5 +110,8 @@ function drawWall(svg, w, len, model) {
   const right = Math.max(196, 88 + widest * 6);
   const Wpx = ox + len * S + right;
   svg.setAttribute("viewBox", `0 0 ${Wpx} ${Hpx}`);
-  svg.style.maxWidth = Wpx + "px";
+  // Always draw at full size. Letting the browser shrink a wide wall to fit would take the
+  // lettering down with it, so the figure scrolls sideways instead.
+  svg.style.width = Wpx + "px";
+  svg.style.maxWidth = "none";
 }

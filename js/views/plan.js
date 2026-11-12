@@ -37,7 +37,8 @@ export function renderPlan(svg, model) {
   const X = x => 16 + (x - minX) * S, Y = y => 16 + (y - minY) * S;
   const Wpx = X(maxX) + 16, Hpx = Y(maxY) + 50;
   svg.setAttribute("viewBox", `0 0 ${Wpx} ${Hpx}`);
-  svg.style.maxWidth = Math.max(560, Wpx) + "px";
+  svg.style.width = Math.max(560, Wpx) + "px";
+  svg.style.maxWidth = "none";
   const g = el("g", {}, svg);
   const poly = ps => "M" + ps.map(p => `${X(p[0])} ${Y(p[1])}`).join(" L") + " Z";
   const txtPx = (px, py, s, cls = "lb", fs = 13, rot = false) => el("text", { x: px, y: py, class: cls, "font-size": fs,
