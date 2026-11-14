@@ -14,8 +14,9 @@ const css = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").match(/<style
 const pages = [];
 for (const id of ROOMS) {
   const mod = await import(path.join(ROOT, `js/closets/${id}.js`));
-  // master and Maya keep their cabinets: the deck question only reads with the boxes there
-  const withBoxes = id === "master" || id === "maya";
+  // Maya keeps her cabinets: the deck question over them only reads with the boxes drawn.
+  // Master dropped its deck, so it is plywood-only like the rest.
+  const withBoxes = id === "maya";
   const model = mod.build({ ...mod.DEFAULTS, plyOnly: !withBoxes });
   const root = new Node("div", null);
   renderElevations(root, model);

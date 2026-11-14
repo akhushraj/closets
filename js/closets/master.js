@@ -1,8 +1,9 @@
 // Master walk-in, oriented like the field sketch: long wall on the left (104.5"), door on the
 // bottom wall (LHI, swings in), nook at the bottom right.
 // Left and right walls are East Star factory cabinets (94" boxes, floor-standing, doors).
-// Site-built plywood does the rest: a deck and an upper shelf over the cabinets, and the nook,
-// whose side gable extends past the alcove so its shelves can be deeper than the 12.4" recess.
+// Site-built plywood does the nook, whose side gable extends past the alcove so its shelves can
+// be deeper than the 12.4" recess. Nothing goes over the cabinets: the ABS boxes are plywood, so
+// their own tops are the top shelf (Amir, 2026-11-13). The deck is still here, switched off.
 import { box, esRun, fixedShelves, pressBoard, collector, hatchClashes } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
@@ -28,7 +29,8 @@ export const DEFAULTS = {
   fronts1: "11, 12, 13", rod1: 84, fronts2: "11, 12, 13", fronts3: "11, 12, 13", rod2: 84, rod3: 84,
   rightDepth: 15.5, rightPlan: "15, 30, 30",
   fillerOn: true, nosingOn: false, plyOnly: false, deckGap: 0.25,
-  aboveLOn: true, aboveROn: true,
+  // Amir: the boxes are plywood, so a deck on their tops is a second top. Off by default.
+  aboveLOn: false, aboveROn: false,
   // over each run: a deck resting on the cabinet tops, then adjustable planks above it
   ...shelfSlots("al", [], [107, 114]),
   ...shelfSlots("ar", [], [107, 114]),
@@ -237,7 +239,8 @@ export function build(p) {
   // numbers tells Amir where his planks break.
   const cabDims = (wall, runFrom, widths) => {
     let u = runFrom;
-    for (const wd of widths) { elevDims.push({ wall: wall.id, u0: u, u1: u + wd, z: deck, off: -15 }); u += wd; }
+    const z = aOn[wall.id] ? deck : top;
+    for (const wd of widths) { elevDims.push({ wall: wall.id, u0: u, u1: u + wd, z, off: -15 }); u += wd; }
   };
   cabDims(w.L, 0, lw);
   cabDims(w.R, rGap, rw);
@@ -356,15 +359,20 @@ add(fixedShelves(w.NR, { u0: 0, u1: nookRun, depth: nd, nosing: NOSE, levels: nL
     ].join("\n"),
     warnings,
     notes: [
-      `East Star does the two walls - anything with a drawer, a door or a carcass. Amir does the flat plywood: the nook shelves and the deck${aLv.L.length || aLv.R.length ? " and shelves" : ""} above the cabinets, cut and painted, sitting on 1x2 cleats.`,
+      `${brand} does the two walls - anything with a drawer, a door or a carcass. Amir does the flat plywood: the nook shelves${aOn.L || aOn.R ? ` and the deck${aLv.L.length || aLv.R.length ? " and shelves" : ""} above the cabinets` : ""}, cut and painted, sitting on 1x2 cleats.`,
       `Stock widths are ${ES_WIDTHS.join(", ")}", so every run adds up to a multiple of 3. ${frac(Lh, 8)} and ${frac(RT, 8)} land on ${lRun}" and ${rRun}". Both leftovers go to the back corner as filler: ${frac(lFill, 8)} on the left, ${frac(rGap, 8)} on the right.`,
-      `The dividers above the cabinets run from the deck all the way to the ceiling${aLv.L.length || aLv.R.length ? ", so any plank between them is braced top and bottom rather than sitting on short posts" : ", bracing the deck and splitting the bay above it into reachable widths"}.`,
-      `OPEN - how the deck is carried. It sits at ${frac(deck, 8)}, underside ${frac(deckZ, 8)}. The cabinets are ${frac(top, 8)} tall with their backs to this wall, so a cleat along the wall under the deck would be inside the cabinet. The plywood goes up before the boxes arrive, so the deck cannot rely on their tops either. Amir to say how he carries it and what that needs from the dividers.`,
-      `Nook shelves start at ${frac(nLv[0] || 24, 8)} and then step about 12" - and the one at eye level is deliberately left out, so 48" to 72" is a single ${frac(23.25, 8)} opening for the puja. It runs its own shelves, floor to ${frac(nLv[nLv.length - 1] || 0, 8)} - the plywood over the cabinets stops at the right wall and does not carry into it.`,
+      ...(aOn.L || aOn.R ? [
+        `The dividers above the cabinets run from the deck all the way to the ceiling${aLv.L.length || aLv.R.length ? ", so any plank between them is braced top and bottom rather than sitting on short posts" : ", bracing the deck and splitting the bay above it into reachable widths"}.`,
+        `OPEN - how the deck is carried. It sits at ${frac(deck, 8)}, underside ${frac(deckZ, 8)}. The cabinets are ${frac(top, 8)} tall with their backs to this wall, so a cleat along the wall under the deck would be inside the cabinet. The plywood goes up before the boxes arrive, so the deck cannot rely on their tops either. Amir to say how he carries it and what that needs from the dividers.`,
+      ] : [
+        `Nothing goes on top of the cabinets. Amir's point: the boxes are plywood, so their tops already are the shelf. A deck would have been a second lid 1/4" above the first, and carrying it was the one open question on this closet - the cabinets back onto the wall, so no cleat could run under it. Dropping it closes that. ${frac(p.ceiling - top, 8)} of open bay sits over each box, load going straight down the box sides to the floor.`,
+        `Ask ${brand} what the tops of the ${Math.max(...lw, ...rw)}" boxes are. A wide top carrying suitcases wants 3/4"; if it is thinner than that, keep the heavy things over the box sides rather than mid-span.`,
+      ]),
+      `Nook shelves start at ${frac(nLv[0] || 24, 8)} and then step about 12" - and the one at eye level is deliberately left out, so 48" to 72" is a single ${frac(23.25, 8)} opening for the puja. It runs its own shelves, floor to ${frac(nLv[nLv.length - 1] || 0, 8)}, independent of the cabinet runs.`,
       `Nothing holds the open corner of the nook shelves up. The near end of each one lands ${frac(p.nookD, 8)} on the nook wall and the remaining ${frac(W - (XN - nd), 8)} on the end panel of the last right-wall cabinet - ${frac(p.nookD + W - (XN - nd), 8)} of support across a ${frac(nd, 8)} shelf, which is all of it. Back edge and far end are on wall cleats. So no plank and no post.`,
       `The nook is planks rather than a box on purpose: the recess is only ${frac(p.nookD, 8)} and East Star's shallowest is 15-1/2", which would stand proud and lap the crawl hatch. Planks fit it exactly.`,
       `The ${lw[0]}" box by the door sits behind the entry door. Opened fully the door stands about ${frac(p.doorAt + 1 - 1.4 - d, 8)} in front of it, so shut the entry door before opening that one.`,
-      `A ${frac(top, 8)} box under a ${ftin(p.ceiling)} ceiling leaves ${frac(p.ceiling - top, 8)} above it. This is a walk-in, so a step ladder reaches it. The deck on the cabinet tops turns it into ${aLv.L.length || aLv.R.length ? "more shelves" : `one ${frac(p.ceiling - deck, 8)} bay, deep enough for suitcases`}.`,
+      `A ${frac(top, 8)} box under a ${ftin(p.ceiling)} ceiling leaves ${frac(p.ceiling - top, 8)} above it, deep enough for suitcases. This is a walk-in, so a step ladder reaches it.${aOn.L || aOn.R ? ` The deck on the cabinet tops turns it into ${aLv.L.length || aLv.R.length ? "more shelves" : `one ${frac(p.ceiling - deck, 8)} bay`}.` : ""}`,
       `The back wall stays clear on purpose. A cabinet there would sit right where you stand to open the doors on the back end of both runs. A 5"-deep press board takes almost nothing from the aisle closed, and folds down to a ${frac(42, 8)} board when you want it.`,
       `The crawl hatch runs ${frac(p.hatchX0, 8)}-${frac(p.hatchX1, 8)} from the left wall. Everything on the left and right walls clears it; only the nook box laps it.`,
     ],
