@@ -1,7 +1,8 @@
 // Maya's reach-in: an East Star box at each end (drawers, rod above them, open shelf above that,
 // no doors) with site-built plywood shelves filling the middle. The middle's lowest shelf sits
-// high enough for a laundry basket. Above the cabinets, a plywood deck and one long shelf on
-// dividers use the 26" that a 94" box leaves under the 10' ceiling. 3-panel sliding doors.
+// high enough for a laundry basket. Nothing spans the box tops - they are plywood already, so
+// they are their own shelf, and each end carries its own shelf level with them. One long shelf
+// higher up uses the rest of what the 10' ceiling leaves. 3-panel sliding doors.
 import { box, esRun, fixedShelves, packStock, collector } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { parseFronts } from "./rohan.js";
@@ -20,7 +21,7 @@ export const DEFAULTS = {
   ends: "ply", gableOn: false,
   ...shelfSlots("s", [24, 36, 48, 60, 72], [12]),
   aboveOn: true, above2On: true, aboveZ2: 102, aboveDepth2: 18, midDiv: true, drawersOut: false,
-  nosingOn: false, plyOnly: false, deckGap: 0.25,
+  nosingOn: false, plyOnly: false, deckGap: 0,
   finish: "white", oneFinish: false, lights: true,
 };
 
@@ -48,9 +49,10 @@ export const CONTROLS = [
     { key: "nosingOn", label: "Solid nosing on the shelf fronts", type: "check" },
     { key: "plyOnly", label: "Show only what Amir builds", type: "check" },
   ]],
-  ["Plywood over the boxes", [
-    { key: "aboveOn", label: "Shelf right across, sitting on the box tops", type: "check" },
-    { key: "deckGap", label: "Gap over the box tops, so a tall box still fits", min: 0, max: 1, step: 0.125 },
+  ["Over the boxes", [
+    { type: "note", text: "The box tops are the shelf across the middle - they are plywood, so nothing is built over them. Each end gets its own shelf at the same height." },
+    { key: "aboveOn", label: "A shelf at each end, level with the box tops", type: "check" },
+    { key: "deckGap", label: "Step up from the box tops (0 = flush)", min: 0, max: 1, step: 0.125 },
     { key: "above2On", label: "A second one higher up", type: "check" },
     { key: "aboveZ2", label: "Its height", min: 94, max: 112, step: 1 },
     { key: "aboveDepth2", label: "Its depth (shallower, you reach it over the header)", min: 12, max: 24, step: 1.5 },
@@ -131,7 +133,9 @@ export function build(p) {
     const gap0 = boxAt[0] + esW[0], gap1 = boxAt[1];
     if (gap1 - gap0 > 10) add(fixedShelves(w.T, { u0: gap0 + g, u1: gap1 - g, depth: d, nosing: NOSE, levels: lv, label: "Shelves · middle" }));
   }
-  const gTop = p.aboveOn ? p.aboveZ - PLY : (lv[lv.length - 1] || top);
+  const aboveZ = top + +p.deckGap;   // the end shelves come up level with the box tops
+  const endsPly = p.ends !== "es";
+  const gTop = p.aboveOn && endsPly ? aboveZ - PLY : (lv[lv.length - 1] || top);
   const endFill = [];
   if (p.ends === "es") {
     // East Star at both ends too. Stock widths only go 15/18/21/24/30/36, so each end takes the
@@ -161,21 +165,23 @@ export function build(p) {
   }
   const basket = lv.length ? lv[0] - PLY - 1.5 : top;
 
-  // One plywood shelf right across, sitting straight on the box tops. The boxes carry the
-  // middle 6 ft of it and the end walls carry the rest, so it needs nothing hanging from above.
-  const aboveZ = top + +p.deckGap + PLY;   // 1/4" of slack over a nominal box
-  if (p.aboveOn) {
-    add(fixedShelves(w.T, { u0: 0, u1: W, depth: d, nosing: NOSE, cleat: 0, levels: [aboveZ], label: "Deck, on angles off the studs" }));
-    // No posts under the top shelf. It is cleated along its whole back edge into the studs,
-    // so every slice of it cantilevers over its 18" depth rather than spanning the room: about
-    // 1/25" of droop at the front. Posts would only be needed if it rested on its two ends.
-    if (p.above2On) add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.aboveDepth2, nosing: NOSE, levels: [p.aboveZ2], label: "Top shelf" }));
-    // One divider on the centre line, which is also the seam between the two boxes, so it lands
+  // Nothing crosses the box tops. They are plywood, so they are the shelf over the middle, and
+  // each end runs its own shelf up level with them. Outboard of the boxes a wall cleat has
+  // nothing in its way, so these are ordinary cleated shelves - no bridge, no open question.
+  if (p.aboveOn && endsPly) for (const [a, b, side] of [[0, m0, "left"], [m1, W, "right"]])
+    add(fixedShelves(w.T, { u0: a, u1: b, depth: d, nosing: NOSE, levels: [aboveZ],
+      label: `Shelf \u00b7 ${side} end, level with the box tops` }));
+  // No posts under the top shelf. It is cleated along its whole back edge into the studs,
+  // so every slice of it cantilevers over its 18" depth rather than spanning the room: about
+  // 1/25" of droop at the front. Posts would only be needed if it rested on its two ends.
+  if (p.above2On) {
+    add(fixedShelves(w.T, { u0: 0, u1: W, depth: p.aboveDepth2, nosing: NOSE, levels: [p.aboveZ2], label: "Top shelf" }));
+    // One divider on the centre line, which is also the seam between the two boxes, so it stands
     // straight over two box sides. It splits the long open band in two - it is not holding
     // anything up, the top shelf is cleated along its back edge.
-    if (p.above2On && p.midDiv) {
+    if (p.midDiv) {
       const mu = W / 2;
-      parts.push(box(w.T, "carcass", mu - PLY / 2, mu + PLY / 2, 0, p.aboveDepth2, aboveZ + PLY, p.aboveZ2 - PLY,
+      parts.push(box(w.T, "carcass", mu - PLY / 2, mu + PLY / 2, 0, p.aboveDepth2, top, p.aboveZ2 - PLY,
         { mark: true, label: "Divider, on the centre line" }));
     }
   }
@@ -196,7 +202,7 @@ export function build(p) {
   if (eLv.length && eLv[0] < fronts.reduce((a, b) => a + b, 0) + 1) warnings.push(`The lowest shelf inside the boxes (${frac(eLv[0], 8)}) is below the top of the drawers (${frac(fronts.reduce((a, b) => a + b, 0), 8)}).`);
   if (eLv.some(z => Math.abs(z - p.rodZ) < 3)) warnings.push(`A shelf lands within 3" of the rod at ${frac(p.rodZ, 8)}. Hangers need about 2" of clear above the rod.`);
   if (abs) warnings.push(`ABS do not make an 84" box as standard, so this is drawn at 94". That puts the shelf on the box tops at ${frac(top + PLY, 8)}, ${frac(p.doorH - top - PLY, 8)} under the ${frac(p.doorH, 8)} header - you can neither see onto it nor reach across it. Custom 84" is priced high; worth a decision.`);
-  if (p.aboveOn && p.above2On) {
+  if (p.above2On) {
     const droop = (20 / 144) * p.aboveDepth2 ** 4 / (8 * 1.3e6 * (PLY ** 3 / 12));
     if (droop > 0.12) warnings.push(`At ${frac(p.aboveDepth2, 8)} deep the top shelf's front edge droops ${frac(droop, 16)} off its back cleat. Make it shallower or put a post under it.`);
     if (p.aboveZ2 - aboveZ < 12) warnings.push(`Only ${frac(p.aboveZ2 - aboveZ - PLY, 8)} between the two shelves above the boxes.`);
@@ -217,11 +223,7 @@ export function build(p) {
     quote: abs ? { supplier: "Aydin Building Supplies", rows: qRows } : null,
     closet: { outline, walls, ceiling: p.ceiling, wallT: t, nbr: [] },
     parts: bare ? parts.filter(q => !q.bought && q.kind !== "garment") : parts, modules, doors: [door], hatches: [],
-    elevNotes: p.aboveOn ? [{ wall: "T", lines: [
-      `OPEN FOR AMIR - how is the deck at ${frac(aboveZ, 8)} carried across the middle ${frac(esRun0, 8)}?`,
-      `East Star boxes are ${frac(top, 8)} tall, backs to this wall, so nothing can run under the deck along the wall.`,
-      `Plywood goes up before the boxes, so their tops cannot be the support either.`,
-    ] }] : [],
+    elevNotes: [],
     elevations: ["T", "L", "R"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
@@ -244,7 +246,8 @@ export function build(p) {
       { k: "Under the lowest shelf", v: frac(basket, 8), s: "clear at the cleats, for a laundry basket" },
       { k: "Clear of the door frames", v: `${frac(m0 - p.stubL, 8)} / ${frac((W - m1) - p.stubR, 8)}`, s: "left / right, box face to frame" },
       { k: "To open a drawer", v: worstSlide === 1 ? "one panel slide" : worstSlide ? `${worstSlide} panel slides` : "cannot", s: `panels are ${frac(pw, 8)}; a box is ${esW.join("/")}"` },
-      { k: "Shelf on the box tops", v: p.aboveOn ? frac(aboveZ, 8) : "off", s: p.aboveOn ? `${frac((p.above2On ? p.aboveZ2 : p.ceiling) - aboveZ - PLY, 8)} clear above it, under the ${frac(p.doorH, 8)} header` : "" },
+      { k: "At the box tops", v: esEnds ? `${frac(top, 8)}, box tops right across` : p.aboveOn ? frac(aboveZ, 8) : "off",
+        s: esEnds ? "all boxes, so nothing to build" : p.aboveOn ? `box tops across the middle ${frac(esRun0, 8)}, a plywood shelf over each ${frac(endW, 8)} end \u00b7 ${frac((p.above2On ? p.aboveZ2 : p.ceiling) - aboveZ - PLY, 8)} clear above` : "" },
       { k: "Top shelf", v: p.above2On ? `${frac(p.aboveZ2, 8)} × ${frac(p.aboveDepth2, 8)} deep` : "off", s: p.above2On ? `${frac(p.aboveZ2 - p.doorH, 8)} above the header, cleated along the back${p.midDiv ? `, one divider on the centre line at ${frac(W / 2, 8)}` : ", no posts"}` : "" },
     ],
     titleMeta: [
@@ -259,7 +262,7 @@ export function build(p) {
       `They start ${frac(m0, 8)} in from each end, so the drawers pull straight out through the opening and clear the door frames.`,
       ...(p.gableOn && !esEnds ? [`AMIR: one 3/4" plywood gable at each join, floor to ${frac(gTop, 8)}, standing against the side of the box. The end shelves land on it.`] : []),
       ...(esEnds ? [`EAST STAR, the two ends: one ${endPlan.join(" + ")}" box at each end, ${frac(top, 8)} tall, ${frac(d, 8)} deep, no doors, shelves at ${lv.map(z => frac(z, 8)).join(", ")}. ${frac(endFill[0] || 0, 8)} filler at each side wall, scribed. Boxes butt the middle run.`] : []),
-      `AMIR:${esEnds ? "" : ` 3/4" birch plywood shelves on 1x2 cleats into the studs, ${frac(endW - g, 8)} wide at each end, ${frac(d, 8)} deep, at ${lv.map(z => frac(z, 8)).join(", ")}.`}${p.aboveOn ? `${esEnds ? "" : " Plus"} one shelf right across the full ${frac(W, 8)}, sitting on the box tops at ${frac(aboveZ, 8)}.` : ""}${p.above2On ? ` And a top shelf at ${frac(p.aboveZ2, 8)}, only ${frac(p.aboveDepth2, 8)} deep, on 1x2 cleats into the studs.` : ""}${p.above2On && p.midDiv ? ` One 3/4" divider between the two upper shelves, on the centre line at ${frac(W / 2, 8)} from the left wall - it lands on the seam between the two boxes.` : ""}`,
+      `AMIR:${esEnds ? "" : ` 3/4" birch plywood shelves on 1x2 cleats into the studs, ${frac(endW - g, 8)} wide at each end, ${frac(d, 8)} deep, at ${lv.map(z => frac(z, 8)).join(", ")}${p.aboveOn ? ` and ${frac(aboveZ, 8)}` : ""}.`}${p.aboveOn && !esEnds ? ` The ${frac(aboveZ, 8)} one is level with the box tops and butts the side of the box - nothing crosses the middle, the box tops are the shelf there.` : ""}${p.above2On ? ` Then a top shelf at ${frac(p.aboveZ2, 8)} right across the full ${frac(W, 8)}, only ${frac(p.aboveDepth2, 8)} deep, on 1x2 cleats into the studs.` : ""}${p.above2On && p.midDiv ? ` One 3/4" divider under it on the centre line at ${frac(W / 2, 8)} from the left wall, standing on the box tops - it lands on the seam between the two boxes.` : ""}`,
       `Nothing below ${frac(lv[0] || 0, 8)} at the ends - ${frac(basket, 8)} clear for laundry baskets.`,
       `Paint room colour, all sides.`,
     ].join("\n"),
@@ -272,13 +275,13 @@ export function build(p) {
       `The boxes stop at ${frac(d, 8)} deep because that is East Star's maximum. The ${frac(D - d, 8)} in front is not wasted: a 3-track slider needs about 5" for its tracks.`,
       `Bought boxes show as white oak in the 3D, site-built plywood in the finish you pick.`,
       `The rod starts at ${frac(p.rodZ, 8)} and moves up as she grows.`,
-      `DECIDED: this one goes to East Star. ABS have no standard 84" box and quoted custom as very high, and 94" does not work here - the shelf on the box tops would land 1-1/4" under the ${frac(p.doorH, 8)} header. East Star boxes in the middle, Amir's plywood shelves at the two ends.`,
-      `${frac(top, 8)} boxes rather than 94". A 94" box puts its shelf at 94-3/4", right under the ${frac(p.doorH, 8)} header, where you can neither see onto it nor reach across it. At ${frac(top, 8)} the shelf lands at ${frac(aboveZ, 8)} with ${frac(p.aboveZ2 - aboveZ - PLY, 8)} of clear, visible space over it, and the awkward height moves up to the ${frac(p.aboveZ2, 8)} shelf where it belongs.`,
+      `DECIDED: this one goes to East Star. ABS have no standard 84" box and quoted custom as very high, and 94" does not work here - the box tops would land 2" under the ${frac(p.doorH, 8)} header. East Star boxes in the middle, Amir's plywood shelves at the two ends.`,
+      `${frac(top, 8)} boxes rather than 94". A 94" box puts the top surface right under the ${frac(p.doorH, 8)} header, where you can neither see onto it nor reach across it. At ${frac(top, 8)} it lands at ${frac(aboveZ, 8)} with ${frac(p.aboveZ2 - aboveZ - PLY, 8)} of clear, visible space over it, and the awkward height moves up to the ${frac(p.aboveZ2, 8)} shelf where it belongs.`,
       ...(p.midDiv && p.above2On ? [`The one divider between the upper shelves is there to split a ${frac(W, 8)} run in two so stacks have something to lean on, not to hold the shelf up - that shelf is cleated along its whole back edge and droops about 1/25" at the front whatever its length. It sits on the centre line, which is also the seam between the two boxes, so it bears straight onto two box sides.`] : []),
       `That top shelf is only ${frac(p.aboveDepth2, 8)} deep on purpose: you reach it over the header, so your arm cannot go 24" back.`,
-      `OPEN - how the deck is carried. It sits at ${frac(aboveZ, 8)}, underside ${frac(aboveZ - PLY, 8)}. The East Star boxes are ${frac(top, 8)} tall with their backs to this wall, so a cleat along the wall under the deck would be inside the box. The plywood goes up before the boxes arrive, so their tops cannot be the support either. The ${frac(endW - g, 8)} at each end lands on the plywood sides, but the middle ${frac(esRun0, 8)} is the question. Amir to say how he carries it. That leaves ${frac(p.ceiling - aboveZ, 8)} open above it.`,
+      ...(p.aboveOn && !esEnds ? [`Nothing crosses the box tops. Amir's point: the boxes are plywood, so their tops already are the shelf over the middle ${frac(esRun0, 8)}. The two ends each get their own shelf at ${frac(aboveZ, 8)}, flush with the box tops and butted to the box side, so the wall reads as one surface at that height. This is what closed the open question on this closet - a deck crossing the boxes had nowhere to land, because their backs are against the wall and no cleat could run under it. Outboard of them a cleat has nothing in its way.`] : []),
       ...(esEnds ? [] : [`The end shelves sit on the back wall, the side wall, and a third cleat screwed into the side of the East Star box${p.gableOn ? "" : " - no gable, so none of that 20-odd inches is given up to a slab of plywood"}. On the shaker grade that side is plywood; on the chipboard grade use coarse cabinet screws.`]),
-      `The opening is ${frac(p.doorH, 8)} tall in a ${ftin(p.ceiling)} room, so ${frac(p.ceiling - p.doorH, 8)} of wall sits above it. The ${frac(top, 8)} boxes and the deck on their tops at ${frac(aboveZ, 8)} stay under the header, where you can see what you are doing.${p.above2On ? ` The ${frac(p.aboveZ2, 8)} shelf is the exception: it sits ${frac(p.aboveZ2 - p.doorH, 8)} above the header, so it is reached blind, over the top of the opening. That is why it is ${frac(p.aboveDepth2, 8)} deep and not ${frac(d, 8)} - its front edge stands ${frac(D - p.aboveDepth2, 8)} back from the doors, and that gap is the room your forearm needs to get up and over.` : ""}`,
+      `The opening is ${frac(p.doorH, 8)} tall in a ${ftin(p.ceiling)} room, so ${frac(p.ceiling - p.doorH, 8)} of wall sits above it. The ${frac(top, 8)} boxes and the ${frac(aboveZ, 8)} shelves level with their tops stay under the header, where you can see what you are doing.${p.above2On ? ` The ${frac(p.aboveZ2, 8)} shelf is the exception: it sits ${frac(p.aboveZ2 - p.doorH, 8)} above the header, so it is reached blind, over the top of the opening. That is why it is ${frac(p.aboveDepth2, 8)} deep and not ${frac(d, 8)} - its front edge stands ${frac(D - p.aboveDepth2, 8)} back from the doors, and that gap is the room your forearm needs to get up and over.` : ""}`,
     ],
   };
 }

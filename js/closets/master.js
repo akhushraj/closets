@@ -45,7 +45,8 @@ export const DEFAULTS = {
   ...shelfSlots("r2", [20, 34, 48, 62, 76], [88]), r2match: "r1",
   ...shelfSlots("r3", [20, 34, 48, 62, 76], [88]), r3match: "r2",
   // Nook: first at 24", then every 12". 60" is left off so 48-72" is one tall opening for the puja.
-  ...shelfSlots("n", [24, 36, 48, 72, 84, 96], [60, 108]),
+  // The top one is 94", not 96": it lines up with the tops of the 94" cabinets next to it.
+  ...shelfSlots("n", [24, 36, 48, 72, 84, 94], [60, 108]),
   finish: "white", oneFinish: false, lights: true,
 };
 
