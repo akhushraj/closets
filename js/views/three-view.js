@@ -184,6 +184,7 @@ export function createThreeView(host) {
         case "counter": addBox(part, mats.stone); break;
         case "elpanel": addBox(part, mats.panel); break;
         case "garment": addBox(part, mats.garments[part.tone % GARMENT.length]); break;
+        case "hole": break;   // a bored hole is a void, not a part
         case "led": addBox(part, p.lights ? mats.ledOn : mats.ledOff).castShadow = false; lights.push(part); break;
         case "rod": {
           const alongX = part.x1 - part.x0 > part.y1 - part.y0, L = alongX ? part.x1 - part.x0 : part.y1 - part.y0;

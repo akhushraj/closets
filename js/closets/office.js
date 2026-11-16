@@ -18,6 +18,7 @@ const CHEST = { w: 27.5, d: 19.75, h: 29.5 };
 export const DEFAULTS = {
   gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
   shelfDepth: 22, dresser: true, topOn: true, topZ: 94, topDepth: 12, nosingOn: false, plyOnly: false,
+  cordHole: true, cordHoleZ: 38, cordHoleBack: 3, cordHoleD: 2,
   ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
   finish: "white", oneFinish: false, lights: true,
@@ -26,6 +27,8 @@ export const DEFAULTS = {
 export const CONTROLS = [
   ["Network gear · left end", [
     { key: "gearW", label: "Gear zone width", min: 20, max: 32, step: 0.5 },
+    { key: "cordHole", label: "Cord hole through the divider (printer power off the gear side)", type: "check" },
+    { key: "cordHoleZ", label: "Its height (centre)", min: 36, max: 80, step: 1, onKey: "cordHole" },
     { key: "rackW", label: "Rack frame width", min: 19, max: 23, step: 0.5 },
     { key: "rackU", label: "Wall rack size (U)", min: 4, max: 15, step: 1, fmt: "int" },
     { key: "rackZ", label: "Rack bottom height", min: 40, max: 70, step: 0.5 },
@@ -107,6 +110,12 @@ export function build(p) {
   // the pair of wall cleats the divider slots between
   for (const [a, b] of [[G - 1.5, G], [G + PLY, G + PLY + 1.5]])
     parts.push(box(w.T, "cleat", a, b, 0, PLY, divBottom, stepAt));
+  // Power for the right side comes off the gear bay, so the cord crosses at shelf level rather
+  // than running round the front of the divider.
+  const holeOK = p.cordHole && p.cordHoleZ > divBottom + 1.5 && p.cordHoleZ < stepAt - 1.5;
+  if (holeOK) parts.push(box(w.T, "hole", G - 0.1, G + PLY + 0.1,
+    p.cordHoleBack - p.cordHoleD / 2, p.cordHoleBack + p.cordHoleD / 2,
+    p.cordHoleZ - p.cordHoleD / 2, p.cordHoleZ + p.cordHoleD / 2, { label: "Cord hole" }));
   add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, nosing: NOSE, levels: lv, label: "Shelves", led: false }));
   // the same shelves continue over the gear zone wherever the devices and rack leave room
   const rackTop = p.rackZ + rackH;
@@ -172,6 +181,9 @@ export function build(p) {
     parts: bare ? parts.filter(q => q.existing || !["garment", "device", "rack", "ups"].includes(q.kind)) : parts,
     modules, doors, hatches,
     elevDims,
+    elevNotes: holeOK ? [{ wall: "T", lines: [
+      `Cord hole through the divider: ${frac(p.cordHoleD, 8)} dia, centre ${frac(p.cordHoleZ, 8)} AFF, ${frac(p.cordHoleBack, 8)} out from the back wall. Grommet it.`,
+    ] }] : [],
     elevations: ["T", "L", "R"],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
@@ -199,6 +211,7 @@ export function build(p) {
       `Left ${frac(G, 8)} is network gear: 3/4" ply backboard screwed to studs, ${p.rackU}U wall rack at ${frac(p.rackZ, 8)} (${frac(rackPad, 8)} clear each side), UPS on the floor.`,
       `3/4" ply divider at ${frac(G, 8)} from the left, ${frac(divBottom, 8)} up to ${frac(stepAt, 8)}, slotted between two vertical 1x2 cleats into the studs.`,
       `Shelves right of it: ${lv.map(z => frac(z, 8)).join(", ")}. Gear side: ${leftLv.map(z => frac(z, 8)).join(", ") || "none"}.`,
+      ...(holeOK ? [`Bore a ${frac(p.cordHoleD, 8)} hole through that divider, centre ${frac(p.cordHoleZ, 8)} AFF and ${frac(p.cordHoleBack, 8)} out from the back wall, and fit a grommet. Power for the printer crosses from the gear side.`] : []),
       ...(p.dresser ? [`IKEA STORKLINTA 3-drawer (70 x 50 x 75 cm = ${CHEST.w} x ${CHEST.d} x ${CHEST.h}") under the bottom shelf. MALM is discontinued.`] : []),
       `1x2 cleats into studs; shelves sit loose. Louvered doors for airflow.`,
     ].join("\n"),
@@ -209,6 +222,7 @@ export function build(p) {
       `The cables arrive in two boxes on the left end wall at ${p.boxZ}", right beside the top of the rack. That's a short, tidy run.`,
       "Heat: the NVR, switch and UPS run all the time. Louvered doors, or a door undercut plus a small thermostat fan, keep the closet from cooking them.",
       "Store the space heater here, but don't run it inside the closet.",
+      ...(holeOK ? [`There is no outlet on the right-hand side. Rather than add one, the printer's cord crosses from the gear bay through a ${frac(p.cordHoleD, 8)} grommeted hole in the divider at ${frac(p.cordHoleZ, 8)} - ${frac(p.cordHoleZ - (lv[0] ?? 35), 8)} above the ${frac(lv[0] ?? 35, 8)} shelf, so the cord lies on the shelf both sides and nothing shows at the front. Bore it before the divider goes in.`] : []),
       plywoodNote(p.nosingOn),
     ],
   };
