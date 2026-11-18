@@ -38,6 +38,21 @@ export function polyPart(w, kind, pts, z0, z1, extra = {}) {
     poly: pts, ...extra };
 }
 
+/* ---------- a panel standing square to its wall whose SIDE profile is a polygon: a divider
+   that steps or tapers back as it rises. `pts` are [v, z] in order, v out from the wall;
+   u0/u1 are its two faces. Carries the same bbox fields as box(), plus the wall frame so the
+   3D can stand the profile up in the right plane. ---------- */
+export function profPart(w, kind, pts, u0, u1, extra = {}) {
+  const f = frame(w);
+  const vs = pts.map(q => q[0]), zs = pts.map(q => q[1]);
+  const v0 = Math.min(...vs), v1 = Math.max(...vs);
+  const p = (u, v) => [f.ax + f.dx * u + f.nx * v, f.ay + f.dy * u + f.ny * v];
+  const [xA, yA] = p(u0, v0), [xB, yB] = p(u1, v1);
+  return { kind, wall: w.id, u0, u1, v0, v1, z0: Math.min(...zs), z1: Math.max(...zs),
+    x0: Math.min(xA, xB), x1: Math.max(xA, xB), y0: Math.min(yA, yB), y1: Math.max(yA, yB),
+    prof: pts, frame: { ...f, u0, u1 }, ...extra };
+}
+
 /* ---------- a panel that runs on the diagonal in plan (across a blind corner).
    `a` and `b` are plan points; the panel is `thick` thick, centred on that line.
    It carries the same bbox/u/v fields as box() so elevations and bounds still work,

@@ -113,6 +113,20 @@ export function createThreeView(host) {
       root.add(m);
       return m;
     }
+    if (p.prof) {   // a panel standing square to its wall, cut to a side profile
+      const shape = new THREE.Shape(p.prof.map(([v, z]) => new THREE.Vector2(v, z)));
+      const f = p.frame, thick = f.u1 - f.u0;
+      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: thick, bevelEnabled: false }), mat);
+      // local X is v (out from the wall), local Y is z, local Z is the thickness. Extrude back
+      // along -u so the basis stays right-handed and the faces are not inside out.
+      const e = new THREE.Matrix4().makeBasis(
+        new THREE.Vector3(f.nx, 0, f.ny), new THREE.Vector3(0, 1, 0), new THREE.Vector3(-f.dx, 0, -f.dy));
+      e.setPosition(f.ax + f.dx * f.u1, 0, f.ay + f.dy * f.u1);
+      m.applyMatrix4(e);
+      m.castShadow = m.receiveShadow = true;
+      root.add(m);
+      return m;
+    }
     const turned = p.yaw != null;
     const w = turned ? p.len : p.x1 - p.x0, h = p.z1 - p.z0, d = turned ? p.thick : p.y1 - p.y0;
     const geo = new THREE.BoxGeometry(w, h, d);

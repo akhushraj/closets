@@ -2,7 +2,7 @@
 // 75.2" AFF on the left end wall). A plywood divider separates it from fixed plywood shelves across the
 // rest. The floor stays one open bay, full width and clear to 41", for a dresser up to 40" tall -
 // which is what sets every shelf height in here. No clothes rod, no desk. Louvered doors swing out.
-import { box, fixedShelves, floorItem, collector, hatchClashes } from "../model/builders.js";
+import { box, fixedShelves, floorItem, collector, hatchClashes, profPart } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, plywoodNote } from "./common.js";
 
@@ -19,6 +19,9 @@ const CHEST = { w: 27.5, d: 19.75, h: 29.5 };
 export const DEFAULTS = {
   gearW: 29, rackW: 21, rackU: 9, rackZ: 67, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 65, upsW: 7, upsD: 17, upsH: 10,
   shelfDepth: 22, dresser: true, topOn: true, topZ: 101, topDepth: 12, nosingOn: false, plyOnly: false,
+  // the top shelf of the main run is shallow like the one above it - at 89" you cannot see to
+  // the back of 22" anyway - and the divider tapers up to meet it rather than stepping
+  highShallow: true, highDepth: 12,
   cordHole: true, cordHoleZ: 44, cordHoleBack: 3, cordHoleD: 2,
   // Everything is the old 35/51/67/83 lifted 6" to clear a 40" dresser. The shelf that used to
   // cap the run at 94" went up to 101", above the header, where it is reached blind - so it
@@ -49,6 +52,8 @@ export const CONTROLS = [
     { key: "topOn", label: "Shelf just under the header", type: "check" },
     { key: "topZ", label: "Its height (top)", min: 80, max: 108, step: 1, gapFrom: "s", onKey: "topOn" },
     { key: "topDepth", label: "Its depth", min: 8, max: 18, step: 0.5 },
+    { key: "highShallow", label: "Top shelf of the main run shallow too, divider tapered up to it", type: "check" },
+    { key: "highDepth", label: "Its depth", min: 8, max: 22, step: 0.5, onKey: "highShallow" },
   ]],
   ["Crawl-space hatch (until measured)", [
     { key: "hatchX", label: "From the left wall", min: 0, max: 40, step: 0.5 },
@@ -109,8 +114,14 @@ export function build(p) {
   const divTop = p.topOn ? p.topZ : (lv[lv.length - 1] || 88);
   const divBottom = Math.max(0, (lv[0] ?? 35) - PLY);   // stops at the bottom shelf - below that is dresser space
   elevDims.push({ wall: "T", u0: 0, u1: G, z: divBottom, off: 22 });   // gear bay width, off the left wall
-  const stepAt = lv.length ? lv[lv.length - 1] : divTop;   // divider steps back to the top shelf's depth
-  parts.push(box(w.T, "carcass", G, G + PLY, 0, sd, divBottom, stepAt));
+  const stepAt = lv.length ? lv[lv.length - 1] : divTop;   // the divider runs up to the top shelf
+  // Taper: full depth up to the shelf below the top one, then a straight cut back to the
+  // shallow top shelf. One diagonal rip, and no slab of ply standing where nothing reaches.
+  const taperFrom = p.highShallow && lv.length > 1 ? lv[lv.length - 2] : null;
+  const hd = p.highShallow ? Math.min(+p.highDepth, sd) : sd;
+  if (taperFrom != null)
+    parts.push(profPart(w.T, "carcass", [[0, divBottom], [sd, divBottom], [sd, taperFrom], [hd, stepAt], [0, stepAt]], G, G + PLY));
+  else parts.push(box(w.T, "carcass", G, G + PLY, 0, sd, divBottom, stepAt));
   // the pair of wall cleats the divider slots between
   for (const [a, b] of [[G - 1.5, G], [G + PLY, G + PLY + 1.5]])
     parts.push(box(w.T, "cleat", a, b, 0, PLY, divBottom, stepAt));
@@ -120,13 +131,22 @@ export function build(p) {
   if (holeOK) parts.push(box(w.T, "hole", G - 0.1, G + PLY + 0.1,
     p.cordHoleBack - p.cordHoleD / 2, p.cordHoleBack + p.cordHoleD / 2,
     p.cordHoleZ - p.cordHoleD / 2, p.cordHoleZ + p.cordHoleD / 2, { label: "Cord hole" }));
-  add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, nosing: NOSE, levels: lv, label: "Shelves", led: false }));
+  // every shelf at the main depth but the top one, which matches the shallow shelf above it
+  const deepLv = taperFrom != null ? lv.slice(0, -1) : lv;
+  add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: sd, nosing: NOSE, levels: deepLv, label: "Shelves", led: false }));
+  if (taperFrom != null)
+    add(fixedShelves(w.T, { u0: G + PLY, u1: W, depth: hd, nosing: NOSE, levels: [stepAt], label: "Shelf · shallow", led: false }));
   // the same shelves continue over the gear zone wherever the devices and rack leave room
   const rackTop = p.rackZ + rackH;
   const clearOfRack = z => z + 1.5 <= p.rackZ || z >= rackTop + 2;
   const leftLv = [...lv.filter(z => (z < base - 1 || z > rackTop + 3) && clearOfRack(z)),
     ...(p.gearShelfOn && clearOfRack(p.gearShelfZ) ? [p.gearShelfZ] : [])].sort((a, b) => a - b);
-  if (leftLv.length) add(fixedShelves(w.T, { u0: 0, u1: G, depth: sd, nosing: NOSE, levels: leftLv, label: "Gear-side shelves", led: false }));
+  // the gear side goes shallow at the same height, so 89" reads as one line right across and
+  // the tapered divider has something to land on at both ends
+  const leftDeep = leftLv.filter(z => taperFrom == null || z < stepAt - 0.1);
+  const leftHigh = leftLv.filter(z => taperFrom != null && z >= stepAt - 0.1);
+  if (leftDeep.length) add(fixedShelves(w.T, { u0: 0, u1: G, depth: sd, nosing: NOSE, levels: leftDeep, label: "Gear-side shelves", led: false }));
+  if (leftHigh.length) add(fixedShelves(w.T, { u0: 0, u1: G, depth: hd, nosing: NOSE, levels: leftHigh, label: "Gear-side shelf · shallow", led: false }));
 
   // The board sits in the bay between two shelves rather than running behind them, so no shelf
   // has to be notched round it and nothing holds a shelf proud of the wall. A gear-side shelf
@@ -203,7 +223,8 @@ export function build(p) {
     drawerGroups: [],
     stats: [
       { k: "Rack", v: `${p.rackU}U · ${frac(p.rackW, 8)} wide`, s: `4U used, ${p.rackU - 4}U spare · ${frac(rackPad, 8)} each side for cables` },
-      { k: "Shelves", v: `${lv.length + leftLv.length} × ${frac(sd, 8)} deep`, s: `right side at ${lv.join(", ")}"; gear side at ${leftLv.join(", ") || "none"}` },
+      { k: "Shelves", v: `${lv.length + leftLv.length} × ${frac(sd, 8)} deep${taperFrom != null ? `, 2 × ${frac(hd, 8)}` : ""}`,
+        s: `right side at ${lv.join(", ")}"; gear side at ${leftLv.join(", ") || "none"}` },
       { k: "Under the lowest shelf", v: frac(Math.max(0, clear1), 8),
         s: `at the cleats, ${frac(Math.max(0, clear1 + 1.5), 8)} under the shelf itself \u00b7 one open bay the full ${frac(W, 8)}, for a dresser and the UPS` },
       p.topOn ? { k: "Top shelf", v: `${frac(p.topZ, 8)} × ${frac(p.topDepth, 8)} deep`,
@@ -219,8 +240,8 @@ export function build(p) {
     gcText: [
       `OFFICE CLOSET - 3/4" birch ply, ${frac(sd, 8)} deep, painted.`,
       `Left ${frac(G, 8)} is network gear: 3/4" ply backboard screwed to studs, ${p.rackU}U wall rack at ${frac(p.rackZ, 8)} (${frac(rackPad, 8)} clear each side), UPS on the floor.`,
-      `3/4" ply divider at ${frac(G, 8)} from the left, ${frac(divBottom, 8)} up to ${frac(stepAt, 8)}, slotted between two vertical 1x2 cleats into the studs.`,
-      `Shelves right of it: ${lv.map(z => frac(z, 8)).join(", ")}. Gear side: ${leftLv.map(z => frac(z, 8)).join(", ") || "none"}.`,
+      `3/4" ply divider at ${frac(G, 8)} from the left, ${frac(divBottom, 8)} up to ${frac(stepAt, 8)}, slotted between two vertical 1x2 cleats into the studs.${taperFrom != null ? ` Not a rectangle: ${frac(sd, 8)} deep up to ${frac(taperFrom, 8)}, then one straight cut from there back to ${frac(hd, 8)} at ${frac(stepAt, 8)}.` : ""}`,
+      `Shelves right of it: ${lv.map(z => frac(z, 8)).join(", ")}. Gear side: ${leftLv.map(z => frac(z, 8)).join(", ") || "none"}. All ${frac(sd, 8)} deep${taperFrom != null ? `, except the ${frac(stepAt, 8)} pair, which are ${frac(hd, 8)} and land on the tapered edge of the divider` : ""}.`,
       ...(holeOK ? [`Bore a ${frac(p.cordHoleD, 8)} hole through that divider, centre ${frac(p.cordHoleZ, 8)} AFF and ${frac(p.cordHoleBack, 8)} out from the back wall, and fit a grommet. Power for the printer crosses from the gear side.`] : []),
       ...(p.dresser ? [`IKEA STORKLINTA 3-drawer (70 x 50 x 75 cm = ${CHEST.w} x ${CHEST.d} x ${CHEST.h}") under the bottom shelf. MALM is discontinued.`] : []),
       `1x2 cleats into studs; shelves sit loose. Louvered doors for airflow.`,
@@ -232,6 +253,7 @@ export function build(p) {
       `The cables arrive in two boxes on the left end wall at ${p.boxZ}", right beside the top of the rack. That's a short, tidy run.`,
       "Heat: the NVR, switch and UPS run all the time. Louvered doors, or a door undercut plus a small thermostat fan, keep the closet from cooking them.",
       "Store the space heater here, but don't run it inside the closet.",
+      ...(taperFrom != null ? [`The ${frac(stepAt, 8)} shelves are ${frac(hd, 8)} deep rather than ${frac(sd, 8)}, matching the ${frac(p.topZ, 8)} one above them. At ${frac(stepAt, 8)} you cannot see to the back of a ${frac(sd, 8)} shelf anyway, and nothing hangs off this one. The divider follows: full depth to ${frac(taperFrom, 8)}, then a single diagonal cut back to ${frac(hd, 8)}. The bay below keeps all ${frac(sd, 8)} of its depth, because the cut starts at the shelf, not below it.`] : []),
       ...(holeOK ? [`There is no outlet on the right-hand side. Rather than add one, the printer's cord crosses from the gear bay through a ${frac(p.cordHoleD, 8)} grommeted hole in the divider at ${frac(p.cordHoleZ, 8)} - ${frac(p.cordHoleZ - (lv[0] ?? 35), 8)} above the ${frac(lv[0] ?? 35, 8)} shelf, so the cord lies on the shelf both sides and nothing shows at the front. Bore it before the divider goes in.`] : []),
       plywoodNote(p.nosingOn),
     ],
