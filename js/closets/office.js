@@ -1,6 +1,7 @@
 // Office reach-in: network + security gear at the left end, where the cables arrive (two boxes at
 // 75.2" AFF on the left end wall). A plywood divider separates it from fixed plywood shelves across the
-// rest; the lowest shelf clears a space heater. No clothes rod, no desk. Louvered double doors swing out.
+// rest. The floor stays one open bay, full width and clear to 41", for a dresser up to 40" tall -
+// which is what sets every shelf height in here. No clothes rod, no desk. Louvered doors swing out.
 import { box, fixedShelves, floorItem, collector, hatchClashes } from "../model/builders.js";
 import { PLY, frac, ftin } from "../lib/units.js";
 import { shelfSlots, shelfControls, readShelves, spacingWarnings, plywoodNote } from "./common.js";
@@ -16,10 +17,13 @@ export const FIELD = { W: 59.8, D: 23.6, ceiling: 120, doorAt: 4.8, doorRO: 49.9
 const CHEST = { w: 27.5, d: 19.75, h: 29.5 };
 
 export const DEFAULTS = {
-  gearW: 25, rackW: 21, rackU: 9, rackZ: 61, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 59, upsW: 7, upsD: 17, upsH: 10,
-  shelfDepth: 22, dresser: true, topOn: true, topZ: 94, topDepth: 12, nosingOn: false, plyOnly: false,
-  cordHole: true, cordHoleZ: 38, cordHoleBack: 3, cordHoleD: 2,
-  ...shelfSlots("s", [35, 51, 67, 83], [19, 94]),
+  gearW: 29, rackW: 21, rackU: 9, rackZ: 67, rackDepth: 14, boardTop: 90, gearShelfOn: true, gearShelfZ: 65, upsW: 7, upsD: 17, upsH: 10,
+  shelfDepth: 22, dresser: true, topOn: true, topZ: 101, topDepth: 12, nosingOn: false, plyOnly: false,
+  cordHole: true, cordHoleZ: 44, cordHoleBack: 3, cordHoleD: 2,
+  // Everything is the old 35/51/67/83 lifted 6" to clear a 40" dresser. The shelf that used to
+  // cap the run at 94" went up to 101", above the header, where it is reached blind - so it
+  // stays 12" deep. 89" is now the top shelf you can see onto.
+  ...shelfSlots("s", [41, 57, 73, 89], [25, 101]),
   hatchX: 18, hatchY: 4, hatchW: 24, hatchD: 18,
   finish: "white", oneFinish: false, lights: true,
 };
@@ -43,7 +47,7 @@ export const CONTROLS = [
   ]),
   ["Top shelf · full width", [
     { key: "topOn", label: "Shelf just under the header", type: "check" },
-    { key: "topZ", label: "Its height (top)", min: 80, max: 95, step: 1, gapFrom: "s", onKey: "topOn" },
+    { key: "topZ", label: "Its height (top)", min: 80, max: 108, step: 1, gapFrom: "s", onKey: "topOn" },
     { key: "topDepth", label: "Its depth", min: 8, max: 18, step: 0.5 },
   ]],
   ["Crawl-space hatch (until measured)", [
@@ -94,7 +98,7 @@ export function build(p) {
   const base = (readShelves(p, "s", 6)[0] ?? 33) + 2;   // devices start just above the bottom shelf
   const dev = (u0, u1, z0, z1, label, tone = "dark") => parts.push(box(w.T, "device", u0, u1, 0.75, 3, z0, z1, { label, tone }));
   dev(1.5, 9.5, base, base + 10, "Fiber ONT", "light");
-  dev(10.5, G - 1.5, base, base + 9, "Gateway");
+  dev(10.5, 23.5, base, base + 9, "Gateway");   // a fixed box, not something that grows with the bay
   dev(1.5, 8.5, base + 12, base + 17, "Blinds hub + power supply", "light");
   parts.push(box(w.L, "ups", D - p.upsD - 1, D - 1, 0.5, 0.5 + p.upsW, 0, p.upsH, { label: "UPS" }));
   modules.push(box(w.T, "equip", 0, G, 0, p.rackDepth + 0.75, 0, 0, { label: "Network gear", sub: `backboard + ${p.rackU}U rack` }));
@@ -164,8 +168,12 @@ export function build(p) {
   if (p.gearShelfOn && !clearOfRack(p.gearShelfZ)) warnings.push(`The gear-side shelf at ${frac(p.gearShelfZ, 8)} lands on the rack (${frac(p.rackZ, 8)}–${frac(rackTop, 8)}).`);
   if (base + 17 > (p.gearShelfOn && p.gearShelfZ > base ? p.gearShelfZ : p.rackZ)) warnings.push("The fiber box, gateway and hub need about 17\" of backboard below the next shelf or the rack.");
   if (rackPad < 1.5) warnings.push(`Only ${frac(Math.max(0, rackPad), 8)} beside the rack for cables. Widen the gear zone to about ${frac(p.rackW + 4, 8)}.`);
-  const blocked = [...lv, ...(p.topOn ? [p.topZ] : [])].filter(z => z > p.doorH - 1.5);
+  const blocked = lv.filter(z => z > p.doorH - 1.5);
   if (blocked.length) warnings.push(`Shelves at ${blocked.join(", ")}" sit above the door header (${p.doorH}"), so you can't reach them.`);
+  // a shallow shelf above the header is fine - you reach it over the top of the opening - but a
+  // deep one is not, because your arm cannot go back that far
+  if (p.topOn && p.topZ > p.doorH - 1.5 && p.topDepth > 14)
+    warnings.push(`The top shelf at ${frac(p.topZ, 8)} is above the ${p.doorH}" header and ${frac(p.topDepth, 8)} deep. You reach it blind, over the opening, so keep it to about 12".`);
   if (p.dresser && lv.length && lv[0] - PLY - 1.5 < CHEST.h + 0.5)
     warnings.push(`The dresser (${CHEST.h}") doesn't fit under the bottom shelf's cleats (${frac(lv[0] - PLY - 1.5, 8)}).`);
 
@@ -196,8 +204,10 @@ export function build(p) {
     stats: [
       { k: "Rack", v: `${p.rackU}U · ${frac(p.rackW, 8)} wide`, s: `4U used, ${p.rackU - 4}U spare · ${frac(rackPad, 8)} each side for cables` },
       { k: "Shelves", v: `${lv.length + leftLv.length} × ${frac(sd, 8)} deep`, s: `right side at ${lv.join(", ")}"; gear side at ${leftLv.join(", ") || "none"}` },
-      { k: "Under the lowest shelf", v: frac(Math.max(0, clear1), 8), s: "clear height at the cleats (space heater, etc.)" },
-      p.topOn ? { k: "Top shelf", v: `${frac(p.topZ, 8)} × ${frac(p.topDepth, 8)} deep`, s: "full width, under the header" }
+      { k: "Under the lowest shelf", v: frac(Math.max(0, clear1), 8),
+        s: `at the cleats, ${frac(Math.max(0, clear1 + 1.5), 8)} under the shelf itself \u00b7 one open bay the full ${frac(W, 8)}, for a dresser and the UPS` },
+      p.topOn ? { k: "Top shelf", v: `${frac(p.topZ, 8)} × ${frac(p.topDepth, 8)} deep`,
+                  s: `full width, ${p.topZ > p.doorH ? `${frac(p.topZ - p.doorH, 8)} above the ${p.doorH}" header - reached blind, which is why it is shallow` : "under the header"}` }
               : { k: "Above the top shelf", v: frac(p.doorH - (lv[lv.length - 1] || 0), 8), s: "open to the header; no shallow shelf" },
     ],
     titleMeta: [
