@@ -104,11 +104,15 @@ function drawWall(svg, w, len, model) {
 
   // AFF height ladder on the right, nudged apart so labels never collide
   marks.sort((a, b) => b.z - a.z);
+  // under about an inch it is trim or a face plate, and the number would be its thickness
+  const txt = m => (m.label || "") + (m.d > 1.25 ? ` \u00b7 ${frac(m.d, 8)} deep` : "");
   const merged = [];
   for (const mk of marks) {
-    const last = merged[merged.length - 1];
-    if (last && Math.abs(last.z - mk.z) < 0.6) { if (!last.label) { last.label = mk.label; last.d = mk.d; } continue; }
-    merged.push({ ...mk });
+    const last = merged[merged.length - 1], t = txt(mk);
+    // Several things can finish at one height - a 1x4 on edge right under a 24" panel, say.
+    // Name them all rather than letting whichever sorted first speak for the rest.
+    if (last && Math.abs(last.z - mk.z) < 0.6) { if (t && !last.parts.includes(t)) last.parts.push(t); continue; }
+    merged.push({ z: mk.z, parts: t ? [t] : [] });
   }
   let prevY = -Infinity;
   const x0 = U(len) + 5;
@@ -118,9 +122,8 @@ function drawWall(svg, w, len, model) {
     el("line", { x1: U(len), y1: y, x2: x0 + 6, y2: y, class: "ext" }, g);
     el("path", { d: `M${x0 + 6} ${y} L${x0 + 12} ${ty}`, class: "ext" }, g);
     el("text", { x: x0 + 15, y: ty, class: "dt", "font-size": 11, "dominant-baseline": "middle" }, g, frac(mk.z, 8));
-    if (mk.label) el("text", { x: x0 + 70, y: ty, class: "lbs", "font-size": 11, "dominant-baseline": "middle" }, g,
-      // under about an inch it is trim or a face plate, and the number is its thickness
-      mk.label + (mk.d > 1.25 ? ` \u00b7 ${frac(mk.d, 8)} deep` : ""));
+    if (mk.parts.length) el("text", { x: x0 + 70, y: ty, class: "lbs", "font-size": 11,
+      "dominant-baseline": "middle" }, g, mk.parts.join(" + "));
   }
 
   dim(g, U(0), Z(0), U(0), Z(ceil), ftin(ceil), -22);
@@ -133,8 +136,7 @@ function drawWall(svg, w, len, model) {
   for (const dm of (model.elevDims || []).filter(x => x.wall === w.id))
     dim(g, U(dm.u0), Z(dm.z), U(dm.u1), Z(dm.z), dm.label || frac(dm.u1 - dm.u0, 8), dm.off ?? -14, 11.5);
 
-  const widest = Math.max(0, ...merged.map(m => (m.label || "").length +
-    (m.d > 1.25 ? frac(m.d, 8).length + 8 : 0)));
+  const widest = Math.max(0, ...merged.map(m => m.parts.join(" + ").length));
   const right = Math.max(196, 88 + widest * 6);
   const Wpx = ox + len * S + right;
   svg.setAttribute("viewBox", `0 0 ${Wpx} ${Hpx}`);
