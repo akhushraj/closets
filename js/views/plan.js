@@ -79,8 +79,11 @@ export function renderPlan(svg, model) {
   const mods = [...model.modules].filter(m => !hidden(m))
     .sort((a, b) => (ORDER.indexOf(a.kind) + 99) % 99 - (ORDER.indexOf(b.kind) + 99) % 99);
   for (const m of mods) {
-    el("rect", { x: X(m.x0), y: Y(m.y0), width: (m.x1 - m.x0) * S, height: (m.y1 - m.y0) * S,
-      class: "m-" + (LEGEND[m.kind] ? m.kind : "other"), rx: m.kind === "hamper" ? 4 : 0 }, g);
+    const cls = "m-" + (LEGEND[m.kind] ? m.kind : "other");
+    // a module whose footprint is not a rectangle - shelves cut to a 45 across a corner
+    if (m.plan) el("path", { d: poly(m.plan), class: cls }, g);
+    else el("rect", { x: X(m.x0), y: Y(m.y0), width: (m.x1 - m.x0) * S, height: (m.y1 - m.y0) * S,
+      class: cls, rx: m.kind === "hamper" ? 4 : 0 }, g);
     const w = wallOf(m.wall);
     for (const r of m.rods || []) {
       const [x1, y1] = P(w, m.u0 + 0.5, r.v), [x2, y2] = P(w, m.u1 - 0.5, r.v);
