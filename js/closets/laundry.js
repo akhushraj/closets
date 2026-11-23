@@ -51,7 +51,7 @@ export const CONTROLS = [
     { key: "backWall", label: "Wall D left (the back leg)", type: "select",
       options: [["counter", "Counter, same as the sink leg"], ["tall", "Floor-to-ceiling storage instead"], ["none", "Leave it empty"]] },
     { key: "upperDepth", label: "Uppers (wall cabinets), depth", type: "select",
-      options: [["15.5", "Shallow \u2014 15-1/2\" ES / 18\" ABS"], ["24", "24\" \u2014 both"]] },
+      options: [["15.5", "Shallow \u2014 18\""], ["24", "24\""]] },
     { key: "wallCab", label: "Wall cabinet height (ABS only)", type: "select", absOnly: true,
       options: [["40+18", "40\" box + 18\" topper \u2014 58\" tall"], ["60", "One 60\" box"]] },
     { key: "upperBottom", label: "Uppers, bottom", min: 48, max: 60, step: 1 },
@@ -106,9 +106,10 @@ export const ES_QUOTE = () => ({ total: 9512.37, taxIn: true, what: "Laundry (no
 export function build(p) {
   p = { ...p, ...FIELD };
   const abs = p.supplier === "abs";
-  // Everything shallow in this room is 18" on ABS - wall cabinets and the tall box on wall B
-  // alike. East Star's shallow box is 15-1/2". (Master's ABS shallow is 15"; different room.)
-  const shallow = x => (abs && Math.abs(Number(x) - 15.5) < 0.3 ? 18 : Number(x));
+  // Everything shallow in this room is 18" deep - wall cabinets and the tall box on wall B
+  // alike - whoever builds it. 15-1/2" is East Star's standard shallow box, but this room was
+  // laid out at 18" and they will build to it. (Master's shallow is 15"; different room.)
+  const shallow = x => (Math.abs(Number(x) - 15.5) < 0.3 ? 18 : Number(x));
   // ABS wall cabinets come two ways: one 60" box, or a 40" box with an 18" topper over it.
   // Either way the height is a product, not a free slider.
   const WC = p.wallCab === "60" ? { h: 60, seam: 0 } : { h: 58, seam: 40 };
