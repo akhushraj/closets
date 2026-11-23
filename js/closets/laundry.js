@@ -23,7 +23,7 @@ export const FIELD = {
 };
 
 export const DEFAULTS = {
-  supplier: "abs", absDoors: true, planShow: "all",
+  supplier: "es", absDoors: true, planShow: "all",
   backClear: 5, showClear: true, pedestal: false,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   sinkW2: 25, sinkD2: 22, backWall: "counter", wdDoorsOpen: false,
@@ -55,7 +55,7 @@ export const CONTROLS = [
     { key: "wallCab", label: "Wall cabinet height (ABS only)", type: "select", absOnly: true,
       options: [["40+18", "40\" box + 18\" topper \u2014 58\" tall"], ["60", "One 60\" box"]] },
     { key: "upperBottom", label: "Uppers, bottom", min: 48, max: 60, step: 1 },
-    { key: "cornerPly", label: "Inside corner: open plywood shelves by Amir (uncheck for the WER cabinet)", type: "check" },
+    { key: "cornerPly", label: "Inside corner: open plywood shelves by Amir", type: "check" },
     { key: "planShow", label: "Plan view shows", type: "select",
       options: [["all", "Everything"], ["base", "Base cabinets only"], ["wall", "Wall cabinets only"]] },
     { key: "upperTop", label: "Uppers, top (East Star only \u2014 ABS heights are set by the box)", min: 80, max: 120, step: 1, esOnly: true },
@@ -131,6 +131,7 @@ export function build(p) {
   ];
   const w = Object.fromEntries(walls.map(x => [x.id, x]));
   const { parts, modules, add } = collector();
+  const details = [];
   const warnings = [];
   const qRows = [];
 
@@ -234,6 +235,7 @@ export function build(p) {
   // Open shelves, so every gap is on show: divide the whole run evenly rather than borrowing
   // the cabinets' shelf lines, which are behind doors anyway. Aim for about 11-1/2" a shelf,
   // then round the step to a quarter so the setting-out is a number Amir can mark off.
+  const cArea = (WER * WER - (WER - ud) ** 2 / 2) / 144;   // the L with its corner chamfered off
   const cz0 = p.upperBottom + PLY;
   const cStep = Math.round(((upTop - cz0) / Math.max(2, Math.round((upTop - cz0) / 11.5))) * 4) / 4;
   const cLv = Array.from({ length: Math.max(2, Math.round((upTop - cz0) / 11.5)) }, (_, k) => cz0 + k * cStep);
@@ -244,15 +246,36 @@ export function build(p) {
       // one plank per leg, meeting on the 45. Each is its own wall's piece, so each shows on
       // that wall's elevation and the grain runs the way the wall does.
       parts.push(polyPart(w.SA, "shelf", [[0, 0], [WER, 0], [WER, ud], [mid, mid]], z - PLY, z,
-        { mark: true, labelDepth: ud, label: i ? "Corner shelf, cut to the 45" : "Corner shelf, bottom (cut to the 45)" }));
+        { mark: true, labelDepth: ud, label: i ? "Corner shelf" : "Corner shelf, bottom" }));
       parts.push(polyPart(w.L, "shelf", [[0, 0], [mid, mid], [ud, WER], [0, WER]], z - PLY, z,
-        { mark: true, labelDepth: ud, label: i ? "Corner shelf, cut to the 45" : "Corner shelf, bottom (cut to the 45)" }));
+        { mark: true, labelDepth: ud, label: i ? "Corner shelf" : "Corner shelf, bottom" }));
       // cleats: both walls the full 30, plus one on the end panel of the cabinet either side
       parts.push(box(w.SA, "cleat", 0, WER, 0, PLY, z - PLY - 1.5, z - PLY));
       parts.push(box(w.L, "cleat", Yb - WER, Yb, 0, PLY, z - PLY - 1.5, z - PLY));
       parts.push(box(w.SA, "cleat", WER - PLY, WER, 0, ud, z - PLY - 1.5, z - PLY));
       parts.push(box(w.L, "cleat", Yb - WER, Yb - WER + PLY, 0, ud, z - PLY - 1.5, z - PLY));
     }
+    // looking down: the only view that shows what shape these are
+    details.push({ tag: "D1", withWall: "SA", name: "Corner shelf · from above",
+      poly: [[0, 0], [WER, 0], [WER, ud], [ud, WER], [0, WER]],
+      neighbours: [{ x0: WER, y0: 0, x1: WER + 7, y1: ud }, { x0: 0, y0: WER, x1: ud, y1: WER + 7 }],
+      cleats: [[[0, 0.4], [WER, 0.4]], [[0.4, 0], [0.4, WER]],
+               [[WER - 0.4, 0], [WER - 0.4, ud]], [[0, WER - 0.4], [ud, WER - 0.4]]],
+      dims: [
+        { a: [0, 0], b: [WER, 0], label: frac(WER, 8), off: -22 },
+        { a: [0, 0], b: [0, WER], label: frac(WER, 8), off: 22 },
+        { a: [WER, 0], b: [WER, ud], label: frac(ud, 8), off: -16 },
+        { a: [0, WER], b: [ud, WER], label: frac(ud, 8), off: 30 },
+        { a: [WER, ud], b: [ud, WER], label: frac(Math.hypot(WER - ud, WER - ud), 8), off: 14 },
+      ],
+      labels: [
+        { x: WER / 2, y: -1.6, t: "wall D", cls: "lbs" },
+        { x: -1.6, y: WER / 2, t: "wall A", cls: "lbs", rot: -90 },
+      ],
+      lines: [
+        `Two planks a shelf, meeting on the 45.`,
+        `Cleats: both walls, plus each cabinet end.`,
+      ] });
     modules.push(box(w.SA, "shelves", 0, WER, 0, WER, 0, 0, { label: "Corner · plywood",
       sub: `${cLv.length} shelves at ${frac(cStep, 8)} · ${frac(ud, 8)} legs, 45° front`,
       plan: [[0, 0], [WER, 0], [WER, ud], [ud, WER], [0, WER]] }));
@@ -411,7 +434,11 @@ export function build(p) {
   const pedVol = 2 * p.washer.w * p.pedH * p.pedD;
 
   const lw = X3;
+  // stone, sink, machines, rack: other trades, not plywood. Grey, and no text on the ladder.
+  for (const q of parts) if (["counter", "sink", "sinkbowl", "appliance", "rack", "elpanel"].includes(q.kind)) q.bought = true;
+
   return {
+    details,
     quote: { supplier: abs ? "Aydin Building Supplies" : "East Star", rows: qRows },
     info: { ...INFO, concept: abs ? "Aydin (ABS) \u00b7 94\" boxes with toppers" : INFO.concept },
     params: p,
@@ -442,7 +469,7 @@ export function build(p) {
       { k: "Washer + dryer", v: `${W1.w + D1.w}" in ${frac(p.wdW, 8)}`, s: `${W1.model} + ${D1.model} · ${frac(spare, 8)} to spare` },
       { k: "Machine tops", v: frac(mTop, 8), s: pedH ? `on ${frac(pedH, 8)} pedestals` : "on the floor, no pedestals" },
       { k: "Inside corner", v: p.cornerPly ? `plywood, ${frac(WER, 8)} × ${frac(WER, 8)}` : (abs ? `WER ${frac(WER, 8)} corner` : "wall A runs through"),
-        s: p.cornerPly ? `${frac(ud, 8)} legs, 45° front, open · 5.75 sq ft a shelf, evenly at ${frac(cStep, 8)} · not a cabinet, so not in anyone's quote` : abs ? "L-shaped box, bi-fold front" : "no corner unit" },
+        s: p.cornerPly ? `${frac(ud, 8)} legs, 45° front, open · ${cArea.toFixed(2)} sq ft a shelf, evenly at ${frac(cStep, 8)} · not a cabinet, so not in anyone's quote` : abs ? "L-shaped box, bi-fold front" : "no corner unit" },
       { k: "Over the machines", v: `${frac(p.wdUpperBottom, 8)} to ${frac(wdTop, 8)}`, s: `${frac(p.wdUpperBottom - mTop, 8)} above the machines; ${frac(Math.max(0, 80 - p.wdUpperBottom), 8)} of it within easy reach` },
       { k: "Machine to long wall", v: frac(Yb - mFront, 8), s: `dryer door open reaches ${frac(dOpen - yWD, 8)} off that wall` },
       { k: "Facing the machines", v: standD ? frac(standD, 8) : "nothing yet", s: standD ? `${frac(aisle, 8)} walkway where you stand - ${aisle >= 42 ? "the recommended 42\"" : aisle >= 36 ? "over the 36\" minimum, under the 42\" recommendation" : "under the 36\" minimum"}; the open door clears the deepest box by ${frac(gap, 8)}` : "" },
@@ -472,7 +499,7 @@ export function build(p) {
     notes: [
       `Wall A right and wall D left are one L-shaped corner closet: ${frac(bd, 8)} base cabinets under a counter at ${frac(cz, 8)}, with ${frac(ud, 8)} uppers from ${frac(p.upperBottom, 8)} to ${frac(upTop, 8)} over both${abs ? ` (${WC.seam ? `a ${frac(WC.seam, 8)} box with a ${frac(WALLCAB - WC.seam, 8)} topper over it` : `one ${frac(WALLCAB, 8)} box`})` : ""}. The A run owns the inside corner; the D run starts ${frac(bd, 8)} clear of it so the two don't collide.`,
       ...(p.cornerPly ? [
-        `The wall cabinets stop ${frac(WER, 8)} short of the inside corner on both walls, and Amir fills it with open plywood instead. Each shelf is two planks meeting on a 45: ${frac(WER, 8)} along each wall, ${frac(ud, 8)} deep, with the front corner cut off square to the diagonal. 5.75 sq ft a shelf, ${cLv.length} of them evenly at ${frac(cStep, 8)} from ${frac(cLv[0], 8)}. They are open, so the spacing is on show - it is divided evenly rather than borrowing the cabinets' shelf heights, which sit behind doors. The one thing that no longer lines up is the ${frac(wcSeam(p.upperBottom), 8)} joint between box and topper next door. Nobody makes a good shallow corner unit - ABS quoted a 24" easy-reach and never priced the ${frac(WER, 8)} × ${frac(WER, 8)} this needs - and open shelves beat a bi-fold door in a room this narrow.`,
+        `The wall cabinets stop ${frac(WER, 8)} short of the inside corner on both walls, and Amir fills it with open plywood instead. Each shelf is two planks meeting on a 45: ${frac(WER, 8)} along each wall, ${frac(ud, 8)} deep, with the front corner cut off square to the diagonal. ${cArea.toFixed(2)} sq ft a shelf, ${cLv.length} of them evenly at ${frac(cStep, 8)} from ${frac(cLv[0], 8)}. They are open, so the spacing is on show - it is divided evenly rather than borrowing the cabinets' shelf heights, which sit behind doors. The one thing that no longer lines up is the ${frac(wcSeam(p.upperBottom), 8)} joint between box and topper next door. ${abs ? `ABS quoted a 24" easy-reach and never priced the ${frac(WER, 8)} × ${frac(WER, 8)} this needs` : "East Star make no corner unit at all"}, and open shelves beat a bi-fold door in a room this narrow anyway.`,
         `Only the ${frac(Math.hypot(WER - ud, WER - ud), 8)} diagonal is a free edge. Both back edges sit on wall cleats running the full ${frac(WER, 8)}, and each outer end lands on a 1x2 screwed to the end panel of the cabinet beside it - 1-1/4" coarse screws, because that panel is only ${frac(ES, 8)} and a longer one comes through inside the box. Worst droop is the middle of the diagonal, ${frac((WER + ud) / 2, 8)} off each wall and carried two ways: well under 1/16".`,
         `Install order: the cabinets either side go in first, because the end cleats screw to them. If that cannot be relied on, say so and the two ends become plywood gables instead, which makes the corner stand on its own.`,
         `You will not reach the back of it. The corner point is ${frac((WER + ud) / Math.SQRT2, 8)} in from the diagonal face, so that is where the things you need twice a year live.`,
