@@ -258,14 +258,15 @@ export function build(p) {
     // looking down: the only view that shows what shape these are
     details.push({ tag: "D1", withWall: "SA", name: "Corner shelf · from above",
       poly: [[0, 0], [WER, 0], [WER, ud], [ud, WER], [0, WER]],
-      neighbours: [{ x0: WER, y0: 0, x1: WER + 7, y1: ud }, { x0: 0, y0: WER, x1: ud, y1: WER + 7 }],
+      neighbours: [{ x0: WER, y0: 0, x1: WER + 6.5, y1: ud, label: "wall cabinet", rot: -90 },
+                   { x0: 0, y0: WER, x1: ud, y1: WER + 6.5, label: "wall cabinet" }],
       cleats: [[[0, 0.4], [WER, 0.4]], [[0.4, 0], [0.4, WER]],
                [[WER - 0.4, 0], [WER - 0.4, ud]], [[0, WER - 0.4], [ud, WER - 0.4]]],
       dims: [
         { a: [0, 0], b: [WER, 0], label: frac(WER, 8), off: -22 },
         { a: [0, 0], b: [0, WER], label: frac(WER, 8), off: 22 },
-        { a: [WER, 0], b: [WER, ud], label: frac(ud, 8), off: -16 },
-        { a: [0, WER], b: [ud, WER], label: frac(ud, 8), off: 30 },
+        { a: [WER, 0], b: [WER, ud], label: frac(ud, 8), off: 20 },
+        { a: [0, WER], b: [ud, WER], label: frac(ud, 8), off: -20 },
         { a: [WER, ud], b: [ud, WER], label: frac(Math.hypot(WER - ud, WER - ud), 8), off: 14 },
       ],
       labels: [

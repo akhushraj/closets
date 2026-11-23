@@ -47,8 +47,8 @@ function drawCut(svg, model, cut) {
     if (p.prof) el("path", { d: "M" + p.prof.map(([v, z]) => `${V(v)} ${Z(z)}`).join(" L") + " Z", class: cls }, g);
     else el("rect", { x: V(p.v0), y: Z(p.z1), width: Math.max(0.6, (p.v1 - p.v0) * S),
       height: Math.max(0.6, (p.z1 - p.z0) * S), class: cls }, g);
-    if (p.mark && p.kind !== "cleat")
-      marks.push(p.bought ? { z: p.z1, label: "" } : { z: p.z1, label: p.label || "", d: p.labelDepth ?? (p.v1 - p.v0) });
+    if (p.mark && p.kind !== "cleat" && !p.bought)
+      marks.push({ z: p.z1, label: p.label || "", d: p.labelDepth ?? (p.v1 - p.v0) });
   }
 
   // the door opening's header, so you can see what is above reach
@@ -68,6 +68,13 @@ function drawCut(svg, model, cut) {
     const last = merged[merged.length - 1], t = txt(mk);
     if (last && Math.abs(last.z - mk.z) < 0.6) { if (t && !last.parts.includes(t)) last.parts.push(t); continue; }
     merged.push({ z: mk.z, parts: t ? [t] : [] });
+  }
+  // identical to the one above it? the number is enough. Compare against what was written,
+  // not against a rung this loop has already blanked.
+  for (let i = 1, prev = merged.length ? merged[0].parts.join("|") : ""; i < merged.length; i++) {
+    const t2 = merged[i].parts.join("|");
+    if (t2 === prev) merged[i].parts = [];
+    prev = t2;
   }
   let prevY = -Infinity;
   const x0 = V(depth) + 5;

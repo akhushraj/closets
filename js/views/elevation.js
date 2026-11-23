@@ -92,7 +92,7 @@ function drawWall(svg, w, len, model) {
     else if (p.kind === "front") marks.push({ z: p.z0 - 1 / 16, label: "" });
     else if (p.kind === "kick") marks.push({ z: p.z1, label: "Toe kick" });
     // a part cut to a polygon is not as deep as its bounding box, so it can name its own depth
-    else if (p.bought) marks.push({ z: p.z1, label: "" });
+    else if (p.bought) continue;
     else marks.push({ z: p.z1, label: p.label || "", d: p.labelDepth ?? (p.v1 - p.v0) });
   }
 
@@ -115,6 +115,13 @@ function drawWall(svg, w, len, model) {
     // Name them all rather than letting whichever sorted first speak for the rest.
     if (last && Math.abs(last.z - mk.z) < 0.6) { if (t && !last.parts.includes(t)) last.parts.push(t); continue; }
     merged.push({ z: mk.z, parts: t ? [t] : [] });
+  }
+  // identical to the one above it? the number is enough. Compare against what was written,
+  // not against a rung this loop has already blanked.
+  for (let i = 1, prev = merged.length ? merged[0].parts.join("|") : ""; i < merged.length; i++) {
+    const t2 = merged[i].parts.join("|");
+    if (t2 === prev) merged[i].parts = [];
+    prev = t2;
   }
   let prevY = -Infinity;
   const x0 = U(len) + 5;
