@@ -27,7 +27,7 @@ export const DEFAULTS = {
   backClear: 5, showClear: true, pedestal: false,
   baseDepth: 24, counterZ: 36, sinkBay: 30,
   sinkW2: 25, sinkD2: 22, backWall: "counter", wdDoorsOpen: false,
-  upperDepth: 15.5, upperBottom: 60, upperTop: 114, wallCab: "40+18", cornerPly: true,
+  upperDepth: 15.5, upperBottom: 60, upperTop: 118, wallCab: "40+18", cornerPly: true, cornerStep: 12,
   wdUpperBottom: 60, wdUpperTop: 114,
   coatW: 36, bPlan: "36, 18/15.5", grade: "shaker", coatRod: 76, coatFronts: "10, 11, 12", coatDoors: false, tallTop: 108,
   facingDepth: 24,
@@ -56,6 +56,7 @@ export const CONTROLS = [
       options: [["40+18", "40\" box + 18\" topper \u2014 58\" tall"], ["60", "One 60\" box"]] },
     { key: "upperBottom", label: "Uppers, bottom", min: 48, max: 60, step: 1 },
     { key: "cornerPly", label: "Inside corner: open plywood shelves by Amir", type: "check" },
+    { key: "cornerStep", label: "Corner shelves, one every", min: 9, max: 16, step: 0.25, onKey: "cornerPly" },
     { key: "planShow", label: "Plan view shows", type: "select",
       options: [["all", "Everything"], ["base", "Base cabinets only"], ["wall", "Wall cabinets only"]] },
     { key: "upperTop", label: "Uppers, top (East Star only \u2014 ABS heights are set by the box)", min: 80, max: 120, step: 1, esOnly: true },
@@ -237,9 +238,12 @@ export function build(p) {
   // the cabinets' shelf lines, which are behind doors anyway. Aim for about 11-1/2" a shelf,
   // then round the step to a quarter so the setting-out is a number Amir can mark off.
   const cArea = (WER * WER - (WER - ud) ** 2 / 2) / 144;   // the L with its corner chamfered off
+  // Bottom shelf level with the underside of the cabinets either side, then one every 12".
+  // A round pitch off a known datum is what gets marked on a wall; the leftover lands at the
+  // top, above reach, where an odd bay costs nothing.
   const cz0 = p.upperBottom + PLY;
-  const cStep = Math.round(((upTop - cz0) / Math.max(2, Math.round((upTop - cz0) / 11.5))) * 4) / 4;
-  const cLv = Array.from({ length: Math.max(2, Math.round((upTop - cz0) / 11.5)) }, (_, k) => cz0 + k * cStep);
+  const cStep = +p.cornerStep;
+  const cLv = Array.from({ length: Math.max(2, Math.floor((upTop - cz0) / cStep) + 1) }, (_, k) => cz0 + k * cStep);
   if (p.cornerPly) {
     const back = WER - ud;                 // 12: how far the 45 cuts back off each leg
     const mid = WER - back / 2;            // 24: where the 45 crosses the corner's own diagonal
@@ -501,7 +505,7 @@ export function build(p) {
     notes: [
       `Wall A right and wall D left are one L-shaped corner closet: ${frac(bd, 8)} base cabinets under a counter at ${frac(cz, 8)}, with ${frac(ud, 8)} uppers from ${frac(p.upperBottom, 8)} to ${frac(upTop, 8)} over both${abs ? ` (${WC.seam ? `a ${frac(WC.seam, 8)} box with a ${frac(WALLCAB - WC.seam, 8)} topper over it` : `one ${frac(WALLCAB, 8)} box`})` : ""}. The A run owns the inside corner; the D run starts ${frac(bd, 8)} clear of it so the two don't collide.`,
       ...(p.cornerPly ? [
-        `The wall cabinets stop ${frac(WER, 8)} short of the inside corner on both walls, and Amir fills it with open plywood instead. Each shelf is two planks meeting on a 45: ${frac(WER, 8)} along each wall, ${frac(ud, 8)} deep, with the front corner cut off square to the diagonal. ${cArea.toFixed(2)} sq ft a shelf, ${cLv.length} of them evenly at ${frac(cStep, 8)} from ${frac(cLv[0], 8)}. They are open, so the spacing is on show - it is divided evenly rather than borrowing the cabinets' shelf heights, which sit behind doors. The one thing that no longer lines up is the ${frac(wcSeam(p.upperBottom), 8)} joint between box and topper next door. ${abs ? `ABS quoted a 24" easy-reach and never priced the ${frac(WER, 8)} × ${frac(WER, 8)} this needs` : "East Star make no corner unit at all"}, and open shelves beat a bi-fold door in a room this narrow anyway.`,
+        `The wall cabinets stop ${frac(WER, 8)} short of the inside corner on both walls, and Amir fills it with open plywood instead. Each shelf is two planks meeting on a 45: ${frac(WER, 8)} along each wall, ${frac(ud, 8)} deep, with the front corner cut off square to the diagonal. ${cArea.toFixed(2)} sq ft a shelf. Tops at ${cLv.map(z => frac(z, 8)).join(", ")} AFF: the bottom one level with the underside of the cabinets either side, then one every ${frac(cStep, 8)}. The ${frac(upTop - cLv[cLv.length - 1], 8)} left at the top is above reach anyway. ${abs ? `ABS quoted a 24" easy-reach and never priced the ${frac(WER, 8)} × ${frac(WER, 8)} this needs` : "East Star make no corner unit at all"}, and open shelves beat a bi-fold door in a room this narrow anyway.`,
         `Only the ${frac(Math.hypot(WER - ud, WER - ud), 8)} diagonal is a free edge. Both back edges sit on wall cleats running the full ${frac(WER, 8)}, and each outer end lands on a 1x2 screwed to the end panel of the cabinet beside it - 1-1/4" coarse screws, because that panel is only ${frac(ES, 8)} and a longer one comes through inside the box. Worst droop is the middle of the diagonal, ${frac((WER + ud) / 2, 8)} off each wall and carried two ways: well under 1/16".`,
         `Install order: the cabinets either side go in first, because the end cleats screw to them. If that cannot be relied on, say so and the two ends become plywood gables instead, which makes the corner stand on its own.`,
         `You will not reach the back of it. The corner point is ${frac((WER + ud) / Math.SQRT2, 8)} in from the diagonal face, so that is where the things you need twice a year live.`,
