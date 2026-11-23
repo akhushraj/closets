@@ -244,8 +244,9 @@ export function build(p) {
       // one plank per leg, meeting on the 45. Each is its own wall's piece, so each shows on
       // that wall's elevation and the grain runs the way the wall does.
       parts.push(polyPart(w.SA, "shelf", [[0, 0], [WER, 0], [WER, ud], [mid, mid]], z - PLY, z,
-        { mark: true, label: i ? "Corner shelf, cut to the 45" : "Corner shelf, bottom" }));
-      parts.push(polyPart(w.L, "shelf", [[0, 0], [mid, mid], [ud, WER], [0, WER]], z - PLY, z));
+        { mark: true, labelDepth: ud, label: i ? "Corner shelf, cut to the 45" : "Corner shelf, bottom (cut to the 45)" }));
+      parts.push(polyPart(w.L, "shelf", [[0, 0], [mid, mid], [ud, WER], [0, WER]], z - PLY, z,
+        { mark: true, labelDepth: ud, label: i ? "Corner shelf, cut to the 45" : "Corner shelf, bottom (cut to the 45)" }));
       // cleats: both walls the full 30, plus one on the end panel of the cabinet either side
       parts.push(box(w.SA, "cleat", 0, WER, 0, PLY, z - PLY - 1.5, z - PLY));
       parts.push(box(w.L, "cleat", Yb - WER, Yb, 0, PLY, z - PLY - 1.5, z - PLY));

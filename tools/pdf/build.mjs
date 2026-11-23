@@ -8,7 +8,7 @@ const { renderElevations } = await import(path.join(ROOT, "js/views/elevation.js
 const { renderSections } = await import(path.join(ROOT, "js/views/section.js"));
 
 // every room with plywood work; the laundry is all cabinets
-const ROOMS = ["master", "maya", "rohan", "guest", "office", "pantry", "masterbath"];
+const ROOMS = ["master", "maya", "rohan", "guest", "office", "pantry", "masterbath", "laundry"];
 
 const css = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").match(/<style>([\s\S]*?)<\/style>/)[1];
 
@@ -17,7 +17,7 @@ for (const id of ROOMS) {
   const mod = await import(path.join(ROOT, `js/closets/${id}.js`));
   // Maya keeps her cabinets: the deck question over them only reads with the boxes drawn.
   // Master dropped its deck, so it is plywood-only like the rest.
-  const withBoxes = id === "maya";
+  const withBoxes = id === "maya" || id === "laundry";
   const model = mod.build({ ...mod.DEFAULTS, plyOnly: !withBoxes });
   const root = new Node("div", null);
   renderElevations(root, model);

@@ -47,7 +47,7 @@ function drawCut(svg, model, cut) {
     if (p.prof) el("path", { d: "M" + p.prof.map(([v, z]) => `${V(v)} ${Z(z)}`).join(" L") + " Z", class: cls }, g);
     else el("rect", { x: V(p.v0), y: Z(p.z1), width: Math.max(0.6, (p.v1 - p.v0) * S),
       height: Math.max(0.6, (p.z1 - p.z0) * S), class: cls }, g);
-    if (p.mark && p.kind !== "cleat") marks.push({ z: p.z1, label: p.label || "", d: p.v1 - p.v0 });
+    if (p.mark && p.kind !== "cleat") marks.push({ z: p.z1, label: p.label || "", d: p.labelDepth ?? (p.v1 - p.v0) });
   }
 
   // the door opening's header, so you can see what is above reach

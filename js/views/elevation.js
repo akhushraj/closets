@@ -91,7 +91,8 @@ function drawWall(svg, w, len, model) {
     if (p.kind === "rod") marks.push({ z: (p.z0 + p.z1) / 2, label: "Rod" });
     else if (p.kind === "front") marks.push({ z: p.z0 - 1 / 16, label: "" });
     else if (p.kind === "kick") marks.push({ z: p.z1, label: "Toe kick" });
-    else marks.push({ z: p.z1, label: p.label || "", d: p.v1 - p.v0 });
+    // a part cut to a polygon is not as deep as its bounding box, so it can name its own depth
+    else marks.push({ z: p.z1, label: p.label || "", d: p.labelDepth ?? (p.v1 - p.v0) });
   }
 
   const hz = Math.min(...model.doors.map(d => d.h));
