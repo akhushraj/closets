@@ -5,6 +5,7 @@ import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const { renderElevations } = await import(path.join(ROOT, "js/views/elevation.js"));
+const { renderSections } = await import(path.join(ROOT, "js/views/section.js"));
 
 // every room with plywood work; the laundry is all cabinets
 const ROOMS = ["master", "maya", "rohan", "guest", "office", "pantry", "masterbath"];
@@ -29,13 +30,23 @@ for (const id of ROOMS) {
     if (n < 2) continue;
     pages.push({ withBoxes, room: `${mod.INFO.name} — ${mod.INFO.room}`, wall: cap._html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").replace(/· (Aydin \(ABS\)|East Star) /, "").trim(), svg: svg.outerHTML });
   }
+  // sections: a cut through something an elevation can only show edge-on
+  const sroot = new Node("div", null);
+  renderSections(sroot, model);
+  for (const fig of sroot.children) {
+    const cap = fig.children.find(c => c.tag === "figcaption");
+    const svg = fig.children.find(c => c.tag === "svg");
+    if (!svg) continue;
+    pages.push({ withBoxes, section: true, room: `${mod.INFO.name} — ${mod.INFO.room}`,
+      wall: cap._html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(), svg: svg.outerHTML });
+  }
 }
 
 const body = pages.map(p => `
 <section class="sheet">
   <header><h1>${p.room}</h1><h2>${p.wall}</h2></header>
   <div class="draw">${p.svg}</div>
-  <footer>${p.withBoxes ? "Cabinets shown for context — Amir builds the plywood only." : "Plywood work only — bought items are not shown."} 5228 Union Ave</footer>
+  <footer>${p.section ? "Section — cut through the closet, looking along the wall. " : ""}${p.withBoxes ? "Cabinets shown for context — Amir builds the plywood only." : "Plywood work only — bought items are not shown."} 5228 Union Ave</footer>
 </section>`).join("");
 
 fs.writeFileSync(path.join(ROOT, "plywood-elevations.html"), `<!doctype html>

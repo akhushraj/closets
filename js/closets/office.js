@@ -213,6 +213,23 @@ export function build(p) {
       `Cord hole through the divider: ${frac(p.cordHoleD, 8)} dia, centre ${frac(p.cordHoleZ, 8)} AFF, ${frac(p.cordHoleBack, 8)} out from the back wall. Grommet it.`,
     ] }] : [],
     elevations: ["T", "L", "R"],
+    // The divider is edge-on in elevation, so the taper - the one thing about it worth drawing -
+    // never shows. Cut through it instead.
+    sections: [{ tag: "S1", wall: "T", u: G + PLY / 2, depth: D, name: "Divider \u00b7 through the middle of the closet",
+      look: "toward the gear side", tol: 1.6,
+      dims: [
+        { v0: 0, v1: sd, z0: divBottom, z1: divBottom, label: frac(sd, 8), off: -16 },
+        ...(taperFrom != null ? [
+          { v0: 0, v1: hd, z0: stepAt, z1: stepAt, label: frac(hd, 8), off: -16 },
+        ] : []),
+      ],
+      lines: [
+        `Divider: one panel, ${frac(stepAt - divBottom, 8)} tall, ${frac(sd, 8)} deep at the bottom.`,
+        ...(taperFrom != null
+          ? [`Full depth to ${frac(taperFrom, 8)}, then one straight cut back to ${frac(hd, 8)} at ${frac(stepAt, 8)}. Nothing below ${frac(divBottom, 8)} - that bay is open for a dresser.`]
+          : [`Nothing below ${frac(divBottom, 8)} - that bay is open for a dresser.`]),
+        `It slots between two vertical 1x2 cleats screwed into the studs. Shelves sit loose on their own cleats either side.`,
+      ] }],
     planDims: [
       { a: [0, 0], b: [W, 0], label: frac(W, 8), off: -(t + 2.3) },
       { a: [W, 0], b: [W, D], label: frac(D, 8), off: -(t + 2.3) },
